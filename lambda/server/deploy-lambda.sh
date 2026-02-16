@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-FUNCTION_NAME="fulcrum-api"
+FUNCTION_NAME="marginarc-api"
 REGION="us-east-1"
 ROLE_ARN="arn:aws:iam::511683043714:role/bachelor-backend-role"
 

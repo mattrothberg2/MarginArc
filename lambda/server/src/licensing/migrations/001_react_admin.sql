@@ -1,5 +1,5 @@
 -- Migration 001: React Admin backend support
--- Run against the fulcrum PostgreSQL database via psql or a migration runner
+-- Run against the MarginArc PostgreSQL database via psql or a migration runner
 
 -- New tables
 CREATE TABLE IF NOT EXISTS license_activations (

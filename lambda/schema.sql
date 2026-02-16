@@ -1,4 +1,4 @@
--- Fulcrum Mothership Database Schema
+-- MarginArc Mothership Database Schema
 -- PostgreSQL 14+
 
 -- Enable UUID extension
@@ -41,7 +41,7 @@ CREATE INDEX idx_licenses_expiry ON licenses(expiry_date);
 CREATE TABLE IF NOT EXISTS customer_config (
     customer_id UUID PRIMARY KEY REFERENCES customers(id) ON DELETE CASCADE,
     gemini_api_key VARCHAR(255),
-    fulcrum_api_url VARCHAR(500) DEFAULT 'https://fulcrum.rothbergs.com/api/recommend',
+    fulcrum_api_url VARCHAR(500) DEFAULT 'https://api.marginarc.com/api/recommend',
     phone_home_interval_days INTEGER DEFAULT 7 CHECK (phone_home_interval_days >= 1),
     features JSONB DEFAULT '{}'::jsonb,
     settings JSONB DEFAULT '{}'::jsonb,
@@ -117,7 +117,7 @@ FROM licenses l
 JOIN customers c ON l.customer_id = c.id
 WHERE l.status IN ('pending', 'active');
 
-COMMENT ON TABLE customers IS 'Customer organizations using Fulcrum';
+COMMENT ON TABLE customers IS 'Customer organizations using MarginArc';
 COMMENT ON TABLE licenses IS 'License keys issued to customers';
 COMMENT ON TABLE customer_config IS 'Per-customer configuration and API keys';
 COMMENT ON TABLE telemetry_events IS 'Phone-home telemetry data from Salesforce orgs';

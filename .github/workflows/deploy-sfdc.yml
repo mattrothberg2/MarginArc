@@ -1,0 +1,81 @@
+name: Deploy to Salesforce
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "sfdc/force-app/**"
+      - "sfdc/sfdx-project.json"
+      - ".github/workflows/deploy-sfdc.yml"
+
+  workflow_dispatch:
+
+concurrency:
+  group: salesforce-deploy
+  cancel-in-progress: true
+
+jobs:
+  validate-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: sfdc
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: sfdc/package-lock.json
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Prettier check
+        run: npm run prettier:verify
+
+      - name: ESLint check
+        run: npm run lint
+
+      - name: Install Salesforce CLI
+        run: |
+          npm install -g @salesforce/cli
+          sf version
+
+      - name: Authenticate to Salesforce
+        run: |
+          echo "${{ secrets.SFDX_AUTH_URL }}" > ./SFDX_AUTH_URL.txt
+          sf org login sfdx-url --sfdx-url-file ./SFDX_AUTH_URL.txt --alias deploy-org --set-default
+          rm -f ./SFDX_AUTH_URL.txt
+
+      - name: Validate deployment (dry run)
+        run: |
+          sf project deploy start \
+            --target-org deploy-org \
+            --source-dir force-app \
+            --test-level RunSpecifiedTests \
+            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest \
+            --dry-run \
+            --wait 20
+
+      - name: Deploy to Salesforce
+        run: |
+          sf project deploy start \
+            --target-org deploy-org \
+            --source-dir force-app \
+            --test-level RunSpecifiedTests \
+            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest \
+            --wait 20
+
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-logs
+          path: sfdc/.sf/
+          retention-days: 7

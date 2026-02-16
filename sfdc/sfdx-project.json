@@ -9,7 +9,7 @@
       "versionDescription": "AI-powered margin intelligence platform for IT VARs"
     }
   ],
-  "name": "fulcrum-sfdc",
+  "name": "MarginArc",
   "namespace": "",
   "sfdcLoginUrl": "https://login.salesforce.com",
   "sourceApiVersion": "62.0",

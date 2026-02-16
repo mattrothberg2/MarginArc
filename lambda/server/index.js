@@ -68,7 +68,7 @@ const SALESFORCE_ORIGINS = [
 const ADMIN_ORIGINS = [
   'https://api.marginarc.com',
   'https://marginarc.com',
-  // legacy fulcrum.rothbergs.com origin removed — all traffic goes through api.marginarc.com now
+  // legacy origin origin removed — all traffic goes through api.marginarc.com now
 ]
 
 if (!isLambda) {
@@ -178,15 +178,15 @@ app.use('/oauth', oauthRoutes)
 app.use('/api/demo-data', demoDataRoutes)
 
 // API key authentication for production (applies to other /api routes)
-const FULCRUM_API_KEY = process.env.FULCRUM_API_KEY || ''
-if (FULCRUM_API_KEY) {
+const MARGINARC_API_KEY = process.env.MARGINARC_API_KEY || ''
+if (MARGINARC_API_KEY) {
   app.use('/api', (req, res, next) => {
     if (req.path === '/health') return next()
     // Skip API key check for licensing routes and demo-data (JWT-authed)
     if (req.path.startsWith('/v1/license')) return next()
     if (req.path.startsWith('/demo-data')) return next()
     const provided = req.headers['x-api-key'] || ''
-    if (provided !== FULCRUM_API_KEY) {
+    if (provided !== MARGINARC_API_KEY) {
       return res.status(401).json({ error: 'Invalid or missing API key' })
     }
     next()
