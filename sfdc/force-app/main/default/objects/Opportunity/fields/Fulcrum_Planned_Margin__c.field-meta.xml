@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Planned_Margin__c</fullName>
+    <description>Your planned margin percentage for this deal</description>
+    <inlineHelpText>Enter your target margin percentage</inlineHelpText>
+    <label>Planned Margin %</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

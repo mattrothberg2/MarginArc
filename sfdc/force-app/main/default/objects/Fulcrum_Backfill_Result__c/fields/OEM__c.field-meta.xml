@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/schemas/metadata">
+    <fullName>OEM__c</fullName>
+    <label>OEM</label>
+    <length>100</length>
+    <type>Text</type>
+    <required>false</required>
+</CustomField>

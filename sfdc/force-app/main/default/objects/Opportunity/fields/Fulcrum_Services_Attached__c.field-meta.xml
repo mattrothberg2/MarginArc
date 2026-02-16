@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Services_Attached__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Whether professional services are included in this deal</description>
+    <inlineHelpText>Check if professional services are included</inlineHelpText>
+    <label>Services Attached</label>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

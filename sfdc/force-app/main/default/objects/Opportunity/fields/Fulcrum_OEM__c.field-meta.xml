@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_OEM__c</fullName>
+    <description>Primary OEM/Vendor for this opportunity</description>
+    <inlineHelpText>Select the primary vendor for this deal</inlineHelpText>
+    <label>OEM</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Cisco</fullName>
+                <default>false</default>
+                <label>Cisco</label>
+            </value>
+            <value>
+                <fullName>HPE</fullName>
+                <default>false</default>
+                <label>HPE</label>
+            </value>
+            <value>
+                <fullName>Dell</fullName>
+                <default>false</default>
+                <label>Dell</label>
+            </value>
+            <value>
+                <fullName>Palo Alto</fullName>
+                <default>false</default>
+                <label>Palo Alto</label>
+            </value>
+            <value>
+                <fullName>Fortinet</fullName>
+                <default>false</default>
+                <label>Fortinet</label>
+            </value>
+            <value>
+                <fullName>VMware</fullName>
+                <default>false</default>
+                <label>VMware</label>
+            </value>
+            <value>
+                <fullName>Microsoft</fullName>
+                <default>false</default>
+                <label>Microsoft</label>
+            </value>
+            <value>
+                <fullName>NetApp</fullName>
+                <default>false</default>
+                <label>NetApp</label>
+            </value>
+            <value>
+                <fullName>Pure Storage</fullName>
+                <default>false</default>
+                <label>Pure Storage</label>
+            </value>
+            <value>
+                <fullName>Arista</fullName>
+                <default>false</default>
+                <label>Arista</label>
+            </value>
+            <value>
+                <fullName>CrowdStrike</fullName>
+                <default>false</default>
+                <label>CrowdStrike</label>
+            </value>
+            <value>
+                <fullName>Nutanix</fullName>
+                <default>false</default>
+                <label>Nutanix</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

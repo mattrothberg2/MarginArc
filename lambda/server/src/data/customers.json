@@ -1,0 +1,2502 @@
+[
+  {
+    "name": "General Motors",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 132000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "MongoDB",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 61000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Etsy",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 33000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Fifth Third Bancorp",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 17000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Capital One",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 12000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "L3Harris Technologies",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 48000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Live Nation Entertainment",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 23000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Omnicom Group",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 16000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Palantir",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 59000,
+    "industry": "Technology"
+  },
+  {
+    "name": "First Republic",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 93000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Agilent Technologies",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 37000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Schneider Electric NA",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 89000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Bosch North America",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 22000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "PepsiCo",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 123000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "FedEx",
+    "segment": "Transportation",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 105000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Conagra Brands",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 22000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Quest Diagnostics",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 41000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Dollar Tree",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 33000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Unilever North America",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 30000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Kimberly-Clark",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 9000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Dropbox",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Valero Energy",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 53000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Southern Company",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Expeditors International",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 37000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Best Buy",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 21000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Hitachi America",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 30000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Stripe",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 25000,
+    "industry": "Technology"
+  },
+  {
+    "name": "RingCentral",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 56000,
+    "industry": "Technology"
+  },
+  {
+    "name": "John Deere",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 21000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Raytheon Technologies",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 69000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "BNY Mellon",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 61000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "General Electric",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 65000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Mitsubishi America",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 71000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Xylem",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 18000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "iHeartMedia",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 24000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Heartland Express",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 20000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Salesforce",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 49000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Danaher",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 56000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Cardinal Health",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "High",
+    "avgDealSize": 42000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Molina Healthcare",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 73000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "DigitalOcean",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 38000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Hormel Foods",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 27000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Raymond James",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 28000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Cummins",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 41000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Lowe's",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 10000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Kraft Heinz",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 12000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Hershey",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 45000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Nordstrom",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 16000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Dover Corporation",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 58000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Target",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 94000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Datadog",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 30000,
+    "industry": "Technology"
+  },
+  {
+    "name": "ConocoPhillips",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 47000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Merck",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 39000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Fox Corporation",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 31000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Take-Two Interactive",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 39000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Samsung Electronics America",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 49000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Electronic Arts",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Plaid",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 18000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Wells Fargo",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 17000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "SPX Technologies",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 32000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Edward Jones",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 56000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Warner Bros. Discovery",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 30000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Netflix",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 122000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "ArcBest Corporation",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 14000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Charter Communications",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 30000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Workday",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 187000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Bath & Body Works",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 13000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Johnson & Johnson",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 74000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "ONEOK",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 28000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Moody's",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 33000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "KeyCorp",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 18000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Amazon",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 41000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Knight-Swift Transportation",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 27000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Comcast",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 49000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Enbridge North America",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 22000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Clorox",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 39000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Macy's",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 47000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Ross Stores",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 138000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Fastly",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 70000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Chevron",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 26000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Berkshire Hathaway",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 92000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Ally Financial",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 45000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "General Mills",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 71000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "TFI International",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 46000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Discover Financial",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 65000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "UnitedHealth Group",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 26000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Landstar System",
+    "segment": "Transportation",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 42000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Honda North America",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 108000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Cigna Group",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 90000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Tesla",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 43000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Panasonic North America",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 37000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Boston Scientific",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 32000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Kinder Morgan",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 19000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Mondelez International",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 15000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Snowflake",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 145000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Paramount Global",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "AutoZone",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 18000,
+    "industry": "Retail"
+  },
+  {
+    "name": "PagerDuty",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 206000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Colgate-Palmolive",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 40000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "AT&T",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 13000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "SVB Financial",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 59000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "LG Electronics USA",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 54000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Zions Bancorporation",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 48000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Walmart",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 29000,
+    "industry": "Retail"
+  },
+  {
+    "name": "HubSpot",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 65000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Amgen",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 22000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Twilio",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 75000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Coca-Cola",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 87000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Dish Network",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 44000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Bristol-Myers Squibb",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 109000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "McCormick",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 68000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Textron",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 16000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Chewy",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 19000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Synchrony Financial",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 172000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Thermo Fisher Scientific",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 14000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Zscaler",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 91000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Parker Hannifin",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 52000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Siemens USA",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 130000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Estee Lauder",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 33000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "General Electric",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 39000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Unity Technologies",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 62000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Archer Daniels Midland",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 11000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "NextEra Energy",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 42000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Phillips 66",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 64000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Huntington Bancshares",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 35000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "3M Company",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 47000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Church & Dwight",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 8000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Werner Enterprises",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 22000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Old Dominion Freight Line",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 19000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "ServiceNow",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 75000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Regal Rexnord",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 39000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Akamai Technologies",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 58000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Lamb Weston",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 35000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Tyson Foods",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Procter & Gamble",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 22000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "Lumen Technologies",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 19000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Toyota North America",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 64000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Saia",
+    "segment": "Transportation",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 17000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Ryder System",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 89000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "HashiCorp",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 89000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Kellogg",
+    "segment": "Consumer Staples",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 26000,
+    "industry": "Consumer Goods & Food"
+  },
+  {
+    "name": "UPS",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "High",
+    "avgDealSize": 50000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "A.O. Smith",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 47000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Wayfair",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 19000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Pfizer",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 16000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "T-Mobile",
+    "segment": "Communication Services",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 49000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "ABB Inc",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 18000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Intuitive Surgical",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 25000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Centene",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 164000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Lockheed Martin",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 30000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Williams Companies",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 54000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Walt Disney",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 78000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "State Street",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 48000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Illinois Tool Works",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 25000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "TJX Companies",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 39000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Trade Desk",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 99000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Confluent",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 20000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Northern Trust",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 39000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Box",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 43000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Snap-on",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 18000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Rockwell Automation",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 60000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "O'Reilly Automotive",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 34000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Halliburton",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 75000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Gilead Sciences",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 51000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Pioneer Natural Resources",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 136000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Exxon Mobil",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 65000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Duke Energy",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 30000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Edwards Lifesciences",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 17000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Tractor Supply",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 57000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Honeywell",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 23000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Frontier Communications",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 84000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Kroger",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 9000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Stryker",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 25000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Home Depot",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 78000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Roku",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 161000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Sirius XM",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 57000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Marathon Petroleum",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 87000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Morgan Stanley",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 64000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Walgreens Boots Alliance",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 37000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Vertex Pharmaceuticals",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 21000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Teradata",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 52000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Bio-Rad Laboratories",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 22000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "MarketAxess",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 32000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Humana",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 29000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Atlassian",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 32000,
+    "industry": "Technology"
+  },
+  {
+    "name": "EOG Resources",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 19000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Baker Hughes",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 133000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Schlumberger",
+    "segment": "Energy",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 18000,
+    "industry": "Energy"
+  },
+  {
+    "name": "JPMorgan Chase",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 85000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Goldman Sachs",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 21000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "BlackRock",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 38000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Interpublic Group",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 51000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Ulta Beauty",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 16000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Regeneron",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "High",
+    "avgDealSize": 54000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "HCA Healthcare",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 81000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "American Express",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 170000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Dollar General",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 24000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Roblox",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 19000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Activision Blizzard",
+    "segment": "Communication Services",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 43000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Costco Wholesale",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 33000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Invesco",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 78000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "T. Rowe Price",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 48000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Dominion Energy",
+    "segment": "Energy",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 65000,
+    "industry": "Energy"
+  },
+  {
+    "name": "S&P Global",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 66000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Regions Financial",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 24000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Medtronic",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 49000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Northrop Grumman",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 106000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Zendesk",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 37000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Gap",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 25000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Williams-Sonoma",
+    "segment": "Consumer Discretionary",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 59000,
+    "industry": "Retail"
+  },
+  {
+    "name": "Roper Technologies",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 56000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Elastic",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 56000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Honeywell International",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 65000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Danaher Corporation",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 66000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "Verizon Communications",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 27000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "Spotify Technology",
+    "segment": "Communication Services",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 43000,
+    "industry": "Media & Telecommunications"
+  },
+  {
+    "name": "AES Corporation",
+    "segment": "Energy",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 35000,
+    "industry": "Energy"
+  },
+  {
+    "name": "Franklin Templeton",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 95000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "XPO Logistics",
+    "segment": "Transportation",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 43000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "J.B. Hunt Transport",
+    "segment": "Transportation",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 77000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Lincoln Electric",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "High",
+    "avgDealSize": 36000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Toshiba America",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 25000,
+    "industry": "Diversified Conglomerates"
+  },
+  {
+    "name": "C.H. Robinson",
+    "segment": "Transportation",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 19000,
+    "industry": "Transportation & Logistics"
+  },
+  {
+    "name": "Elevance Health",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 46000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Emerson Electric",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 117000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Okta",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 20000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Eli Lilly",
+    "segment": "Health Care",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 31000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Citigroup",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 40000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "MSCI",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 61000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Ford Motor",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 172000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Asana",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 38000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Nutanix",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 94000,
+    "industry": "Technology"
+  },
+  {
+    "name": "McKesson",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 46000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Abbott Laboratories",
+    "segment": "Health Care",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 13000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Monday.com",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 30000,
+    "industry": "Technology"
+  },
+  {
+    "name": "DocuSign",
+    "segment": "Information Technology",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 29000,
+    "industry": "Technology"
+  },
+  {
+    "name": "M&T Bank",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 36000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "CVS Health",
+    "segment": "Health Care",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 51000,
+    "industry": "Life Sciences & Healthcare"
+  },
+  {
+    "name": "Eaton Corporation",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 15000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Fidelity National",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 139000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Cloudflare",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 29000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Splunk",
+    "segment": "Information Technology",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "High",
+    "avgDealSize": 108000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Zoom Video",
+    "segment": "Information Technology",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 51000,
+    "industry": "Technology"
+  },
+  {
+    "name": "Citizens Financial",
+    "segment": "Financials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 29000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "Caterpillar",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "High",
+    "avgDealSize": 51000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Watts Water Technologies",
+    "segment": "Industrials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 28000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "3M Company",
+    "segment": "Industrials",
+    "relationshipStrength": "Strategic",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Mature",
+    "valueAddExpectation": "High",
+    "avgDealSize": 85000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Charles Schwab",
+    "segment": "Financials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Low",
+    "relationshipStage": "Prospecting",
+    "valueAddExpectation": "Low",
+    "avgDealSize": 21000,
+    "industry": "Financial Services"
+  },
+  {
+    "name": "PACCAR",
+    "segment": "Industrials",
+    "relationshipStrength": "Good",
+    "customerTechSophistication": "Medium",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 28000,
+    "industry": "Manufacturing & Automotive"
+  },
+  {
+    "name": "Bank of America",
+    "segment": "Financials",
+    "relationshipStrength": "New",
+    "customerTechSophistication": "High",
+    "relationshipStage": "Expansion",
+    "valueAddExpectation": "Medium",
+    "avgDealSize": 41000,
+    "industry": "Financial Services"
+  }
+]

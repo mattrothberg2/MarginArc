@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Win_Probability__c</fullName>
+    <description>AI-predicted win probability from MarginArc</description>
+    <inlineHelpText
+  >This value is populated by the MarginArc Margin Advisor</inlineHelpText>
+    <label>Win Probability %</label>
+    <precision>5</precision>
+    <required>false</required>
+    <scale>2</scale>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Percent</type>
+</CustomField>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Deal_Reg_Type__c</fullName>
+    <description>Type of deal registration with the OEM</description>
+    <label>Deal Reg Type</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>NotRegistered</fullName>
+                <default>false</default>
+                <label>Not Registered</label>
+            </value>
+            <value>
+                <fullName>StandardApproved</fullName>
+                <default>false</default>
+                <label>Standard Approved</label>
+            </value>
+            <value>
+                <fullName>PremiumHunting</fullName>
+                <default>false</default>
+                <label>Premium Hunting</label>
+            </value>
+            <value>
+                <fullName>Teaming</fullName>
+                <default>false</default>
+                <label>Teaming</label>
+            </value>
+            <value>
+                <fullName>None</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>None</label>
+            </value>
+            <value>
+                <fullName>PartnerSourced</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>PartnerSourced</label>
+            </value>
+            <value>
+                <fullName>StandardDealReg</fullName>
+                <default>false</default>
+                <isActive>false</isActive>
+                <label>StandardDealReg</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

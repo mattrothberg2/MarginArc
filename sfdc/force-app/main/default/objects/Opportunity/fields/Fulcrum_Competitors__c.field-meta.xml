@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Competitors__c</fullName>
+    <description>Number of competing vendors on this deal</description>
+    <label>Competitors</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>0</fullName>
+                <default>false</default>
+                <label>0 - None</label>
+            </value>
+            <value>
+                <fullName>1</fullName>
+                <default>false</default>
+                <label>1 - Single competitor</label>
+            </value>
+            <value>
+                <fullName>2</fullName>
+                <default>false</default>
+                <label>2 - Two competitors</label>
+            </value>
+            <value>
+                <fullName>3+</fullName>
+                <default>false</default>
+                <label>3+ - Multiple competitors</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

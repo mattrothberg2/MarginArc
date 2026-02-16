@@ -1,0 +1,683 @@
+<template>
+  <div class="fulcrum-wizard">
+    <!-- ═══ HEADER ═══ -->
+    <div class="wizard-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="header-title">MarginArc Setup Wizard</h2>
+          <span class="header-subtitle"
+            >Configure your margin intelligence platform</span
+          >
+        </div>
+      </div>
+      <div class="header-right">
+        <span class="header-progress"
+          >{completedSteps} of {totalChecks} setup checks passed</span
+        >
+      </div>
+    </div>
+
+    <!-- ═══ STEP INDICATOR BAR ═══ -->
+    <div class="step-indicator-bar">
+      <template for:each={stepIndicators} for:item="step">
+        <div key={step.number} class={step.containerClass}>
+          <div class={step.circleClass}>
+            <template lwc:if={step.isCompleted}>
+              <span class="step-check">&#10003;</span>
+            </template>
+            <template lwc:else>
+              <span class="step-number">{step.number}</span>
+            </template>
+          </div>
+          <span class={step.labelClass}>{step.label}</span>
+          <template lwc:if={step.hasConnector}>
+            <div class={step.connectorClass}></div>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <!-- ═══ STEP CONTENT ═══ -->
+    <div class="step-content">
+      <!-- ═══ STEP 1: WELCOME ═══ -->
+      <template lwc:if={isStep1}>
+        <div class="step-card">
+          <div class="welcome-section">
+            <div class="welcome-logo">
+              <svg
+                viewBox="0 0 48 48"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.2"
+              >
+                <path d="M24 4L4 14l20 10 20-10L24 4z" stroke="#02b1b5" />
+                <path d="M4 34l20 10 20-10" stroke="#02b1b5" opacity="0.5" />
+                <path d="M4 24l20 10 20-10" stroke="#02b1b5" opacity="0.75" />
+              </svg>
+            </div>
+            <h3 class="welcome-title">Welcome to MarginArc</h3>
+            <p class="welcome-subtitle">
+              Your AI-powered margin intelligence platform for IT channel sales
+            </p>
+
+            <div class="value-props">
+              <div class="value-prop">
+                <div class="value-prop-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--teal-500)"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"
+                    />
+                  </svg>
+                </div>
+                <div class="value-prop-text">
+                  <strong>AI-Powered Margin Recommendations</strong>
+                  <span
+                    >Get optimal pricing guidance on every deal based on
+                    historical win/loss data and competitive dynamics</span
+                  >
+                </div>
+              </div>
+              <div class="value-prop">
+                <div class="value-prop-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--teal-500)"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    />
+                  </svg>
+                </div>
+                <div class="value-prop-text">
+                  <strong>Historical Deal Analysis</strong>
+                  <span
+                    >Analyze past deals to understand where margin was left on
+                    the table and build institutional knowledge</span
+                  >
+                </div>
+              </div>
+              <div class="value-prop">
+                <div class="value-prop-icon">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="var(--teal-500)"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                </div>
+                <div class="value-prop-text">
+                  <strong>Team Performance Insights</strong>
+                  <span
+                    >Track rep compliance, identify coaching opportunities, and
+                    measure the ROI of margin intelligence</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="welcome-progress">
+              <div class="progress-ring-container">
+                <svg class="progress-ring" viewBox="0 0 80 80">
+                  <circle class="progress-ring-bg" cx="40" cy="40" r="34" />
+                  <circle
+                    class="progress-ring-fill"
+                    cx="40"
+                    cy="40"
+                    r="34"
+                    style={progressRingStyle}
+                  />
+                </svg>
+                <div class="progress-ring-text">
+                  <span class="progress-ring-value">{overallProgressPct}%</span>
+                  <span class="progress-ring-label">Complete</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ DEMO DATA (Optional) ═══ -->
+            <div class="demo-data-section">
+              <div class="demo-data-card">
+                <div class="demo-data-header">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                    class="demo-data-icon"
+                  >
+                    <path
+                      d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 12c0 2.21 3.582 4 8 4s8-1.79 8-4"
+                    />
+                  </svg>
+                  <div>
+                    <h4 class="demo-data-title">Demo Data</h4>
+                    <p class="demo-data-desc">
+                      Optionally load sample OEM vendors, competitor profiles,
+                      accounts, and opportunities to explore MarginArc
+                      immediately.
+                    </p>
+                  </div>
+                </div>
+                <template lwc:if={demoDataLoaded}>
+                  <div class="demo-data-success">
+                    <span class="demo-check">&#10003;</span>
+                    <span>{demoDataMessage}</span>
+                  </div>
+                </template>
+                <template lwc:else>
+                  <button
+                    class="btn-demo"
+                    onclick={handleLoadDemoData}
+                    disabled={isDemoButtonDisabled}
+                  >
+                    <template lwc:if={isLoadingDemo}>
+                      <span class="spinner-small"></span>
+                      Loading demo data...
+                    </template>
+                    <template lwc:else> Load Demo Data </template>
+                  </button>
+                  <template lwc:if={demoDataMessage}>
+                    <p class="demo-data-error">{demoDataMessage}</p>
+                  </template>
+                </template>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 2: CONNECTION ═══ -->
+      <template lwc:if={isStep2}>
+        <div class="step-card">
+          <h3 class="step-title">API Connection</h3>
+          <p class="step-description">
+            MarginArc connects to a backend API for margin analysis and
+            AI-powered recommendations. Let's verify the connection.
+          </p>
+
+          <template lwc:if={isLoadingStatus}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Testing connection"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text">Testing connection...</span>
+            </div>
+          </template>
+
+          <template lwc:if={hasSetupStatus}>
+            <div class="connection-grid">
+              <div class="connection-item">
+                <span class={apiUrlDotClass}></span>
+                <div class="connection-detail">
+                  <span class="connection-label">API URL Configured</span>
+                  <span class="connection-hint"
+                    >Custom setting: MarginArc Config</span
+                  >
+                </div>
+              </div>
+              <div class="connection-item">
+                <span class={apiKeyDotClass}></span>
+                <div class="connection-detail">
+                  <span class="connection-label">API Key Configured</span>
+                  <span class="connection-hint"
+                    >Authentication credentials</span
+                  >
+                </div>
+              </div>
+              <div class="connection-item">
+                <span class={geminiKeyDotClass}></span>
+                <div class="connection-detail">
+                  <span class="connection-label"
+                    >Gemini API Key Configured</span
+                  >
+                  <span class="connection-hint">Powers AI explanations</span>
+                </div>
+              </div>
+              <div class="connection-item">
+                <span class={apiReachableDotClass}></span>
+                <div class="connection-detail">
+                  <span class="connection-label">API Reachable</span>
+                  <span class="connection-hint">Health check passed</span>
+                </div>
+              </div>
+            </div>
+
+            <template lwc:if={connectionWarning}>
+              <div class="config-warning">{connectionWarning}</div>
+            </template>
+
+            <div class="connection-actions">
+              <button
+                class="btn-action"
+                onclick={handleTestConnection}
+                disabled={isLoadingStatus}
+              >
+                Test Connection
+              </button>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 3: DATA QUALITY ═══ -->
+      <template lwc:if={isStep3}>
+        <div class="step-card">
+          <h3 class="step-title">Data Quality</h3>
+          <p class="step-description">
+            MarginArc works best when your Opportunity records have complete
+            data. Here's how your current data looks.
+          </p>
+
+          <template lwc:if={isLoadingStatus}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Checking data quality"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text">Analyzing data quality...</span>
+            </div>
+          </template>
+
+          <template lwc:if={hasSetupStatus}>
+            <!-- Overall Fill Rate Ring -->
+            <div class="data-quality-hero">
+              <div class="quality-ring-container">
+                <svg class="quality-ring" viewBox="0 0 120 120">
+                  <circle class="quality-ring-bg" cx="60" cy="60" r="52" />
+                  <circle
+                    class={qualityRingFillClass}
+                    cx="60"
+                    cy="60"
+                    r="52"
+                    style={qualityRingStyle}
+                  />
+                </svg>
+                <div class="quality-ring-text">
+                  <span class="quality-ring-value">{overallFillRate}%</span>
+                  <span class="quality-ring-label">Field Fill Rate</span>
+                </div>
+              </div>
+              <div class={qualityRatingClass}>
+                <span class="quality-rating-icon">{qualityRatingIcon}</span>
+                <span class="quality-rating-text">{qualityRatingMessage}</span>
+              </div>
+            </div>
+
+            <!-- Individual Field Bars -->
+            <div class="field-bars">
+              <template for:each={fieldFillRates} for:item="field">
+                <div key={field.name} class="field-bar-row">
+                  <div class="field-bar-info">
+                    <span class="field-bar-label">{field.label}</span>
+                    <span class={field.rateClass}>{field.rate}%</span>
+                  </div>
+                  <div class="field-bar-track">
+                    <div class={field.barClass} style={field.barStyle}></div>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <!-- Field Mapping Suggestions -->
+            <template lwc:if={hasFieldSuggestions}>
+              <div class="suggestions-section">
+                <h4 class="suggestions-title">Improvement Suggestions</h4>
+                <template for:each={fieldSuggestions} for:item="suggestion">
+                  <div key={suggestion.targetField} class="suggestion-row">
+                    <span class="suggestion-icon">{suggestion.icon}</span>
+                    <div class="suggestion-detail">
+                      <span class="suggestion-field"
+                        >{suggestion.targetField}</span
+                      >
+                      <span class="suggestion-text"
+                        >{suggestion.suggestion}</span
+                      >
+                    </div>
+                    <template lwc:if={suggestion.autoDerivable}>
+                      <span class="auto-badge">Auto-derivable</span>
+                    </template>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 4: CONFIGURATION CHECK ═══ -->
+      <template lwc:if={isStep4}>
+        <div class="step-card">
+          <h3 class="step-title">Configuration Check</h3>
+          <p class="step-description">
+            MarginArc uses OEM vendor data and competitor profiles to fine-tune
+            margin recommendations.
+          </p>
+
+          <template lwc:if={isLoadingStatus}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Checking configuration"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text">Checking configuration...</span>
+            </div>
+          </template>
+
+          <template lwc:if={hasSetupStatus}>
+            <div class="config-checks">
+              <div class={oemCheckClass}>
+                <div class="config-check-icon">
+                  <template lwc:if={hasOems}>
+                    <span class="check-icon-good">&#10003;</span>
+                  </template>
+                  <template lwc:else>
+                    <span class="check-icon-warn">!</span>
+                  </template>
+                </div>
+                <div class="config-check-detail">
+                  <span class="config-check-title">{oemStatusText}</span>
+                  <span class="config-check-hint">{oemStatusHint}</span>
+                </div>
+              </div>
+
+              <div class={competitorCheckClass}>
+                <div class="config-check-icon">
+                  <template lwc:if={hasCompetitors}>
+                    <span class="check-icon-good">&#10003;</span>
+                  </template>
+                  <template lwc:else>
+                    <span class="check-icon-warn">!</span>
+                  </template>
+                </div>
+                <div class="config-check-detail">
+                  <span class="config-check-title">{competitorStatusText}</span>
+                  <span class="config-check-hint">{competitorStatusHint}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="config-note">
+              <p class="config-note-text">
+                OEM and competitor data enhances recommendations but is optional
+                for basic functionality. You can configure these anytime in the
+                MarginArc Admin tab.
+              </p>
+              <button class="btn-secondary" onclick={handleGoToAdmin}>
+                Open Admin Config
+              </button>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 5: HISTORICAL BACKFILL ═══ -->
+      <template lwc:if={isStep5}>
+        <div class="step-card">
+          <h3 class="step-title">Historical Backfill</h3>
+          <p class="step-description">
+            MarginArc can analyze your historical deals to show what margin
+            recommendations would have looked like, establishing a baseline for
+            measuring improvement.
+          </p>
+
+          <template lwc:if={isLoadingStatus}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Loading"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text">Loading backfill status...</span>
+            </div>
+          </template>
+
+          <template lwc:if={hasSetupStatus}>
+            <!-- Already completed backfill -->
+            <template lwc:if={backfillAlreadyRun}>
+              <div class="backfill-complete-card">
+                <span class="backfill-complete-icon">&#10003;</span>
+                <div class="backfill-complete-detail">
+                  <span class="backfill-complete-title">Backfill Complete</span>
+                  <span class="backfill-complete-sub"
+                    >{backfillResultCount} deals analyzed</span
+                  >
+                </div>
+              </div>
+            </template>
+
+            <!-- Time range selector -->
+            <template lwc:if={showBackfillControls}>
+              <div class="backfill-selector">
+                <span class="selector-label">Time Range</span>
+                <div class="segmented-control">
+                  <button
+                    class={months6Class}
+                    data-months="6"
+                    onclick={handleMonthsChange}
+                  >
+                    6 months
+                  </button>
+                  <button
+                    class={months12Class}
+                    data-months="12"
+                    onclick={handleMonthsChange}
+                  >
+                    12 months
+                  </button>
+                  <button
+                    class={months24Class}
+                    data-months="24"
+                    onclick={handleMonthsChange}
+                  >
+                    24 months
+                  </button>
+                </div>
+              </div>
+            </template>
+
+            <!-- Backfill progress -->
+            <template lwc:if={isBackfillRunning}>
+              <div class="backfill-progress">
+                <div class="backfill-progress-header">
+                  <span class="backfill-progress-label"
+                    >Analyzing deals...</span
+                  >
+                  <span class="backfill-progress-pct"
+                    >{backfillProgressPct}%</span
+                  >
+                </div>
+                <div class="backfill-progress-track">
+                  <div
+                    class="backfill-progress-fill"
+                    style={backfillProgressStyle}
+                  ></div>
+                </div>
+                <span class="backfill-progress-status"
+                  >{backfillStatusText}</span
+                >
+              </div>
+            </template>
+
+            <!-- Action buttons -->
+            <template lwc:if={showBackfillControls}>
+              <div class="backfill-actions">
+                <button
+                  class="btn-action"
+                  onclick={handleRunBackfill}
+                  disabled={isBackfillRunning}
+                >
+                  <template lwc:if={backfillAlreadyRun}
+                    >Re-run Backfill Analysis</template
+                  >
+                  <template lwc:else>Run Backfill Analysis</template>
+                </button>
+                <button
+                  class="btn-secondary"
+                  onclick={handleRunNightly}
+                  disabled={isNightlyRunning}
+                >
+                  <template lwc:if={isNightlyRunning}>Running...</template>
+                  <template lwc:else>Run Nightly Analyzer</template>
+                </button>
+              </div>
+            </template>
+
+            <!-- Nightly analyzer result -->
+            <template lwc:if={nightlyJobComplete}>
+              <div class="nightly-complete">
+                <span class="nightly-complete-icon">&#10003;</span>
+                <span class="nightly-complete-text"
+                  >Nightly analyzer triggered successfully</span
+                >
+              </div>
+            </template>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 6: INTELLIGENCE MATURITY & COMPLETE ═══ -->
+      <template lwc:if={isStep6}>
+        <div class="step-card">
+          <h3 class="step-title">Intelligence Maturity</h3>
+          <p class="step-description">
+            Your MarginArc deployment maturity level, based on data quality,
+            configuration, and usage patterns.
+          </p>
+
+          <template lwc:if={isLoadingMaturity}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Loading maturity"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text">Assessing maturity level...</span>
+            </div>
+          </template>
+
+          <template lwc:if={hasMaturityData}>
+            <!-- Maturity Level Indicator -->
+            <div class="maturity-track">
+              <template for:each={maturityLevels} for:item="level">
+                <div key={level.number} class={level.containerClass}>
+                  <div class={level.dotClass}>{level.number}</div>
+                  <span class={level.nameClass}>{level.name}</span>
+                </div>
+              </template>
+            </div>
+
+            <div class="maturity-detail">
+              <h4 class="maturity-level-name">{maturityData.levelName}</h4>
+              <p class="maturity-level-desc">{maturityData.levelDescription}</p>
+            </div>
+
+            <!-- Congratulatory message -->
+            <template lwc:if={showCongrats}>
+              <div class="congrats-banner">
+                <span class="congrats-text">
+                  Great job! Your MarginArc deployment is well-configured and
+                  delivering value.
+                </span>
+              </div>
+            </template>
+
+            <!-- What's Next -->
+            <template lwc:if={hasNextActions}>
+              <div class="next-actions">
+                <h4 class="next-actions-title">
+                  What's Next: Reach {maturityData.nextLevelName}
+                </h4>
+                <template for:each={nextActionItems} for:item="action">
+                  <div key={action.text} class="next-action-item">
+                    <span class="next-action-bullet">&#9679;</span>
+                    <span class="next-action-text">{action.text}</span>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <!-- Summary Card -->
+            <div class="summary-card">
+              <h4 class="summary-title">Setup Summary</h4>
+              <div class="summary-grid">
+                <div class="summary-stat">
+                  <span class="summary-stat-value">{summaryDealsAnalyzed}</span>
+                  <span class="summary-stat-label">Deals Analyzed</span>
+                </div>
+                <div class="summary-stat">
+                  <span class="summary-stat-value">{summaryFillRate}%</span>
+                  <span class="summary-stat-label">Field Fill Rate</span>
+                </div>
+                <div class="summary-stat">
+                  <span class="summary-stat-value">{summaryOemCount}</span>
+                  <span class="summary-stat-label">OEM Vendors</span>
+                </div>
+                <div class="summary-stat">
+                  <span class="summary-stat-value"
+                    >{summaryCompetitorCount}</span
+                  >
+                  <span class="summary-stat-label">Competitors</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="finish-actions">
+              <button class="btn-action btn-lg" onclick={handleGoToDashboard}>
+                Go to Dashboard
+              </button>
+              <button class="btn-secondary" onclick={handleGoToAdmin}>
+                Go to Admin Config
+              </button>
+            </div>
+          </template>
+        </div>
+      </template>
+    </div>
+
+    <!-- ═══ NAVIGATION FOOTER ═══ -->
+    <div class="wizard-footer">
+      <div class="footer-left">
+        <template lwc:if={showPrevButton}>
+          <button class="btn-nav btn-prev" onclick={handlePrevStep}>
+            &#8249; Previous
+          </button>
+        </template>
+      </div>
+      <div class="footer-right">
+        <template lwc:if={isStep5}>
+          <button class="btn-nav btn-skip" onclick={handleNextStep}>
+            Skip for now
+          </button>
+        </template>
+        <template lwc:if={showNextButton}>
+          <button class="btn-action btn-next" onclick={handleNextStep}>
+            <template lwc:if={isStep1}>Let's Get Started</template>
+            <template lwc:elseif={isStep5}>Next</template>
+            <template lwc:else>Next</template>
+          </button>
+        </template>
+      </div>
+    </div>
+  </div>
+</template>

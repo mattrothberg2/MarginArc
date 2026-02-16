@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/schemas/metadata">
+    <fullName>Margin_Delta__c</fullName>
+    <label>Margin Delta</label>
+    <precision>5</precision>
+    <scale>2</scale>
+    <type>Number</type>
+    <required>false</required>
+</CustomField>

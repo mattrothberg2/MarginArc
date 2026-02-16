@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build artifacts
+*.zip
+dist/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Salesforce
+.sfdx/
+.sf/
+
+# OS files
+.DS_Store
+*.log
+Thumbs.db
+
+# IDE
+.idea/
+
+# Temporary
+*.pid
+*.bak

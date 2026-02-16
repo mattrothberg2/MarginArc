@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Applied__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description
+  >Whether the rep clicked Apply Recommendation to accept this</description>
+    <externalId>false</externalId>
+    <label>Applied</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

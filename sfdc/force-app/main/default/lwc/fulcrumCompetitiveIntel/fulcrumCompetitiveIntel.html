@@ -1,0 +1,404 @@
+<template>
+  <div class="competitive-intel-widget">
+    <!-- Loading State -->
+    <template lwc:if={isLoading}>
+      <div class="intel-card">
+        <div class="loading-state">
+          <lightning-spinner
+            alternative-text="Loading"
+            size="medium"
+          ></lightning-spinner>
+          <p class="loading-text">Analyzing competitive history...</p>
+        </div>
+      </div>
+    </template>
+
+    <!-- Error State -->
+    <template lwc:if={showError}>
+      <div class="intel-card">
+        <div class="error-state">
+          <div class="error-icon">!</div>
+          <p class="error-text">{error}</p>
+          <p class="version-info">v{widgetVersion}</p>
+        </div>
+      </div>
+    </template>
+
+    <!-- Main Content -->
+    <template lwc:if={showContent}>
+      <!-- Has Account History -->
+      <template lwc:if={hasAccountData}>
+        <div class="intel-card">
+          <!-- Header -->
+          <div class="card-header">
+            <div class="header-content">
+              <div class="header-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path
+                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                  />
+                </svg>
+              </div>
+              <div class="header-text">
+                <h3 class="header-title">
+                  Competitive Intelligence
+                  <span class="version-badge">v{widgetVersion}</span>
+                </h3>
+                <span class="header-badge">{displayAccountName}</span>
+              </div>
+            </div>
+            <button class="btn-refresh" onclick={handleRefresh}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Account Summary -->
+          <div class="account-summary">
+            <div class="summary-row">
+              <span class={accountData.relationshipClass}
+                >{accountData.relationship}</span
+              >
+              <span class="summary-label"
+                >relationship over {accountData.yearsAsCustomer} years</span
+              >
+            </div>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-value"
+                  >{accountData.wonDeals}/{accountData.totalDeals}</span
+                >
+                <span class="stat-label">Deals Won</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{accountData.winRatePercent}%</span>
+                <span class="stat-label">Win Rate</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{accountData.revenueFormatted}</span>
+                <span class="stat-label">Total Revenue</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{accountData.avgMarginPercent}%</span>
+                <span class="stat-label">Avg Margin</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Brief -->
+          <div class="quick-brief">
+            <div class="brief-header">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <span>The MarginArc Brief</span>
+            </div>
+            <p class="brief-text">{accountData.quickBrief}</p>
+          </div>
+
+          <!-- Competitor Matchups -->
+          <div class="section">
+            <h4 class="section-title">Head-to-Head Matchups</h4>
+            <div class="matchups-list">
+              <template for:each={competitorMatchups} for:item="matchup">
+                <div
+                  key={matchup.competitor}
+                  class="matchup-row"
+                  data-competitor={matchup.competitor}
+                  onclick={handleCompetitorClick}
+                >
+                  <div class="matchup-header">
+                    <span class="competitor-name">vs {matchup.competitor}</span>
+                    <span class={matchup.threatClass}
+                      >{matchup.threat} threat</span
+                    >
+                  </div>
+                  <div class="matchup-dots-row">
+                    <div class="dots-container">
+                      <template for:each={matchup.dots} for:item="dot">
+                        <span key={dot.key} class={dot.cssClass}></span>
+                      </template>
+                    </div>
+                    <span class={matchup.winRateClass}>{matchup.record}</span>
+                  </div>
+                  <div class="matchup-stats-row">
+                    <div class="matchup-stat">
+                      <span class="matchup-stat-label">Win Rate</span>
+                      <span class="matchup-stat-value"
+                        >{matchup.winRatePercent}%</span
+                      >
+                    </div>
+                    <template lwc:if={matchup.hasMarginData}>
+                      <div class="matchup-stat">
+                        <span class="matchup-stat-label">Avg Margin Won</span>
+                        <span class="matchup-stat-value"
+                          >{matchup.marginDisplay}</span
+                        >
+                      </div>
+                    </template>
+                    <div class="matchup-stat">
+                      <span class="matchup-stat-label">Deals</span>
+                      <span class="matchup-stat-value"
+                        >{matchup.totalDeals}</span
+                      >
+                    </div>
+                  </div>
+                  <div class="matchup-strategy">
+                    <span class="strategy-label">Strategy:</span>
+                    <span class="strategy-text">{matchup.strategy}</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+
+          <!-- What Works -->
+          <template lwc:if={hasStrategies}>
+            <div class="section">
+              <h4 class="section-title">What Works Here</h4>
+              <div class="strategies-list">
+                <template for:each={strategies} for:item="strategy">
+                  <div key={strategy.label} class="strategy-row">
+                    <template lwc:if={strategy.isGood}>
+                      <span class="strategy-icon good">&#10003;</span>
+                    </template>
+                    <template lwc:else>
+                      <span class="strategy-icon neutral">&#8226;</span>
+                    </template>
+                    <span class="strategy-name">{strategy.label}</span>
+                    <span class="strategy-stat">{strategy.description}</span>
+                  </div>
+                </template>
+              </div>
+            </div>
+          </template>
+
+          <!-- Recent Deals -->
+          <div class="section">
+            <h4 class="section-title">Recent Deal History</h4>
+            <div class="deals-table">
+              <div class="deals-header">
+                <span>Date</span>
+                <span>OEM</span>
+                <span>Size</span>
+                <span>Result</span>
+                <span>Insight</span>
+              </div>
+              <template for:each={recentDeals} for:item="deal">
+                <div key={deal.date} class="deal-row">
+                  <span class="deal-date">{deal.dateFormatted}</span>
+                  <span class="deal-oem">{deal.oem}</span>
+                  <span class="deal-size">{deal.sizeFormatted}</span>
+                  <span class={deal.outcomeClass}>{deal.outcome}</span>
+                  <span class="deal-insight">{deal.insight}</span>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- No History - Show Similar Accounts -->
+      <template lwc:if={hasSimilarData}>
+        <div class="intel-card">
+          <!-- Header -->
+          <div class="card-header">
+            <div class="header-content">
+              <div class="header-icon similar">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+              </div>
+              <div class="header-text">
+                <h3 class="header-title">
+                  Industry Intelligence
+                  <span class="version-badge">v{widgetVersion}</span>
+                </h3>
+                <span class="header-badge">{similarAccountData.industry}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- No History Message -->
+          <div class="no-history-message">
+            <p>{message}</p>
+          </div>
+
+          <!-- Industry Stats -->
+          <div class="account-summary">
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span class="stat-value"
+                  >{similarAccountData.accountsAnalyzed}</span
+                >
+                <span class="stat-label">Accounts Analyzed</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{similarAccountData.totalDeals}</span>
+                <span class="stat-label">Total Deals</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{similarAccountData.avgWinRate}%</span>
+                <span class="stat-label">Avg Win Rate</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value">{similarAccountData.avgMargin}%</span>
+                <span class="stat-label">Avg Margin</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Top Competitors -->
+          <div class="section">
+            <h4 class="section-title">
+              Common Competitors in {similarAccountData.industry}
+            </h4>
+            <div class="competitor-tags">
+              <template for:each={similarCompetitors} for:item="competitor">
+                <span
+                  key={competitor}
+                  class="competitor-tag"
+                  data-competitor={competitor}
+                  onclick={handleCompetitorClick}
+                  >{competitor}</span
+                >
+              </template>
+            </div>
+          </div>
+
+          <!-- Key Insights -->
+          <div class="section">
+            <h4 class="section-title">Key Insights from Similar Accounts</h4>
+            <ul class="insights-list">
+              <template for:each={similarInsights} for:item="insight">
+                <li key={insight} class="insight-item">{insight}</li>
+              </template>
+            </ul>
+          </div>
+
+          <!-- Recommended Strategy -->
+          <div class="recommendation-box">
+            <div class="recommendation-header">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                />
+              </svg>
+              <span>Recommended Strategy</span>
+            </div>
+            <p class="recommendation-text">
+              {similarAccountData.recommendedStrategy}
+            </p>
+          </div>
+        </div>
+      </template>
+    </template>
+
+    <!-- Competitor Modal -->
+    <template lwc:if={showCompetitorModal}>
+      <div
+        class="modal-backdrop"
+        onclick={closeCompetitorModal}
+        onkeydown={handleModalKeydown}
+      >
+        <div
+          class="competitor-modal"
+          role="dialog"
+          aria-modal="true"
+          onclick={stopPropagation}
+        >
+          <template lwc:if={selectedCompetitor}>
+            <div class="modal-header">
+              <div class="modal-header-text">
+                <h3>vs {selectedCompetitor.name}</h3>
+                <span class="modal-subtitle"
+                  >{selectedCompetitor.strength}</span
+                >
+              </div>
+              <button
+                class="modal-close"
+                onclick={closeCompetitorModal}
+                aria-label="Close"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div class="modal-content">
+              <div class="modal-profile-section">
+                <div class="profile-row">
+                  <span class="profile-label">Primary OEMs</span>
+                  <span class="profile-value"
+                    >{selectedCompetitor.primaryOems}</span
+                  >
+                </div>
+                <div class="profile-row">
+                  <span class="profile-label">Price Aggression</span>
+                  <span class="profile-stars"
+                    >{selectedCompetitor.priceAggressionDisplay}</span
+                  >
+                </div>
+                <div class="profile-row">
+                  <span class="profile-label">Services</span>
+                  <span class="profile-stars"
+                    >{selectedCompetitor.servicesDisplay}</span
+                  >
+                </div>
+                <div class="profile-row">
+                  <span class="profile-label">Typical Discount</span>
+                  <span class="profile-value"
+                    >{selectedCompetitor.typicalDiscount}</span
+                  >
+                </div>
+              </div>
+              <div class="how-to-win">
+                <span class="htw-label">How to Win</span>
+                <p class="htw-text">{selectedCompetitor.howToWin}</p>
+              </div>
+            </div>
+          </template>
+          <template lwc:else>
+            <div class="modal-loading">
+              <lightning-spinner
+                alternative-text="Loading"
+                size="small"
+              ></lightning-spinner>
+            </div>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

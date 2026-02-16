@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Deal_Type__c</fullName>
+    <description
+  >Type of deal - new business, renewal, or expansion</description>
+    <inlineHelpText>Select the type of deal</inlineHelpText>
+    <label>Deal Type</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>New Business</fullName>
+                <default>false</default>
+                <label>New Business</label>
+            </value>
+            <value>
+                <fullName>Renewal</fullName>
+                <default>false</default>
+                <label>Renewal</label>
+            </value>
+            <value>
+                <fullName>Expansion</fullName>
+                <default>false</default>
+                <label>Expansion</label>
+            </value>
+            <value>
+                <fullName>Refresh</fullName>
+                <default>false</default>
+                <label>Hardware Refresh</label>
+            </value>
+            <value>
+                <fullName>Run Rate</fullName>
+                <default>false</default>
+                <label>Run Rate / Transactional</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

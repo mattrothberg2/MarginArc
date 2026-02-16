@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Product_Category__c</fullName>
+    <description>Primary product category for this deal</description>
+    <inlineHelpText>Select the primary product category</inlineHelpText>
+    <label>Product Category</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Networking</fullName>
+                <default>false</default>
+                <label>Networking</label>
+            </value>
+            <value>
+                <fullName>Security</fullName>
+                <default>false</default>
+                <label>Security</label>
+            </value>
+            <value>
+                <fullName>Compute</fullName>
+                <default>false</default>
+                <label>Compute / Servers</label>
+            </value>
+            <value>
+                <fullName>Storage</fullName>
+                <default>false</default>
+                <label>Storage</label>
+            </value>
+            <value>
+                <fullName>Cloud</fullName>
+                <default>false</default>
+                <label>Cloud / SaaS</label>
+            </value>
+            <value>
+                <fullName>Collaboration</fullName>
+                <default>false</default>
+                <label>Collaboration</label>
+            </value>
+            <value>
+                <fullName>DataCenter</fullName>
+                <default>false</default>
+                <label>Data Center Infrastructure</label>
+            </value>
+            <value>
+                <fullName>Software</fullName>
+                <default>false</default>
+                <label>Software Licensing</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>

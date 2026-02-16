@@ -1,0 +1,198 @@
+[
+  {
+    "id": "preset-hw-refresh",
+    "label": "Hybrid infrastructure refresh",
+    "description": "Server + switching + install services",
+    "lines": [
+      {
+        "productId": "DEL-PWX820",
+        "quantity": 1,
+        "overrideDiscountRate": 0.24
+      },
+      {
+        "productId": "CSC-SDWAN",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "preset-secure-workspace",
+    "label": "Secure workspace rollout",
+    "description": "VDI, SASE, onboarding services",
+    "lines": [
+      {
+        "productId": "VMW-VDI",
+        "quantity": 1
+      },
+      {
+        "productId": "PAN-PRISMA",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1,
+        "overrideMargin": 0.28
+      }
+    ]
+  },
+  {
+    "id": "preset-cloud-ops",
+    "label": "Cloud operations uplift",
+    "description": "Azure Arc + GreenLake managed services",
+    "lines": [
+      {
+        "productId": "MS-AZRARC",
+        "quantity": 1
+      },
+      {
+        "productId": "HPE-GRNLAKE",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-RESERVE",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "preset-digital-service",
+    "label": "Digital service desk modernization",
+    "description": "ServiceNow ITSM + CSM + advisory",
+    "lines": [
+      {
+        "productId": "SN-ITSM",
+        "quantity": 1
+      },
+      {
+        "productId": "SN-CSM",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1,
+        "overrideDiscountRate": 0.22
+      }
+    ]
+  },
+  {
+    "id": "preset-data-fabric",
+    "label": "Data fabric rollout",
+    "description": "Snowflake credits + Dell compute + services",
+    "lines": [
+      {
+        "productId": "SNW-EDW",
+        "quantity": 1
+      },
+      {
+        "productId": "DEL-PWX820",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1,
+        "overrideMargin": 0.29
+      }
+    ]
+  },
+  {
+    "id": "preset-sase-lite",
+    "label": "SASE starter bundle",
+    "description": "Umbrella SIG + Prisma SASE + onboarding",
+    "lines": [
+      {
+        "productId": "CSC-UMB365",
+        "quantity": 1
+      },
+      {
+        "productId": "PAN-PRISMA",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1,
+        "overrideMargin": 0.27
+      }
+    ]
+  },
+  {
+    "id": "preset-modern-work",
+    "label": "Modern work foundation",
+    "description": "Microsoft 365 E5 + VDI + success workshops",
+    "lines": [
+      {
+        "productId": "MS-365E5",
+        "quantity": 1
+      },
+      {
+        "productId": "VMW-VDI",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "preset-managed-hybrid",
+    "label": "Managed hybrid core",
+    "description": "GreenLake + EC2 Reserved + Dell switching",
+    "lines": [
+      {
+        "productId": "HPE-GRNLAKE",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-RESERVE",
+        "quantity": 1
+      },
+      {
+        "productId": "DEL-NET7300",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "preset-secure-cloud",
+    "label": "Secure cloud acceleration",
+    "description": "SD-WAN + Azure Arc + advisory",
+    "lines": [
+      {
+        "productId": "CSC-SDWAN",
+        "quantity": 1
+      },
+      {
+        "productId": "MS-AZRARC",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "preset-data-center-core",
+    "label": "Data center core refresh",
+    "description": "HPE Gen11 + Dell networking + services",
+    "lines": [
+      {
+        "productId": "HPE-GEN11",
+        "quantity": 1
+      },
+      {
+        "productId": "DEL-NET7300",
+        "quantity": 1
+      },
+      {
+        "productId": "AWS-OPTIMIZE",
+        "quantity": 1,
+        "overrideMargin": 0.26
+      }
+    ]
+  }
+]

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/schemas/metadata">
+    <groupingsDown>
+        <dateGranularity>Month</dateGranularity>
+        <field>CLOSE_DATE</field>
+        <sortOrder>Asc</sortOrder>
+    </groupingsDown>
+    <columns>
+        <field>OPPORTUNITY_NAME</field>
+    </columns>
+    <columns>
+        <field>ACCOUNT_NAME</field>
+    </columns>
+    <columns>
+        <field>AMOUNT</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_OEM__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_Planned_Margin__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_Recommended_Margin__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_GP_Percent__c</field>
+    </columns>
+    <aggregates>
+        <calculatedFormula>AMOUNT:SUM</calculatedFormula>
+        <datatype>currency</datatype>
+        <description>Total revenue by period</description>
+        <developerName>FORMULA1</developerName>
+        <isActive>true</isActive>
+        <isCrossBlock>false</isCrossBlock>
+        <masterLabel>Total Revenue</masterLabel>
+        <scale>0</scale>
+    </aggregates>
+    <aggregates>
+        <calculatedFormula
+    >Opportunity.Fulcrum_Planned_Margin__c:AVG</calculatedFormula>
+        <datatype>number</datatype>
+        <description>Average planned margin per period</description>
+        <developerName>FORMULA2</developerName>
+        <isActive>true</isActive>
+        <isCrossBlock>false</isCrossBlock>
+        <masterLabel>Avg Planned Margin %</masterLabel>
+        <scale>1</scale>
+    </aggregates>
+    <aggregates>
+        <calculatedFormula
+    >Opportunity.Fulcrum_Recommended_Margin__c:AVG</calculatedFormula>
+        <datatype>number</datatype>
+        <description>Average recommended margin per period</description>
+        <developerName>FORMULA3</developerName>
+        <isActive>true</isActive>
+        <isCrossBlock>false</isCrossBlock>
+        <masterLabel>Avg Recommended Margin %</masterLabel>
+        <scale>1</scale>
+    </aggregates>
+    <description
+  >Monthly trend of closed-won deal margins with planned vs. recommended comparison. Use to measure MarginArc adoption impact over time.</description>
+    <filter>
+        <criteriaItems>
+            <column>STAGE_NAME</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>equals</operator>
+            <value>Closed Won</value>
+        </criteriaItems>
+    </filter>
+    <format>Summary</format>
+    <name>MarginArc RAGP Trend</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>Opportunity</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <timeFrameFilter>
+        <dateColumn>CLOSE_DATE</dateColumn>
+        <interval>INTERVAL_PREVY</interval>
+    </timeFrameFilter>
+</Report>

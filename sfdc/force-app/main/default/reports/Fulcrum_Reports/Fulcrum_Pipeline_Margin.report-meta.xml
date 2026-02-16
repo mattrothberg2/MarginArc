@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Report xmlns="http://soap.sforce.com/2006/schemas/metadata">
+    <columns>
+        <field>OPPORTUNITY_NAME</field>
+    </columns>
+    <columns>
+        <field>ACCOUNT_NAME</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_OEM__c</field>
+    </columns>
+    <columns>
+        <field>AMOUNT</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_Planned_Margin__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_Recommended_Margin__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_AI_Confidence__c</field>
+    </columns>
+    <columns>
+        <field>Opportunity.Fulcrum_Win_Probability__c</field>
+    </columns>
+    <columns>
+        <field>STAGE_NAME</field>
+    </columns>
+    <columns>
+        <field>CLOSE_DATE</field>
+    </columns>
+    <description
+  >Open pipeline with MarginArc margin recommendations. Shows planned vs. recommended margin for every open deal.</description>
+    <filter>
+        <criteriaItems>
+            <column>STAGE_NAME</column>
+            <columnToColumn>false</columnToColumn>
+            <isUnlocked>true</isUnlocked>
+            <operator>notEqual</operator>
+            <value>Closed Won,Closed Lost</value>
+        </criteriaItems>
+    </filter>
+    <format>Tabular</format>
+    <name>MarginArc Pipeline Margin Analysis</name>
+    <params>
+        <name>co</name>
+        <value>1</value>
+    </params>
+    <reportType>Opportunity</reportType>
+    <scope>organization</scope>
+    <showDetails>true</showDetails>
+    <sortColumn>AMOUNT</sortColumn>
+    <sortOrder>Desc</sortOrder>
+    <timeFrameFilter>
+        <dateColumn>CLOSE_DATE</dateColumn>
+        <interval>INTERVAL_CUSTOM</interval>
+    </timeFrameFilter>
+</Report>

@@ -1,0 +1,146 @@
+[
+  {
+    "vendor": "Dell Technologies",
+    "productId": "DEL-PWX820",
+    "name": "PowerEdge MX820 Compute Block",
+    "category": "Hardware",
+    "listPrice": 42000,
+    "discountRate": 0.25,
+    "marginTarget": 0.18
+  },
+  {
+    "vendor": "Dell Technologies",
+    "productId": "DEL-NET7300",
+    "name": "S-Series 7300 Top-of-Rack Switch",
+    "category": "Hardware",
+    "listPrice": 18000,
+    "discountRate": 0.22,
+    "marginTarget": 0.16
+  },
+  {
+    "vendor": "HPE",
+    "productId": "HPE-GEN11",
+    "name": "ProLiant DL380 Gen11 Bundle",
+    "category": "Hardware",
+    "listPrice": 38000,
+    "discountRate": 0.27,
+    "marginTarget": 0.17
+  },
+  {
+    "vendor": "HPE",
+    "productId": "HPE-GRNLAKE",
+    "name": "GreenLake Hybrid Cloud Pack",
+    "category": "ManagedServices",
+    "listPrice": 24000,
+    "discountRate": 0.18,
+    "marginTarget": 0.22
+  },
+  {
+    "vendor": "Cisco",
+    "productId": "CSC-SDWAN",
+    "name": "Catalyst SD-WAN Secure Edge",
+    "category": "Hardware",
+    "listPrice": 26000,
+    "discountRate": 0.2,
+    "marginTarget": 0.19
+  },
+  {
+    "vendor": "Cisco",
+    "productId": "CSC-UMB365",
+    "name": "Umbrella Secure Internet Gateway",
+    "category": "Software",
+    "listPrice": 14000,
+    "discountRate": 0.18,
+    "marginTarget": 0.24
+  },
+  {
+    "vendor": "Microsoft",
+    "productId": "MS-365E5",
+    "name": "Microsoft 365 E5 Suite",
+    "category": "Software",
+    "listPrice": 12000,
+    "discountRate": 0.15,
+    "marginTarget": 0.2
+  },
+  {
+    "vendor": "Microsoft",
+    "productId": "MS-AZRARC",
+    "name": "Azure Arc Hybrid Control Plane",
+    "category": "Cloud",
+    "listPrice": 20000,
+    "discountRate": 0.17,
+    "marginTarget": 0.21
+  },
+  {
+    "vendor": "Amazon Web Services",
+    "productId": "AWS-OPTIMIZE",
+    "name": "AWS Well-Architected Optimization Pack",
+    "category": "ProfessionalServices",
+    "listPrice": 16000,
+    "discountRate": 0.2,
+    "marginTarget": 0.26
+  },
+  {
+    "vendor": "Amazon Web Services",
+    "productId": "AWS-RESERVE",
+    "name": "EC2 Reserved Capacity Bundle",
+    "category": "Cloud",
+    "listPrice": 30000,
+    "discountRate": 0.19,
+    "marginTarget": 0.18
+  },
+  {
+    "vendor": "ServiceNow",
+    "productId": "SN-ITSM",
+    "name": "ITSM Enterprise Workflow Suite",
+    "category": "Software",
+    "listPrice": 28000,
+    "discountRate": 0.16,
+    "marginTarget": 0.25
+  },
+  {
+    "vendor": "ServiceNow",
+    "productId": "SN-CSM",
+    "name": "Customer Service Management Pro",
+    "category": "Software",
+    "listPrice": 19000,
+    "discountRate": 0.18,
+    "marginTarget": 0.23
+  },
+  {
+    "vendor": "VMware",
+    "productId": "VMW-VCF",
+    "name": "VMware Cloud Foundation Core Stack",
+    "category": "Hardware",
+    "listPrice": 34000,
+    "discountRate": 0.24,
+    "marginTarget": 0.2
+  },
+  {
+    "vendor": "VMware",
+    "productId": "VMW-VDI",
+    "name": "Horizon Anywhere VDI Suite",
+    "category": "Software",
+    "listPrice": 22000,
+    "discountRate": 0.2,
+    "marginTarget": 0.22
+  },
+  {
+    "vendor": "Snowflake",
+    "productId": "SNW-EDW",
+    "name": "Snowflake Enterprise Data Warehouse Credits",
+    "category": "Cloud",
+    "listPrice": 26000,
+    "discountRate": 0.17,
+    "marginTarget": 0.21
+  },
+  {
+    "vendor": "Palo Alto Networks",
+    "productId": "PAN-PRISMA",
+    "name": "Prisma SASE Secure Access Bundle",
+    "category": "ManagedServices",
+    "listPrice": 21000,
+    "discountRate": 0.19,
+    "marginTarget": 0.24
+  }
+]

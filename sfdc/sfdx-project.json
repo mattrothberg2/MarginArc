@@ -1,0 +1,25 @@
+{
+  "packageDirectories": [
+    {
+      "versionName": "v1.0.0",
+      "versionNumber": "1.0.0.NEXT",
+      "path": "force-app",
+      "default": true,
+      "package": "Fulcrum AI",
+      "versionDescription": "AI-powered margin intelligence platform for IT VARs"
+    }
+  ],
+  "name": "fulcrum-sfdc",
+  "namespace": "",
+  "sfdcLoginUrl": "https://login.salesforce.com",
+  "sourceApiVersion": "62.0",
+  "packageAliases": {
+    "Fulcrum AI": "0Hofj0000001BflCAE",
+    "Fulcrum AI@1.0.0-1": "04tfj000000E6gfAAC",
+    "Fulcrum AI@1.0.0-2": "04tfj000000E6wnAAC",
+    "Fulcrum AI@1.0.0-3": "04tfj000000EDGjAAO",
+    "Fulcrum AI@1.0.0-4": "04tfj000000EKLRAA4",
+    "Fulcrum AI@1.0.0-5": "04tfj000000EKN3AAO",
+    "Fulcrum AI@1.0.0-6": "04tfj000000EL4bAAG"
+  }
+}

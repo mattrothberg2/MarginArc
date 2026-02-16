@@ -1,0 +1,244 @@
+<template>
+  <div class="fulcrum-whatif">
+    <div class="fulcrum-card">
+      <!-- Header -->
+      <div class="card-header">
+        <div class="header-content">
+          <div class="header-text">
+            <h3 class="header-title">
+              What-If Scenarios
+              <span class="version-badge">v{widgetVersion}</span>
+            </h3>
+            <p class="header-subtitle">
+              Explore how changes affect margin recommendations
+            </p>
+          </div>
+          <template lwc:if={hasScenarios}>
+            <span class="scenario-badge">{scenarioCount} saved</span>
+          </template>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="quick-actions-section">
+        <div class="section-label">Quick Actions</div>
+        <div class="quick-actions-grid">
+          <button
+            class="quick-action-btn quick-action-teal"
+            data-action="fewer-competitors"
+            onclick={handleQuickAction}
+            disabled={isLoading}
+          >
+            <lightning-icon
+              icon-name="utility:dash"
+              size="x-small"
+            ></lightning-icon>
+            <span>Fewer Competitors</span>
+          </button>
+          <button
+            class="quick-action-btn quick-action-blue"
+            data-action="premium-reg"
+            onclick={handleQuickAction}
+            disabled={isLoading}
+          >
+            <lightning-icon
+              icon-name="utility:ribbon"
+              size="x-small"
+            ></lightning-icon>
+            <span>Premium Reg</span>
+          </button>
+          <button
+            class="quick-action-btn quick-action-purple"
+            data-action="high-complexity"
+            onclick={handleQuickAction}
+            disabled={isLoading}
+          >
+            <lightning-icon
+              icon-name="utility:layers"
+              size="x-small"
+            ></lightning-icon>
+            <span>High Complexity</span>
+          </button>
+          <button
+            class="quick-action-btn quick-action-green"
+            data-action="strategic-rel"
+            onclick={handleQuickAction}
+            disabled={isLoading}
+          >
+            <lightning-icon
+              icon-name="utility:groups"
+              size="x-small"
+            ></lightning-icon>
+            <span>Strategic Rel</span>
+          </button>
+          <button
+            class="quick-action-btn quick-action-orange"
+            data-action="high-value"
+            onclick={handleQuickAction}
+            disabled={isLoading}
+          >
+            <lightning-icon
+              icon-name="utility:trending"
+              size="x-small"
+            ></lightning-icon>
+            <span>High Value-Add</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Scenario Builder -->
+      <div class="builder-section">
+        <div class="section-label">Custom Scenario</div>
+        <div class="builder-grid">
+          <div class="builder-field">
+            <lightning-combobox
+              name="competitors"
+              label="Competitors"
+              value={competitors}
+              options={competitorOptions}
+              onchange={handleCompetitorsChange}
+              variant="label-stacked"
+            >
+            </lightning-combobox>
+          </div>
+          <div class="builder-field">
+            <lightning-combobox
+              name="dealReg"
+              label="Deal Registration"
+              value={dealRegType}
+              options={dealRegOptions}
+              onchange={handleDealRegChange}
+              variant="label-stacked"
+            >
+            </lightning-combobox>
+          </div>
+          <div class="builder-field">
+            <lightning-combobox
+              name="complexity"
+              label="Complexity"
+              value={solutionComplexity}
+              options={complexityOptions}
+              onchange={handleComplexityChange}
+              variant="label-stacked"
+            >
+            </lightning-combobox>
+          </div>
+          <div class="builder-field">
+            <lightning-combobox
+              name="relationship"
+              label="Relationship"
+              value={relationshipStrength}
+              options={relationshipOptions}
+              onchange={handleRelationshipChange}
+              variant="label-stacked"
+            >
+            </lightning-combobox>
+          </div>
+          <div class="builder-field">
+            <lightning-combobox
+              name="valueAdd"
+              label="Value-Add"
+              value={valueAdd}
+              options={valueAddOptions}
+              onchange={handleValueAddChange}
+              variant="label-stacked"
+            >
+            </lightning-combobox>
+          </div>
+        </div>
+        <div class="builder-actions">
+          <button
+            class="btn-run-scenario"
+            onclick={runScenario}
+            disabled={isLoading}
+          >
+            <template lwc:if={isLoading}>
+              <lightning-spinner
+                alternative-text="Loading"
+                size="small"
+              ></lightning-spinner>
+            </template>
+            <template lwc:else>
+              <lightning-icon
+                icon-name="utility:play"
+                size="x-small"
+              ></lightning-icon>
+              <span>Run Scenario</span>
+            </template>
+          </button>
+        </div>
+      </div>
+
+      <!-- Saved Scenarios -->
+      <template lwc:if={hasScenarios}>
+        <div class="scenarios-section">
+          <div class="scenarios-header">
+            <span class="section-label">Saved Scenarios</span>
+            <button class="btn-clear-all" onclick={handleClearAll}>
+              Clear All
+            </button>
+          </div>
+          <div class="scenarios-list">
+            <template for:each={formattedScenarios} for:item="scenario">
+              <div
+                key={scenario.id}
+                class={scenario.cardClass}
+                data-index={scenario.index}
+                onclick={handleSelectScenario}
+              >
+                <div class="scenario-header">
+                  <span class="scenario-number">#{scenario.index}</span>
+                  <span class="scenario-label">{scenario.label}</span>
+                  <button
+                    class="btn-remove"
+                    data-index={scenario.index}
+                    onclick={handleRemoveScenario}
+                  >
+                    <lightning-icon
+                      icon-name="utility:close"
+                      size="xx-small"
+                    ></lightning-icon>
+                  </button>
+                </div>
+                <div class="scenario-metrics">
+                  <div class="scenario-metric">
+                    <span class="metric-label">Margin</span>
+                    <span class="metric-value metric-value-teal"
+                      >{scenario.marginFormatted}</span
+                    >
+                  </div>
+                  <div class="scenario-metric">
+                    <span class="metric-label">Win %</span>
+                    <span class="metric-value"
+                      >{scenario.winProbFormatted}</span
+                    >
+                  </div>
+                  <div class="scenario-metric">
+                    <span class="metric-label">Risk-Adj GP</span>
+                    <span class="metric-value metric-value-green"
+                      >{scenario.riskAdjFormatted}</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <template lwc:if={noScenarios}>
+        <div class="empty-state">
+          <lightning-icon
+            icon-name="utility:sparkles"
+            size="medium"
+          ></lightning-icon>
+          <p>
+            Use quick actions or build a custom scenario to explore different
+            deal outcomes
+          </p>
+        </div>
+      </template>
+    </div>
+  </div>
+</template>

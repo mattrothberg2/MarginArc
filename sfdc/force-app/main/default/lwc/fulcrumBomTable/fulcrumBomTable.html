@@ -1,0 +1,173 @@
+<template>
+  <template lwc:if={hasBom}>
+    <div class="bom-section">
+      <!-- Header -->
+      <div
+        class="bom-header"
+        onclick={handleToggleCollapse}
+        role="button"
+        tabindex="0"
+        aria-expanded={isExpanded}
+        aria-label="Toggle Bill of Materials"
+      >
+        <div class="bom-header-left">
+          <svg
+            class={chevronClass}
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            width="16"
+            height="16"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          <span class="bom-title">Bill of Materials</span>
+          <span class={bomOriginClass}>{bomOrigin}</span>
+        </div>
+        <div class="bom-header-right">
+          <span class="bom-stat">{bomLineCount} line items</span>
+          <span class="bom-stat-divider">|</span>
+          <span class="bom-stat"
+            >Rec. Blended: <strong>{blendedRecMarginDisplay}</strong></span
+          >
+        </div>
+      </div>
+
+      <!-- Table -->
+      <template lwc:if={isExpanded}>
+        <div class="bom-scroll-wrapper">
+          <div
+            class="bom-table-wrap"
+            role="grid"
+            aria-label="Bill of Materials line items"
+          >
+            <!-- Column Headers -->
+            <div class="bom-table-header" role="row">
+              <div class="bom-col bom-col-label" role="columnheader">
+                Line Item
+              </div>
+              <div class="bom-col bom-col-cat" role="columnheader">
+                Category
+              </div>
+              <div class="bom-col bom-col-qty" role="columnheader">Qty</div>
+              <div class="bom-col bom-col-cost" role="columnheader">
+                Unit Cost
+              </div>
+              <div class="bom-col bom-col-plan" role="columnheader">
+                Plan Margin
+              </div>
+              <div class="bom-col bom-col-rec" role="columnheader">
+                Rec. Margin
+              </div>
+              <div class="bom-col bom-col-delta" role="columnheader">Delta</div>
+              <div class="bom-col bom-col-ext" role="columnheader">
+                Ext. Price (Plan)
+              </div>
+            </div>
+
+            <!-- Line Items -->
+            <template for:each={tableRows} for:item="row">
+              <div key={row.key} class="bom-row" role="row">
+                <div class="bom-col bom-col-label">
+                  <span class="bom-item-label">{row.label}</span>
+                  <template lwc:if={row.productNumber}>
+                    <span class="bom-item-sku">{row.productNumber}</span>
+                  </template>
+                  <template lwc:if={row.note}>
+                    <span class="bom-item-note">{row.note}</span>
+                  </template>
+                </div>
+                <div class="bom-col bom-col-cat">
+                  <span class={row.categoryClass}>{row.category}</span>
+                </div>
+                <div class="bom-col bom-col-qty">
+                  {row.quantity} <span class="bom-unit">{row.unit}</span>
+                </div>
+                <div class="bom-col bom-col-cost">{row.unitCostDisplay}</div>
+                <div class="bom-col bom-col-plan">
+                  <div class="bom-input-wrap">
+                    <input
+                      type="number"
+                      class={row.inputClass}
+                      value={row.planMarginPct}
+                      data-key={row.key}
+                      onchange={handleMarginChange}
+                      min="0"
+                      max="70"
+                      step="0.5"
+                      aria-label={row.ariaLabel}
+                    />
+                    <span class="bom-pct-suffix">%</span>
+                  </div>
+                </div>
+                <div class="bom-col bom-col-rec">
+                  <span class="bom-rec-value">{row.recMarginDisplay}</span>
+                </div>
+                <div class="bom-col bom-col-delta">
+                  <span class={row.deltaClass}>{row.delta}</span>
+                </div>
+                <div class="bom-col bom-col-ext">{row.planExtPriceDisplay}</div>
+              </div>
+            </template>
+
+            <!-- Totals Row -->
+            <div class="bom-row bom-row-total">
+              <div class="bom-col bom-col-label"><strong>Total</strong></div>
+              <div class="bom-col bom-col-cat"></div>
+              <div class="bom-col bom-col-qty"></div>
+              <div class="bom-col bom-col-cost">{totalCostDisplay}</div>
+              <div class="bom-col bom-col-plan">
+                <span class="bom-blended-value"
+                  >{blendedPlanMarginDisplay}</span
+                >
+              </div>
+              <div class="bom-col bom-col-rec">
+                <span class="bom-blended-value">{blendedRecMarginDisplay}</span>
+              </div>
+              <div class="bom-col bom-col-delta">
+                <span class={totalDeltaClass}>{totalDelta}</span>
+              </div>
+              <div class="bom-col bom-col-ext">{totalPlanPriceDisplay}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Bar: show when edits exist or BOM was recalculated (manual origin) -->
+        <template lwc:if={showActionBar}>
+          <div class="bom-action-bar">
+            <template lwc:if={isManualOrigin}>
+              <button
+                class="bom-btn bom-btn-secondary"
+                onclick={handleReset}
+                aria-label="Restore original BOM margins"
+              >
+                Restore Original
+              </button>
+            </template>
+            <template lwc:elseif={isEditing}>
+              <button
+                class="bom-btn bom-btn-secondary"
+                onclick={handleClearEdits}
+              >
+                Clear Edits
+              </button>
+            </template>
+            <template lwc:if={isEditing}>
+              <button
+                class="bom-btn bom-btn-primary"
+                onclick={handleRecalculate}
+                disabled={isRecalculating}
+              >
+                <template lwc:if={isRecalculating}> Recalculating... </template>
+                <template lwc:else> Recalculate with BOM </template>
+              </button>
+            </template>
+          </div>
+        </template>
+      </template>
+    </div>
+  </template>
+</template>

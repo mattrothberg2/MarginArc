@@ -1,0 +1,221 @@
+<template>
+  <div class="fulcrum-insights">
+    <div class="fulcrum-card">
+      <!-- Header -->
+      <div class="card-header">
+        <div class="header-content">
+          <div class="header-text">
+            <h3 class="header-title">
+              Deal Insights
+              <span class="version-badge">v{widgetVersion}</span>
+            </h3>
+            <p class="header-subtitle">
+              {insightCount} insights for this {detectedOem} deal
+            </p>
+          </div>
+          <div class="header-tags">
+            <span class="header-tag">{detectedOem}</span>
+            <span class="header-tag">{detectedSegment}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights List -->
+      <template lwc:if={hasInsights}>
+        <div class="insights-list">
+          <template for:each={formattedInsights} for:item="insight">
+            <div key={insight.id} class={insight.cardClass}>
+              <div class="insight-icon-wrap">
+                <!-- Chart icon -->
+                <template lwc:if={insight.isChart}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M3 3v18h18"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M7 16l4-6 4 4 5-8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Warning icon -->
+                <template lwc:if={insight.isWarning}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Lightbulb icon -->
+                <template lwc:if={insight.isBulb}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M9 21h6m-3-18a7 7 0 00-4 12.73V17a1 1 0 001 1h6a1 1 0 001-1v-1.27A7 7 0 0012 3z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Target/crosshair icon -->
+                <template lwc:if={insight.isTarget}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <circle cx="12" cy="12" r="10" stroke-linecap="round" />
+                    <circle cx="12" cy="12" r="6" stroke-linecap="round" />
+                    <circle cx="12" cy="12" r="2" stroke-linecap="round" />
+                  </svg>
+                </template>
+                <!-- Shield icon -->
+                <template lwc:if={insight.isShield}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Checkmark icon -->
+                <template lwc:if={insight.isCheck}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M22 11.08V12a10 10 0 11-5.93-9.14"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M22 4L12 14.01l-3-3"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Building icon -->
+                <template lwc:if={insight.isBuilding}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M3 21h18M5 21V7l8-4v18M13 21V7l6 2v12M9 9v.01M9 12v.01M9 15v.01M9 18v.01M17 11v.01M17 14v.01M17 17v.01"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Handshake icon -->
+                <template lwc:if={insight.isHandshake}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M17 11h3a2 2 0 012 2v1a2 2 0 01-2 2h-1l-5 5-4-4-4 1H4a2 2 0 01-2-2v-1a2 2 0 012-2h3l3-3 3.5-.5L17 11z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path d="M12 15l2-2" stroke-linecap="round" />
+                  </svg>
+                </template>
+                <!-- Document icon -->
+                <template lwc:if={insight.isDocument}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M14 2v6h6M16 13H8M16 17H8M10 9H8"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+                <!-- Trend icon -->
+                <template lwc:if={insight.isTrend}>
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="1.5"
+                  >
+                    <path
+                      d="M23 6l-9.5 9.5-5-5L1 18"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M17 6h6v6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </template>
+              </div>
+              <div class="insight-content">
+                <h4 class="insight-title">{insight.title}</h4>
+                <p class="insight-description">{insight.description}</p>
+              </div>
+            </div>
+          </template>
+        </div>
+      </template>
+
+      <!-- Empty State -->
+      <template lwc:if={noInsights}>
+        <div class="empty-state">
+          <p>Loading deal insights...</p>
+        </div>
+      </template>
+
+      <!-- Footer -->
+      <div class="card-footer">
+        <span class="footer-text">{footerText}</span>
+      </div>
+    </div>
+  </div>
+</template>

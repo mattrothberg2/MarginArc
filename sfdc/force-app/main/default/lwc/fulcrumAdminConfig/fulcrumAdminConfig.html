@@ -1,0 +1,715 @@
+<template>
+  <div class="fulcrum-admin">
+    <!-- ═══ HEADER ═══ -->
+    <div class="admin-header">
+      <div class="header-left">
+        <div class="header-icon">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.573-1.066z"
+            />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </div>
+        <div>
+          <h2 class="header-title">MarginArc Setup</h2>
+          <span class="header-subtitle"
+            >Admin configuration for OEMs, competitors, and data health</span
+          >
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SECTION 1: LICENSE ACTIVATION ═══ -->
+    <template lwc:if={showLicenseActivation}>
+      <div class="admin-card">
+        <div class="card-header">
+          <h3 class="card-title">License Activation</h3>
+        </div>
+        <div class="card-body">
+          <p class="license-intro">
+            Enter your MarginArc license key to activate this installation.
+          </p>
+          <div class="license-form">
+            <div class="form-field form-field-wide">
+              <label class="form-label">License Key</label>
+              <input
+                type="text"
+                class="form-input"
+                placeholder="XXXX-XXXX-XXXX-XXXX"
+                value={licenseKey}
+                onchange={handleLicenseKeyChange}
+                disabled={isActivating}
+              />
+            </div>
+            <button
+              class="btn-save"
+              onclick={handleActivateLicense}
+              disabled={isActivating}
+            >
+              <template lwc:if={isActivating}>Activating...</template>
+              <template lwc:else>Activate License</template>
+            </button>
+          </div>
+          <template lwc:if={activationMessage}>
+            <div class={activationMessageClass}>{activationMessage}</div>
+          </template>
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══ SECTION 2: LICENSE STATUS ═══ -->
+    <template lwc:if={hasLicense}>
+      <div class="admin-card">
+        <div class="card-header">
+          <h3 class="card-title">License Status</h3>
+          <button
+            class="btn-action btn-sm"
+            onclick={handleRevalidateLicense}
+            disabled={isRevalidating}
+          >
+            <template lwc:if={isRevalidating}>Validating...</template>
+            <template lwc:else>Revalidate Now</template>
+          </button>
+        </div>
+        <div class="card-body">
+          <template lwc:if={showLicenseWarning}>
+            <div class="license-warning-banner">{licenseWarningMessage}</div>
+          </template>
+          <div class="license-status-grid">
+            <div class="license-status-item">
+              <span class="license-status-label">Status</span>
+              <span class={licenseStatusBadgeClass}>{licenseStatusText}</span>
+            </div>
+            <div class="license-status-item">
+              <span class="license-status-label">Expiry Date</span>
+              <span class="license-status-value">{expiryDateFormatted}</span>
+            </div>
+            <div class="license-status-item">
+              <span class="license-status-label">Seats Licensed</span>
+              <span class="license-status-value">{seatsLicensed}</span>
+            </div>
+            <div class="license-status-item">
+              <span class="license-status-label">Last Validated</span>
+              <span class="license-status-value">{lastValidatedFormatted}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══ SECTION 3: CONNECTION STATUS ═══ -->
+    <div class="admin-card">
+      <div class="card-header">
+        <h3 class="card-title">Connection Status</h3>
+        <button
+          class="btn-action btn-sm"
+          onclick={handleTestConnection}
+          disabled={isTestingConnection}
+        >
+          <template lwc:if={isTestingConnection}>Testing...</template>
+          <template lwc:else>Test Connection</template>
+        </button>
+      </div>
+      <div class="card-body">
+        <template lwc:if={connectionMessage}>
+          <p class="config-warning">{connectionMessage}</p>
+        </template>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class={apiUrlDotClass}></span>
+            <span class="status-label">API URL</span>
+          </div>
+          <div class="status-item">
+            <span class={apiKeyDotClass}></span>
+            <span class="status-label">API Key</span>
+          </div>
+          <div class="status-item">
+            <span class={geminiKeyDotClass}></span>
+            <span class="status-label">Gemini Key</span>
+          </div>
+          <div class="status-item">
+            <span class={apiReachableDotClass}></span>
+            <span class="status-label">API Reachable</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SECTION 4: DATA HEALTH ═══ -->
+    <div class="admin-card">
+      <div class="card-header">
+        <h3 class="card-title">Data Health</h3>
+        <button
+          class="btn-action btn-sm"
+          onclick={handleRefreshHealth}
+          disabled={isLoadingHealth}
+        >
+          <template lwc:if={isLoadingHealth}>Loading...</template>
+          <template lwc:else>Refresh</template>
+        </button>
+      </div>
+      <div class="card-body">
+        <template lwc:if={isLoadingHealth}>
+          <div class="loading-inline">
+            <lightning-spinner
+              alternative-text="Loading health data"
+              size="small"
+            ></lightning-spinner>
+          </div>
+        </template>
+        <template lwc:elseif={hasHealthData}>
+          <!-- Analysis Summary -->
+          <div class="health-summary">
+            <span class="health-summary-text">
+              {analyzedDeals} of {totalOpportunities} open deals analyzed
+              ({analysisRate}%)
+            </span>
+          </div>
+          <div class="health-bar-container">
+            <div class="health-bar-track">
+              <div class={analysisBarClass} style={analysisBarStyle}></div>
+            </div>
+          </div>
+
+          <!-- Field Fill Rates -->
+          <div class="health-fields">
+            <template for:each={healthFields} for:item="field">
+              <div key={field.fieldName} class="health-field-row">
+                <div class="health-field-info">
+                  <span class="health-field-label">{field.label}</span>
+                  <span class="health-field-count"
+                    >{field.filled}/{field.total}</span
+                  >
+                </div>
+                <div class="health-bar-container">
+                  <div class="health-bar-track">
+                    <div class={field.barClass} style={field.barStyle}></div>
+                  </div>
+                  <span class={field.statusClass}>{field.rate}%</span>
+                </div>
+              </div>
+            </template>
+          </div>
+        </template>
+        <template lwc:else>
+          <p class="empty-text">No open opportunities found.</p>
+        </template>
+      </div>
+    </div>
+
+    <!-- ═══ SECTION 5: OEM MANAGEMENT ═══ -->
+    <div class="admin-card">
+      <div class="card-header">
+        <h3 class="card-title">OEM Vendors</h3>
+        <span class="card-count">{oemCount}</span>
+        <button
+          class="btn-action"
+          onclick={handleAddOem}
+          disabled={isAddingOem}
+        >
+          + Add OEM
+        </button>
+      </div>
+      <div class="card-body">
+        <!-- Add New OEM Form -->
+        <template lwc:if={isAddingOem}>
+          <div class="inline-form">
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Name</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Name"
+                  value={newOem.Name}
+                  onchange={handleNewOemChange}
+                  placeholder="e.g. Cisco"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Base Margin %</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  data-field="Base_Margin__c"
+                  value={newOem.Base_Margin__c}
+                  onchange={handleNewOemChange}
+                  step="0.5"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Deal Reg Boost %</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  data-field="Deal_Reg_Margin_Boost__c"
+                  value={newOem.Deal_Reg_Margin_Boost__c}
+                  onchange={handleNewOemChange}
+                  step="0.5"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Services Boost %</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  data-field="Services_Margin_Boost__c"
+                  value={newOem.Services_Margin_Boost__c}
+                  onchange={handleNewOemChange}
+                  step="0.5"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">QE Discount %</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  data-field="Quarter_End_Discount__c"
+                  value={newOem.Quarter_End_Discount__c}
+                  onchange={handleNewOemChange}
+                  step="0.5"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Category</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Product_Category__c"
+                  value={newOem.Product_Category__c}
+                  onchange={handleNewOemChange}
+                  placeholder="e.g. Networking"
+                />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button
+                class="btn-save"
+                onclick={handleSaveNewOem}
+                disabled={isSavingOem}
+              >
+                Save
+              </button>
+              <button class="btn-cancel" onclick={handleCancelOemEdit}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- OEM Table -->
+        <template lwc:if={hasOems}>
+          <div class="admin-table">
+            <div class="admin-table-header oem-grid">
+              <div class="col-header" data-col="name">Name</div>
+              <div class="col-header" data-col="base-margin">Base Margin</div>
+              <div class="col-header" data-col="deal-reg">Deal Reg Boost</div>
+              <div class="col-header" data-col="services">Services Boost</div>
+              <div class="col-header" data-col="quarter-end">QE Discount</div>
+              <div class="col-header" data-col="category">Category</div>
+              <div class="col-header col-actions" data-col="actions">
+                Actions
+              </div>
+            </div>
+            <template for:each={oemRows} for:item="oem">
+              <template lwc:if={oem.isEditing}>
+                <div class="admin-table-row oem-grid editing-row" key={oem.Id}>
+                  <div data-col="name">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Name"
+                      value={editingOem.Name}
+                      onchange={handleEditOemChange}
+                    />
+                  </div>
+                  <div data-col="base-margin">
+                    <input
+                      type="number"
+                      class="form-input-inline"
+                      data-field="Base_Margin__c"
+                      value={editingOem.Base_Margin__c}
+                      onchange={handleEditOemChange}
+                      step="0.5"
+                    />
+                  </div>
+                  <div data-col="deal-reg">
+                    <input
+                      type="number"
+                      class="form-input-inline"
+                      data-field="Deal_Reg_Margin_Boost__c"
+                      value={editingOem.Deal_Reg_Margin_Boost__c}
+                      onchange={handleEditOemChange}
+                      step="0.5"
+                    />
+                  </div>
+                  <div data-col="services">
+                    <input
+                      type="number"
+                      class="form-input-inline"
+                      data-field="Services_Margin_Boost__c"
+                      value={editingOem.Services_Margin_Boost__c}
+                      onchange={handleEditOemChange}
+                      step="0.5"
+                    />
+                  </div>
+                  <div data-col="quarter-end">
+                    <input
+                      type="number"
+                      class="form-input-inline"
+                      data-field="Quarter_End_Discount__c"
+                      value={editingOem.Quarter_End_Discount__c}
+                      onchange={handleEditOemChange}
+                      step="0.5"
+                    />
+                  </div>
+                  <div data-col="category">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Product_Category__c"
+                      value={editingOem.Product_Category__c}
+                      onchange={handleEditOemChange}
+                    />
+                  </div>
+                  <div class="col-actions" data-col="actions">
+                    <button
+                      class="btn-icon btn-icon-save"
+                      onclick={handleSaveEditOem}
+                      disabled={isSavingOem}
+                      title="Save"
+                    >
+                      &#10003;
+                    </button>
+                    <button
+                      class="btn-icon btn-icon-cancel"
+                      onclick={handleCancelOemEdit}
+                      title="Cancel"
+                    >
+                      &#10005;
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <template lwc:else>
+                <div class="admin-table-row oem-grid" key={oem.Id}>
+                  <div class="cell-name" data-col="name">{oem.Name}</div>
+                  <div class="cell-value" data-col="base-margin">
+                    {oem.basePct}
+                  </div>
+                  <div class="cell-value" data-col="deal-reg">
+                    {oem.dealRegPct}
+                  </div>
+                  <div class="cell-value" data-col="services">
+                    {oem.servicesPct}
+                  </div>
+                  <div class="cell-value" data-col="quarter-end">
+                    {oem.qeDiscount}
+                  </div>
+                  <div class="cell-value" data-col="category">
+                    {oem.category}
+                  </div>
+                  <div class="col-actions" data-col="actions">
+                    <button
+                      class="btn-icon btn-icon-edit"
+                      data-id={oem.Id}
+                      onclick={handleEditOem}
+                      title="Edit"
+                    >
+                      &#9998;
+                    </button>
+                    <button
+                      class="btn-icon btn-icon-delete"
+                      data-id={oem.Id}
+                      onclick={handleDeleteOem}
+                      title="Delete"
+                    >
+                      &#128465;
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </template>
+          </div>
+        </template>
+        <template lwc:else>
+          <p class="empty-text">
+            No OEM vendors configured. Click "Add OEM" to get started.
+          </p>
+        </template>
+      </div>
+    </div>
+
+    <!-- ═══ SECTION 6: COMPETITOR MANAGEMENT ═══ -->
+    <div class="admin-card">
+      <div class="card-header">
+        <h3 class="card-title">Competitors</h3>
+        <span class="card-count">{competitorCount}</span>
+        <button
+          class="btn-action"
+          onclick={handleAddComp}
+          disabled={isAddingComp}
+        >
+          + Add Competitor
+        </button>
+      </div>
+      <div class="card-body">
+        <!-- Add New Competitor Form -->
+        <template lwc:if={isAddingComp}>
+          <div class="inline-form">
+            <div class="form-row">
+              <div class="form-field form-field-wide">
+                <label class="form-label">Name</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Name"
+                  value={newComp.Name}
+                  onchange={handleNewCompChange}
+                  placeholder="e.g. CDW"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Primary Strength</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Primary_Strength__c"
+                  value={newComp.Primary_Strength__c}
+                  onchange={handleNewCompChange}
+                  placeholder="e.g. Scale"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Price Aggression</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Price_Aggression__c"
+                  value={newComp.Price_Aggression__c}
+                  onchange={handleNewCompChange}
+                  placeholder="e.g. High"
+                />
+              </div>
+              <div class="form-field">
+                <label class="form-label">Services Capability</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Services_Capability__c"
+                  value={newComp.Services_Capability__c}
+                  onchange={handleNewCompChange}
+                  placeholder="e.g. Medium"
+                />
+              </div>
+              <div class="form-field form-field-wide">
+                <label class="form-label">Primary OEMs</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Primary_OEMs__c"
+                  value={newComp.Primary_OEMs__c}
+                  onchange={handleNewCompChange}
+                  placeholder="e.g. Cisco;Palo Alto"
+                />
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-field form-field-full">
+                <label class="form-label">Description</label>
+                <input
+                  type="text"
+                  class="form-input"
+                  data-field="Description__c"
+                  value={newComp.Description__c}
+                  onchange={handleNewCompChange}
+                  placeholder="Brief description"
+                />
+              </div>
+            </div>
+            <div class="form-actions">
+              <button
+                class="btn-save"
+                onclick={handleSaveNewComp}
+                disabled={isSavingComp}
+              >
+                Save
+              </button>
+              <button class="btn-cancel" onclick={handleCancelCompEdit}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <!-- Competitor Table -->
+        <template lwc:if={hasCompetitors}>
+          <div class="admin-table">
+            <div class="admin-table-header comp-grid">
+              <div class="col-header" data-col="comp-name">Name</div>
+              <div class="col-header" data-col="comp-strength">
+                Primary Strength
+              </div>
+              <div class="col-header" data-col="comp-aggression">
+                Price Aggression
+              </div>
+              <div class="col-header" data-col="comp-services">Services</div>
+              <div class="col-header" data-col="comp-oems">Primary OEMs</div>
+              <div class="col-header col-actions" data-col="comp-actions">
+                Actions
+              </div>
+            </div>
+            <template for:each={competitorRows} for:item="comp">
+              <template lwc:if={comp.isEditing}>
+                <div
+                  class="admin-table-row comp-grid editing-row"
+                  key={comp.Id}
+                >
+                  <div data-col="comp-name">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Name"
+                      value={editingComp.Name}
+                      onchange={handleEditCompChange}
+                    />
+                  </div>
+                  <div data-col="comp-strength">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Primary_Strength__c"
+                      value={editingComp.Primary_Strength__c}
+                      onchange={handleEditCompChange}
+                    />
+                  </div>
+                  <div data-col="comp-aggression">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Price_Aggression__c"
+                      value={editingComp.Price_Aggression__c}
+                      onchange={handleEditCompChange}
+                    />
+                  </div>
+                  <div data-col="comp-services">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Services_Capability__c"
+                      value={editingComp.Services_Capability__c}
+                      onchange={handleEditCompChange}
+                    />
+                  </div>
+                  <div data-col="comp-oems">
+                    <input
+                      type="text"
+                      class="form-input-inline"
+                      data-field="Primary_OEMs__c"
+                      value={editingComp.Primary_OEMs__c}
+                      onchange={handleEditCompChange}
+                    />
+                  </div>
+                  <div class="col-actions" data-col="comp-actions">
+                    <button
+                      class="btn-icon btn-icon-save"
+                      onclick={handleSaveEditComp}
+                      disabled={isSavingComp}
+                      title="Save"
+                    >
+                      &#10003;
+                    </button>
+                    <button
+                      class="btn-icon btn-icon-cancel"
+                      onclick={handleCancelCompEdit}
+                      title="Cancel"
+                    >
+                      &#10005;
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <template lwc:else>
+                <div class="admin-table-row comp-grid" key={comp.Id}>
+                  <div class="cell-name" data-col="comp-name">{comp.Name}</div>
+                  <div class="cell-value" data-col="comp-strength">
+                    {comp.strengthDisplay}
+                  </div>
+                  <div class="cell-value" data-col="comp-aggression">
+                    {comp.aggressionDisplay}
+                  </div>
+                  <div class="cell-value" data-col="comp-services">
+                    {comp.servicesDisplay}
+                  </div>
+                  <div class="cell-value" data-col="comp-oems">
+                    {comp.oemsDisplay}
+                  </div>
+                  <div class="col-actions" data-col="comp-actions">
+                    <button
+                      class="btn-icon btn-icon-edit"
+                      data-id={comp.Id}
+                      onclick={handleEditComp}
+                      title="Edit"
+                    >
+                      &#9998;
+                    </button>
+                    <button
+                      class="btn-icon btn-icon-delete"
+                      data-id={comp.Id}
+                      onclick={handleDeleteComp}
+                      title="Delete"
+                    >
+                      &#128465;
+                    </button>
+                  </div>
+                </div>
+              </template>
+            </template>
+          </div>
+        </template>
+        <template lwc:else>
+          <p class="empty-text">
+            No competitors configured. Click "Add Competitor" to get started.
+          </p>
+        </template>
+      </div>
+    </div>
+
+    <!-- ═══ DELETE CONFIRMATION MODAL ═══ -->
+    <template lwc:if={showDeleteConfirm}>
+      <div
+        class="modal-overlay"
+        onclick={handleCancelDelete}
+        onkeydown={handleDeleteKeydown}
+      >
+        <div
+          class="modal-content"
+          role="dialog"
+          aria-modal="true"
+          onclick={stopPropagation}
+        >
+          <div class="modal-header-delete">
+            <h3 class="modal-title-delete">Confirm Delete</h3>
+          </div>
+          <div class="modal-body-delete">
+            <p class="delete-message">{deleteConfirmMessage}</p>
+            <div class="modal-actions">
+              <button class="btn-delete-confirm" onclick={handleConfirmDelete}>
+                Delete
+              </button>
+              <button class="btn-cancel" onclick={handleCancelDelete}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+</template>

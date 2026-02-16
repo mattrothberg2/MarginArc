@@ -1,0 +1,801 @@
+{
+  "Cisco": {
+    "Hardware": {
+      "core": [
+        { "sku": "C9300-48P-A", "name": "Catalyst 9300 48-Port PoE+ Switch", "listPrice": 12495 },
+        { "sku": "ISR4431/K9", "name": "ISR 4431 Integrated Services Router", "listPrice": 14800 },
+        { "sku": "C9200L-48P-4G", "name": "Catalyst 9200L 48-Port PoE+ Switch", "listPrice": 6995 },
+        { "sku": "C8300-2N2S-4T2X", "name": "Catalyst 8300 Series Edge Platform", "listPrice": 18700 }
+      ],
+      "services": [
+        { "sku": "CON-ECMU-IMPL", "name": "Cisco Advanced Implementation Services", "listPrice": 245 }
+      ],
+      "support": [
+        { "sku": "CON-SNT-C930048", "name": "SmartNet 24x7x4 Support (12 mo)", "listPrice": 2495 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "DNA-E-T-48-A", "name": "Cisco DNA Essentials 48-Port License (3yr)", "listPrice": 4500 },
+        { "sku": "UMB-INSIGHTS-K9", "name": "Umbrella Secure Internet Gateway", "listPrice": 14000 }
+      ],
+      "onboarding": [
+        { "sku": "CON-ECMU-DNAONB", "name": "DNA Center Onboarding & Migration Services", "listPrice": 225 }
+      ],
+      "enablement": [
+        { "sku": "CON-ECMU-WRKSHP", "name": "Cisco Solution Enablement Workshop", "listPrice": 3200 }
+      ],
+      "support": [
+        { "sku": "CON-SSSNP-DNAE48", "name": "Solution Support for DNA Enterprise", "listPrice": 1800 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "MSLA-INTERSIGHT", "name": "Intersight SaaS Infrastructure Platform", "listPrice": 3600 }
+      ],
+      "managed": [
+        { "sku": "CON-ECMU-CLDMGD", "name": "Cisco Managed Hybrid Cloud Services", "listPrice": 210 }
+      ],
+      "optimization": [
+        { "sku": "APPDYN-ENT-K9", "name": "AppDynamics Enterprise APM Suite", "listPrice": 8400 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "CON-ECMU-CONSLT", "name": "Cisco CX Advisory Consulting", "listPrice": 275 }
+      ],
+      "specialists": [
+        { "sku": "CON-ECMU-ARCHCT", "name": "Cisco Solutions Architect Engagement", "listPrice": 325 }
+      ],
+      "program": [
+        { "sku": "CON-ECMU-PRGMGT", "name": "Cisco CX Program Management", "listPrice": 4800 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "CX-MNGD-NTWRK", "name": "CX Managed Network-as-a-Service", "listPrice": 4200 }
+      ],
+      "automation": [
+        { "sku": "CON-ECMU-AUTMTN", "name": "Network Automation & Day-2 Onboarding", "listPrice": 235 }
+      ],
+      "success": [
+        { "sku": "CX-SUCCESS-ENT", "name": "CX Success Track Enterprise QBR", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "CON-SNT-PROACTV", "name": "Proactive 24x7 NOC Monitoring", "listPrice": 3600 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "C9300-48UXM-A", "name": "Catalyst 9300 mGig + ISR 4461 SD-WAN Stack", "listPrice": 32500 }
+      ],
+      "software": [
+        { "sku": "DNA-P-T-48-A", "name": "Cisco DNA Premier + Umbrella + ThousandEyes", "listPrice": 12800 }
+      ],
+      "services": [
+        { "sku": "CON-ECMU-SDWDLV", "name": "SD-WAN Solution Delivery Squad", "listPrice": 265 }
+      ],
+      "governance": [
+        { "sku": "CX-GOVERN-ENT", "name": "CX Governance & Lifecycle Support", "listPrice": 3400 }
+      ]
+    }
+  },
+  "Palo Alto": {
+    "Hardware": {
+      "core": [
+        { "sku": "PA-460", "name": "PA-460 Next-Gen Firewall", "listPrice": 4495 },
+        { "sku": "PA-3260", "name": "PA-3260 Next-Gen Firewall", "listPrice": 42995 },
+        { "sku": "PA-5260", "name": "PA-5260 Next-Gen Firewall", "listPrice": 89995 }
+      ],
+      "services": [
+        { "sku": "PAN-SVC-IMPL", "name": "Palo Alto Deployment & Migration Services", "listPrice": 255 }
+      ],
+      "support": [
+        { "sku": "PAN-SVC-PREM", "name": "Premium Support (24x7, 12 mo)", "listPrice": 3200 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "PAN-PA-460-TP", "name": "Threat Prevention Subscription (PA-460, 3yr)", "listPrice": 3600 },
+        { "sku": "PRISMA-ACCESS-ENT", "name": "Prisma Access Enterprise Edition", "listPrice": 18000 }
+      ],
+      "onboarding": [
+        { "sku": "PAN-SVC-ONBRD", "name": "Prisma Onboarding & Policy Migration", "listPrice": 235 }
+      ],
+      "enablement": [
+        { "sku": "PAN-EDU-SEC", "name": "Palo Alto Security Essentials Workshop", "listPrice": 3800 }
+      ],
+      "support": [
+        { "sku": "PAN-SVC-FOCUS", "name": "Focused Services (Incident Response + TAM)", "listPrice": 2400 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "PRISMA-CLD-CMP", "name": "Prisma Cloud Compute Edition", "listPrice": 4800 }
+      ],
+      "managed": [
+        { "sku": "CORTEX-XSIAM", "name": "Cortex XSIAM Managed SOC Platform", "listPrice": 280 }
+      ],
+      "optimization": [
+        { "sku": "PRISMA-CLD-GOV", "name": "Prisma Cloud Governance & Compliance Module", "listPrice": 6200 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "PAN-SVC-CONSLT", "name": "Unit 42 Security Consulting", "listPrice": 295 }
+      ],
+      "specialists": [
+        { "sku": "PAN-SVC-ARCHT", "name": "Palo Alto Solutions Architect Engagement", "listPrice": 345 }
+      ],
+      "program": [
+        { "sku": "PAN-SVC-PRGM", "name": "Security Program Management & QA", "listPrice": 5200 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "CORTEX-MDR-ENT", "name": "Cortex MDR Enterprise Subscription", "listPrice": 5600 }
+      ],
+      "automation": [
+        { "sku": "XSOAR-ONBRD", "name": "XSOAR Automation & Playbook Onboarding", "listPrice": 245 }
+      ],
+      "success": [
+        { "sku": "PAN-SVC-QBR", "name": "Security Posture QBR Program", "listPrice": 3200 }
+      ],
+      "support": [
+        { "sku": "CORTEX-MDR-MON", "name": "24x7 MDR Threat Monitoring", "listPrice": 4200 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "PA-5260-BND", "name": "PA-5260 + Panorama Management Stack", "listPrice": 98000 }
+      ],
+      "software": [
+        { "sku": "PRISMA-SASE-PLT", "name": "Prisma SASE + Cortex XDR Platform", "listPrice": 24000 }
+      ],
+      "services": [
+        { "sku": "PAN-SVC-DLVR", "name": "Zero Trust Solution Delivery Squad", "listPrice": 285 }
+      ],
+      "governance": [
+        { "sku": "PAN-SVC-GOVNC", "name": "Security Governance & Lifecycle Management", "listPrice": 3800 }
+      ]
+    }
+  },
+  "HPE": {
+    "Hardware": {
+      "core": [
+        { "sku": "P55245-B21", "name": "ProLiant DL380 Gen11 Server", "listPrice": 12499 },
+        { "sku": "R8S89A", "name": "ProLiant DL360 Gen11 Server", "listPrice": 9995 },
+        { "sku": "JL726A", "name": "Aruba CX 6300M 48-Port Switch", "listPrice": 7495 }
+      ],
+      "services": [
+        { "sku": "H36MNE", "name": "HPE Pointnext Implementation Services", "listPrice": 235 }
+      ],
+      "support": [
+        { "sku": "H36MGE", "name": "HPE Foundation Care 24x7 (12 mo)", "listPrice": 2800 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "R4Q18AAE", "name": "HPE GreenLake for Compute Ops Management", "listPrice": 3600 },
+        { "sku": "Q8H71AAE", "name": "HPE InfoSight for Servers License", "listPrice": 2400 }
+      ],
+      "onboarding": [
+        { "sku": "H36MQE", "name": "HPE GreenLake Onboarding & Migration", "listPrice": 220 }
+      ],
+      "enablement": [
+        { "sku": "HA124A1", "name": "HPE Technology Workshop (Server/Storage)", "listPrice": 3400 }
+      ],
+      "support": [
+        { "sku": "H36MSE", "name": "HPE Complete Care Enterprise Support", "listPrice": 2200 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "GRNLK-CMP-RSV", "name": "GreenLake Reserved Compute Capacity", "listPrice": 4200 }
+      ],
+      "managed": [
+        { "sku": "GRNLK-MGDSVC", "name": "GreenLake Managed Cloud Services", "listPrice": 225 }
+      ],
+      "optimization": [
+        { "sku": "GRNLK-OPT-TL", "name": "GreenLake Cost Optimization Tooling", "listPrice": 7200 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "HA110A1", "name": "HPE Pointnext Advisory Consulting", "listPrice": 265 }
+      ],
+      "specialists": [
+        { "sku": "HA115A1", "name": "HPE Technology Architect Engagement", "listPrice": 315 }
+      ],
+      "program": [
+        { "sku": "HA120A1", "name": "HPE Project & Program Management", "listPrice": 4600 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "GRNLK-MNGD-SUB", "name": "GreenLake Managed IT Subscription", "listPrice": 4800 }
+      ],
+      "automation": [
+        { "sku": "GRNLK-AUTO-ONB", "name": "GreenLake Automation & Onboarding", "listPrice": 220 }
+      ],
+      "success": [
+        { "sku": "GRNLK-QBR-ENT", "name": "GreenLake Customer Success QBR Program", "listPrice": 2600 }
+      ],
+      "support": [
+        { "sku": "GRNLK-MON-24X7", "name": "GreenLake Proactive Monitoring (24x7)", "listPrice": 3400 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "DL380-SIMPVTY", "name": "ProLiant DL380 + SimpliVity HCI Stack", "listPrice": 45000 }
+      ],
+      "software": [
+        { "sku": "GRNLK-ANLYTCS", "name": "GreenLake Analytics + InfoSight Platform", "listPrice": 9800 }
+      ],
+      "services": [
+        { "sku": "H36MTE", "name": "HPE Pointnext Solution Delivery Squad", "listPrice": 255 }
+      ],
+      "governance": [
+        { "sku": "GRNLK-GOVERN", "name": "GreenLake Program Governance & Support", "listPrice": 3200 }
+      ]
+    }
+  },
+  "Dell": {
+    "Hardware": {
+      "core": [
+        { "sku": "PE-R760xs", "name": "PowerEdge R760xs Rack Server", "listPrice": 11995 },
+        { "sku": "PE-R660xs", "name": "PowerEdge R660xs Rack Server", "listPrice": 8995 },
+        { "sku": "S5248F-ON", "name": "PowerSwitch S5248F-ON 48-Port 25GbE", "listPrice": 16995 }
+      ],
+      "services": [
+        { "sku": "DELL-IMPL-SVC", "name": "Dell ProDeploy Plus Implementation", "listPrice": 230 }
+      ],
+      "support": [
+        { "sku": "DELL-PSP-5YR", "name": "ProSupport Plus 24x7 (12 mo)", "listPrice": 2600 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "APEX-CLD-SVC", "name": "APEX Cloud Services Subscription", "listPrice": 4800 },
+        { "sku": "PSTV-ONE-500T", "name": "PowerStore ONE Software Suite", "listPrice": 6200 }
+      ],
+      "onboarding": [
+        { "sku": "DELL-ONBRD-SVC", "name": "Dell Technologies Onboarding Services", "listPrice": 215 }
+      ],
+      "enablement": [
+        { "sku": "DELL-EDU-WRKSP", "name": "Dell Technology Workshop & Enablement", "listPrice": 3000 }
+      ],
+      "support": [
+        { "sku": "DELL-PSP-SW", "name": "Dell ProSupport for Software", "listPrice": 1900 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "APEX-FLEX-RSV", "name": "APEX Flex on Demand Capacity", "listPrice": 3800 }
+      ],
+      "managed": [
+        { "sku": "APEX-MGDSVC", "name": "APEX Managed Cloud Oversight", "listPrice": 215 }
+      ],
+      "optimization": [
+        { "sku": "APEX-CONSOLE", "name": "APEX Console Cloud Governance Suite", "listPrice": 6800 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "DELL-CTS-ADVSR", "name": "Dell Consulting & Advisory Services", "listPrice": 255 }
+      ],
+      "specialists": [
+        { "sku": "DELL-CTS-ARCHT", "name": "Dell Solutions Architect Engagement", "listPrice": 305 }
+      ],
+      "program": [
+        { "sku": "DELL-CTS-PRGM", "name": "Dell Program Management & QA", "listPrice": 4400 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "APEX-MNGDSUB", "name": "APEX Managed Infrastructure Subscription", "listPrice": 4400 }
+      ],
+      "automation": [
+        { "sku": "APEX-AUTO-ONB", "name": "APEX Automation & Day-2 Onboarding", "listPrice": 210 }
+      ],
+      "success": [
+        { "sku": "DELL-QBR-ENT", "name": "Dell Customer Success QBR Cadence", "listPrice": 2400 }
+      ],
+      "support": [
+        { "sku": "DELL-PROACTV", "name": "Dell Proactive Monitoring Service", "listPrice": 3200 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "PE-R760-VxRail", "name": "PowerEdge + VxRail HCI Platform Stack", "listPrice": 48000 }
+      ],
+      "software": [
+        { "sku": "APEX-ANLTCS", "name": "APEX Analytics + CloudIQ Software Layer", "listPrice": 8600 }
+      ],
+      "services": [
+        { "sku": "DELL-CTS-DLVR", "name": "Dell Solution Delivery Squad", "listPrice": 245 }
+      ],
+      "governance": [
+        { "sku": "DELL-GOV-SVC", "name": "Dell Program Governance & Lifecycle Support", "listPrice": 3000 }
+      ]
+    }
+  },
+  "Fortinet": {
+    "Hardware": {
+      "core": [
+        { "sku": "FG-100F", "name": "FortiGate 100F Next-Gen Firewall", "listPrice": 3995 },
+        { "sku": "FG-600F", "name": "FortiGate 600F Next-Gen Firewall", "listPrice": 32995 },
+        { "sku": "FS-248E-POE", "name": "FortiSwitch 248E-POE Layer 2/3 Switch", "listPrice": 4495 }
+      ],
+      "services": [
+        { "sku": "FC-SVC-IMPL", "name": "Fortinet Deployment & Configuration Services", "listPrice": 225 }
+      ],
+      "support": [
+        { "sku": "FC-10-F100F-247", "name": "FortiCare Premium 24x7 (12 mo)", "listPrice": 1800 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "FC-10-F100F-UTP", "name": "FortiGuard UTM Protection Bundle (3yr)", "listPrice": 4200 },
+        { "sku": "FC-SASE-ENT", "name": "FortiSASE Enterprise Subscription", "listPrice": 12000 }
+      ],
+      "onboarding": [
+        { "sku": "FC-SVC-ONBRD", "name": "FortiGate Onboarding & Policy Migration", "listPrice": 215 }
+      ],
+      "enablement": [
+        { "sku": "FC-EDU-NSEWKSP", "name": "Fortinet NSE Workshop & Enablement", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "FC-SVC-FCTEMS", "name": "FortiClient EMS Enterprise Support", "listPrice": 1600 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "FC-FWEB-CLD", "name": "FortiWeb Cloud WAF-as-a-Service", "listPrice": 3400 }
+      ],
+      "managed": [
+        { "sku": "FC-SOC-MGDSVC", "name": "FortiSOC Managed Detection & Response", "listPrice": 240 }
+      ],
+      "optimization": [
+        { "sku": "FAZ-VM-BASE", "name": "FortiAnalyzer VM Cloud Analytics", "listPrice": 5800 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "FC-SVC-CONSLT", "name": "Fortinet Security Advisory Consulting", "listPrice": 245 }
+      ],
+      "specialists": [
+        { "sku": "FC-SVC-ARCHT", "name": "Fortinet Solutions Architect Engagement", "listPrice": 295 }
+      ],
+      "program": [
+        { "sku": "FC-SVC-PRGM", "name": "Fortinet Program Management & QA", "listPrice": 4200 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "FC-MDR-ENT", "name": "FortiGuard Managed SOC Subscription", "listPrice": 4600 }
+      ],
+      "automation": [
+        { "sku": "FC-SOAR-ONB", "name": "FortiSOAR Automation Onboarding", "listPrice": 225 }
+      ],
+      "success": [
+        { "sku": "FC-SVC-QBR", "name": "Fortinet Security Posture QBR Program", "listPrice": 2600 }
+      ],
+      "support": [
+        { "sku": "FC-SOC-MON", "name": "FortiSOC 24x7 Proactive Monitoring", "listPrice": 3600 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "FG-600F-FABRIC", "name": "FortiGate 600F + FortiSwitch Security Fabric", "listPrice": 42000 }
+      ],
+      "software": [
+        { "sku": "FC-FABRIC-SW", "name": "Fortinet Security Fabric Software Suite", "listPrice": 14000 }
+      ],
+      "services": [
+        { "sku": "FC-SVC-DLVR", "name": "Fortinet Fabric Deployment Squad", "listPrice": 255 }
+      ],
+      "governance": [
+        { "sku": "FC-SVC-GOVNC", "name": "Fortinet Security Governance & Lifecycle", "listPrice": 3200 }
+      ]
+    }
+  },
+  "VMware": {
+    "Hardware": {
+      "core": [
+        { "sku": "VS8-ENT-PL-C", "name": "vSphere 8 Enterprise Plus (per CPU)", "listPrice": 7495 },
+        { "sku": "VCF-STD-C", "name": "VMware Cloud Foundation Standard", "listPrice": 13495 }
+      ],
+      "services": [
+        { "sku": "VMW-PS-IMPL", "name": "VMware Professional Services Implementation", "listPrice": 250 }
+      ],
+      "support": [
+        { "sku": "VS8-ENT-SNS", "name": "vSphere Enterprise Production Support (12 mo)", "listPrice": 2200 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "VCF-SUB-ENT", "name": "VMware Cloud Foundation Enterprise Subscription", "listPrice": 8400 },
+        { "sku": "HZ-ADV-STD-C", "name": "Horizon 8 Advanced (Named User)", "listPrice": 3200 }
+      ],
+      "onboarding": [
+        { "sku": "VMW-PS-ONBRD", "name": "VMware Onboarding & Migration Services", "listPrice": 240 }
+      ],
+      "enablement": [
+        { "sku": "VMW-EDU-WRKSP", "name": "VMware Technical Enablement Workshop", "listPrice": 3600 }
+      ],
+      "support": [
+        { "sku": "VCF-ENT-SNS", "name": "VCF Enterprise Production Support", "listPrice": 2400 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "VMC-AWS-HOST", "name": "VMware Cloud on AWS Host Reservation", "listPrice": 5200 }
+      ],
+      "managed": [
+        { "sku": "VMW-MGDSVC", "name": "VMware Managed Cloud Oversight", "listPrice": 235 }
+      ],
+      "optimization": [
+        { "sku": "ARIA-OPS-ENT", "name": "Aria Operations Enterprise (Cloud Cost Mgmt)", "listPrice": 7800 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "VMW-PS-ADVSR", "name": "VMware Advisory & Strategy Consulting", "listPrice": 270 }
+      ],
+      "specialists": [
+        { "sku": "VMW-PS-ARCHT", "name": "VMware Solutions Architect Engagement", "listPrice": 320 }
+      ],
+      "program": [
+        { "sku": "VMW-PS-PRGM", "name": "VMware Program Management & QA", "listPrice": 4800 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "VMW-MNGD-SUB", "name": "VMware Managed VDI/Cloud Subscription", "listPrice": 5000 }
+      ],
+      "automation": [
+        { "sku": "ARIA-AUTO-ONB", "name": "Aria Automation Onboarding & Runbooks", "listPrice": 230 }
+      ],
+      "success": [
+        { "sku": "VMW-QBR-ENT", "name": "VMware Customer Success QBR Program", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "VMW-MON-24X7", "name": "VMware Proactive Platform Monitoring", "listPrice": 3800 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "VCF-ENT-STACK", "name": "VCF Enterprise + vSAN + NSX Platform Stack", "listPrice": 52000 }
+      ],
+      "software": [
+        { "sku": "ARIA-SUITE-ENT", "name": "Aria Suite Enterprise (Ops + Auto + Logs)", "listPrice": 16000 }
+      ],
+      "services": [
+        { "sku": "VMW-PS-DLVR", "name": "VMware Solution Delivery Squad", "listPrice": 260 }
+      ],
+      "governance": [
+        { "sku": "VMW-GOV-SVC", "name": "VMware Platform Governance & Support", "listPrice": 3600 }
+      ]
+    }
+  },
+  "Microsoft": {
+    "Hardware": {
+      "core": [
+        { "sku": "5P6-00003", "name": "Surface Laptop 6 for Business (i7/16GB)", "listPrice": 1899 },
+        { "sku": "AZS-HCI-2N", "name": "Azure Stack HCI 2-Node Cluster", "listPrice": 28000 }
+      ],
+      "services": [
+        { "sku": "MS-UNFY-IMPL", "name": "Microsoft Unified Implementation Services", "listPrice": 235 }
+      ],
+      "support": [
+        { "sku": "MS-UNFY-SUP", "name": "Microsoft Unified Support (12 mo)", "listPrice": 3200 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "AAA-22340", "name": "Microsoft 365 E5 (Annual, per user)", "listPrice": 684 },
+        { "sku": "CFQ7TTC0LCHC", "name": "Microsoft Defender for Endpoint P2", "listPrice": 684 }
+      ],
+      "onboarding": [
+        { "sku": "MS-FRP-ONBRD", "name": "FastTrack Migration & Onboarding", "listPrice": 210 }
+      ],
+      "enablement": [
+        { "sku": "MS-EDU-WRKSP", "name": "Microsoft Adoption & Enablement Workshop", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "MS-PRE-SUP", "name": "Microsoft Premier Support for Enterprise", "listPrice": 2000 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "AZR-RI-D4V5", "name": "Azure Reserved VM Instance (D4s v5, 1yr)", "listPrice": 3600 }
+      ],
+      "managed": [
+        { "sku": "AZR-ARC-MGDSVC", "name": "Azure Arc Managed Hybrid Cloud Services", "listPrice": 220 }
+      ],
+      "optimization": [
+        { "sku": "AZR-COST-MGT", "name": "Azure Cost Management + Advisor Suite", "listPrice": 6400 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "MS-CTS-ADVSR", "name": "Microsoft Consulting Advisory Services", "listPrice": 260 }
+      ],
+      "specialists": [
+        { "sku": "MS-CTS-ARCHT", "name": "Microsoft Cloud Solutions Architect", "listPrice": 310 }
+      ],
+      "program": [
+        { "sku": "MS-CTS-PRGM", "name": "Microsoft Program Management & QA", "listPrice": 4600 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "AZR-MNGD-SUB", "name": "Azure Managed Services Subscription", "listPrice": 4600 }
+      ],
+      "automation": [
+        { "sku": "AZR-AUTO-ONB", "name": "Azure Automation & Onboarding", "listPrice": 215 }
+      ],
+      "success": [
+        { "sku": "MS-QBR-ENT", "name": "Microsoft Customer Success QBR Program", "listPrice": 2600 }
+      ],
+      "support": [
+        { "sku": "AZR-MON-24X7", "name": "Azure Proactive Monitoring (24x7)", "listPrice": 3400 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "AZS-HCI-STACK", "name": "Azure Stack HCI + Arc + Defender Stack", "listPrice": 38000 }
+      ],
+      "software": [
+        { "sku": "MS-SEC-SUITE", "name": "Microsoft Security Suite (Defender + Sentinel + Entra)", "listPrice": 11000 }
+      ],
+      "services": [
+        { "sku": "MS-CTS-DLVR", "name": "Microsoft Solution Delivery Squad", "listPrice": 250 }
+      ],
+      "governance": [
+        { "sku": "MS-GOV-SVC", "name": "Microsoft Governance & Lifecycle Support", "listPrice": 3200 }
+      ]
+    }
+  },
+  "Pure Storage": {
+    "Hardware": {
+      "core": [
+        { "sku": "FA-X20-R4", "name": "FlashArray//X20 R4 (All-Flash)", "listPrice": 89000 },
+        { "sku": "FA-C40-R4", "name": "FlashArray//C40 R4 (Capacity Tier)", "listPrice": 52000 },
+        { "sku": "FB-S200", "name": "FlashBlade//S200 (Unstructured Data)", "listPrice": 125000 }
+      ],
+      "services": [
+        { "sku": "PS-SVC-IMPL", "name": "Pure Professional Services Implementation", "listPrice": 240 }
+      ],
+      "support": [
+        { "sku": "PS-EVG-SUB", "name": "Pure Evergreen//One Subscription (12 mo)", "listPrice": 4800 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "PS-PURE1-ENT", "name": "Pure1 Enterprise (AIOps + Management)", "listPrice": 3600 },
+        { "sku": "PS-PORTWORX", "name": "Portworx Enterprise (Kubernetes Storage)", "listPrice": 6800 }
+      ],
+      "onboarding": [
+        { "sku": "PS-SVC-ONBRD", "name": "Pure Storage Onboarding & Data Migration", "listPrice": 225 }
+      ],
+      "enablement": [
+        { "sku": "PS-EDU-WRKSP", "name": "Pure Storage Technical Workshop", "listPrice": 3200 }
+      ],
+      "support": [
+        { "sku": "PS-PRE-SUP", "name": "Pure Premium Support (24x7)", "listPrice": 2200 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "PS-CAS-RSV", "name": "Pure Cloud Block Store Reserved Capacity", "listPrice": 4400 }
+      ],
+      "managed": [
+        { "sku": "PS-MGDSVC", "name": "Pure Managed Storage Services", "listPrice": 230 }
+      ],
+      "optimization": [
+        { "sku": "PS-PURE1-OPT", "name": "Pure1 Storage Optimization & Planning", "listPrice": 5400 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "PS-SVC-CONSLT", "name": "Pure Storage Advisory Consulting", "listPrice": 260 }
+      ],
+      "specialists": [
+        { "sku": "PS-SVC-ARCHT", "name": "Pure Storage Solutions Architect", "listPrice": 310 }
+      ],
+      "program": [
+        { "sku": "PS-SVC-PRGM", "name": "Pure Program Management & QA", "listPrice": 4400 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "PS-EVG-MNGD", "name": "Evergreen//One Managed Storage Subscription", "listPrice": 5200 }
+      ],
+      "automation": [
+        { "sku": "PS-AUTO-ONB", "name": "Pure Automation & Runbook Onboarding", "listPrice": 220 }
+      ],
+      "success": [
+        { "sku": "PS-QBR-ENT", "name": "Pure Customer Success QBR Program", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "PS-MON-24X7", "name": "Pure Proactive Array Monitoring (24x7)", "listPrice": 3800 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "FA-X20-FB-STACK", "name": "FlashArray//X20 + FlashBlade Unified Storage Stack", "listPrice": 165000 }
+      ],
+      "software": [
+        { "sku": "PS-FUSION-SW", "name": "Pure Fusion + Portworx Platform Layer", "listPrice": 12000 }
+      ],
+      "services": [
+        { "sku": "PS-SVC-DLVR", "name": "Pure Solution Delivery Squad", "listPrice": 250 }
+      ],
+      "governance": [
+        { "sku": "PS-GOV-SVC", "name": "Pure Governance & Lifecycle Management", "listPrice": 3400 }
+      ]
+    }
+  },
+  "NetApp": {
+    "Hardware": {
+      "core": [
+        { "sku": "AFF-A250", "name": "AFF A250 All-Flash Storage System", "listPrice": 45000 },
+        { "sku": "AFF-A400", "name": "AFF A400 All-Flash Storage System", "listPrice": 78000 },
+        { "sku": "FAS-2820", "name": "FAS2820 Hybrid Storage System", "listPrice": 22000 }
+      ],
+      "services": [
+        { "sku": "NA-PS-IMPL", "name": "NetApp Professional Services Implementation", "listPrice": 235 }
+      ],
+      "support": [
+        { "sku": "NA-SUP-SB-PRE", "name": "NetApp SupportEdge Premium (12 mo)", "listPrice": 3200 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "SW-ONTAP-ENT", "name": "ONTAP Enterprise Data Management Suite", "listPrice": 5400 },
+        { "sku": "SW-BLUEXP-ENT", "name": "BlueXP Enterprise Cloud Management", "listPrice": 3800 }
+      ],
+      "onboarding": [
+        { "sku": "NA-PS-ONBRD", "name": "NetApp Onboarding & Data Migration", "listPrice": 220 }
+      ],
+      "enablement": [
+        { "sku": "NA-EDU-WRKSP", "name": "NetApp Technical Enablement Workshop", "listPrice": 3000 }
+      ],
+      "support": [
+        { "sku": "NA-SUP-SW-PRE", "name": "NetApp Software Support Premium", "listPrice": 2000 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "CVO-AWS-RSV", "name": "Cloud Volumes ONTAP Reserved Capacity", "listPrice": 4000 }
+      ],
+      "managed": [
+        { "sku": "NA-MGDSVC", "name": "NetApp Managed Cloud Volume Services", "listPrice": 220 }
+      ],
+      "optimization": [
+        { "sku": "BLUEXP-OPT", "name": "BlueXP Cloud Tiering & Optimization", "listPrice": 5600 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "NA-PS-CONSLT", "name": "NetApp Advisory Consulting Services", "listPrice": 255 }
+      ],
+      "specialists": [
+        { "sku": "NA-PS-ARCHT", "name": "NetApp Solutions Architect Engagement", "listPrice": 305 }
+      ],
+      "program": [
+        { "sku": "NA-PS-PRGM", "name": "NetApp Program Management & QA", "listPrice": 4200 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "KEYSTONE-STG", "name": "NetApp Keystone STaaS Subscription", "listPrice": 4800 }
+      ],
+      "automation": [
+        { "sku": "NA-AUTO-ONB", "name": "NetApp Automation & Ansible Onboarding", "listPrice": 215 }
+      ],
+      "success": [
+        { "sku": "NA-QBR-ENT", "name": "NetApp Customer Success QBR Program", "listPrice": 2600 }
+      ],
+      "support": [
+        { "sku": "NA-MON-24X7", "name": "NetApp AIQ Proactive Monitoring (24x7)", "listPrice": 3400 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "AFF-A400-STACK", "name": "AFF A400 + MetroCluster Data Fabric Stack", "listPrice": 120000 }
+      ],
+      "software": [
+        { "sku": "ONTAP-FABRIC-SW", "name": "ONTAP + BlueXP Data Fabric Software Layer", "listPrice": 10000 }
+      ],
+      "services": [
+        { "sku": "NA-PS-DLVR", "name": "NetApp Solution Delivery Squad", "listPrice": 245 }
+      ],
+      "governance": [
+        { "sku": "NA-GOV-SVC", "name": "NetApp Data Governance & Lifecycle Support", "listPrice": 3200 }
+      ]
+    }
+  },
+  "Arista": {
+    "Hardware": {
+      "core": [
+        { "sku": "DCS-7050X3-48YC12", "name": "7050X3 48-Port 25GbE Data Center Switch", "listPrice": 24995 },
+        { "sku": "DCS-7280R3-48C6", "name": "7280R3 48-Port 100GbE Spine Switch", "listPrice": 68000 },
+        { "sku": "CCS-720XP-48Y6", "name": "720XP 48-Port Campus Switch", "listPrice": 8995 }
+      ],
+      "services": [
+        { "sku": "AR-SVC-IMPL", "name": "Arista Deployment & Integration Services", "listPrice": 255 }
+      ],
+      "support": [
+        { "sku": "AR-SUP-A-LINE", "name": "Arista A-Line Support 24x7 (12 mo)", "listPrice": 3400 }
+      ]
+    },
+    "Software": {
+      "subscription": [
+        { "sku": "CVP-ENT-SUB", "name": "CloudVision Portal Enterprise Subscription", "listPrice": 6200 },
+        { "sku": "DMF-ENT-SUB", "name": "DANZ Monitoring Fabric Enterprise", "listPrice": 4800 }
+      ],
+      "onboarding": [
+        { "sku": "AR-SVC-ONBRD", "name": "Arista CloudVision Onboarding & Integration", "listPrice": 240 }
+      ],
+      "enablement": [
+        { "sku": "AR-EDU-WRKSP", "name": "Arista Network Enablement Workshop", "listPrice": 3400 }
+      ],
+      "support": [
+        { "sku": "AR-SUP-SW", "name": "Arista Software Support Premium", "listPrice": 2200 }
+      ]
+    },
+    "Cloud": {
+      "capacity": [
+        { "sku": "CVaaS-ENT", "name": "CloudVision as-a-Service Enterprise", "listPrice": 4800 }
+      ],
+      "managed": [
+        { "sku": "AR-MGDSVC", "name": "Arista Managed Network Services", "listPrice": 240 }
+      ],
+      "optimization": [
+        { "sku": "AR-NETOBS", "name": "Arista Network Observability & Analytics", "listPrice": 6800 }
+      ]
+    },
+    "ProfessionalServices": {
+      "consulting": [
+        { "sku": "AR-PS-CONSLT", "name": "Arista Network Advisory Consulting", "listPrice": 275 }
+      ],
+      "specialists": [
+        { "sku": "AR-PS-ARCHT", "name": "Arista Network Architect Engagement", "listPrice": 325 }
+      ],
+      "program": [
+        { "sku": "AR-PS-PRGM", "name": "Arista Program Management & QA", "listPrice": 4800 }
+      ]
+    },
+    "ManagedServices": {
+      "subscription": [
+        { "sku": "AR-MNGD-SUB", "name": "Arista Managed Network Subscription", "listPrice": 5200 }
+      ],
+      "automation": [
+        { "sku": "AR-AUTO-ONB", "name": "Arista Automation & Day-2 Onboarding", "listPrice": 235 }
+      ],
+      "success": [
+        { "sku": "AR-QBR-ENT", "name": "Arista Customer Success QBR Program", "listPrice": 2800 }
+      ],
+      "support": [
+        { "sku": "AR-MON-24X7", "name": "Arista Proactive Network Monitoring (24x7)", "listPrice": 4000 }
+      ]
+    },
+    "ComplexSolution": {
+      "platform": [
+        { "sku": "7280R3-SPINE-LF", "name": "7280R3 Spine + 7050X3 Leaf Data Center Fabric", "listPrice": 145000 }
+      ],
+      "software": [
+        { "sku": "CVP-DMF-SUITE", "name": "CloudVision + DANZ Full Observability Suite", "listPrice": 14000 }
+      ],
+      "services": [
+        { "sku": "AR-PS-DLVR", "name": "Arista Fabric Deployment Squad", "listPrice": 265 }
+      ],
+      "governance": [
+        { "sku": "AR-GOV-SVC", "name": "Arista Network Governance & Lifecycle Support", "listPrice": 3600 }
+      ]
+    }
+  }
+}

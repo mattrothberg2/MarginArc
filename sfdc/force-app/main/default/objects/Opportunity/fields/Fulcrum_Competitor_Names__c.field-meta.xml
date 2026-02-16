@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Fulcrum_Competitor_Names__c</fullName>
+    <description
+  >Specific VAR competitors on this deal (used by ML model)</description>
+    <inlineHelpText
+  >Select which VAR competitors are competing on this deal</inlineHelpText>
+    <label>Competitor VARs</label>
+    <required>false</required>
+    <trackFeedHistory>false</trackFeedHistory>
+    <trackTrending>false</trackTrending>
+    <type>MultiselectPicklist</type>
+    <valueSet>
+        <valueSetDefinition>
+            <sorted>true</sorted>
+            <value>
+                <fullName>CDW</fullName>
+                <default>false</default>
+                <label>CDW</label>
+            </value>
+            <value>
+                <fullName>Computacenter</fullName>
+                <default>false</default>
+                <label>Computacenter</label>
+            </value>
+            <value>
+                <fullName>Connection</fullName>
+                <default>false</default>
+                <label>Connection</label>
+            </value>
+            <value>
+                <fullName>Converge</fullName>
+                <default>false</default>
+                <label>Converge Technology</label>
+            </value>
+            <value>
+                <fullName>DimensionData</fullName>
+                <default>false</default>
+                <label>Dimension Data (NTT)</label>
+            </value>
+            <value>
+                <fullName>ePlus</fullName>
+                <default>false</default>
+                <label>ePlus</label>
+            </value>
+            <value>
+                <fullName>Insight</fullName>
+                <default>false</default>
+                <label>Insight Enterprises</label>
+            </value>
+            <value>
+                <fullName>Logicalis</fullName>
+                <default>false</default>
+                <label>Logicalis</label>
+            </value>
+            <value>
+                <fullName>Optiv</fullName>
+                <default>false</default>
+                <label>Optiv</label>
+            </value>
+            <value>
+                <fullName>Presidio</fullName>
+                <default>false</default>
+                <label>Presidio</label>
+            </value>
+            <value>
+                <fullName>SHI</fullName>
+                <default>false</default>
+                <label>SHI International</label>
+            </value>
+            <value>
+                <fullName>Softchoice</fullName>
+                <default>false</default>
+                <label>Softchoice</label>
+            </value>
+            <value>
+                <fullName>Trace3</fullName>
+                <default>false</default>
+                <label>Trace3</label>
+            </value>
+            <value>
+                <fullName>Zones</fullName>
+                <default>false</default>
+                <label>Zones</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+    <visibleLines>5</visibleLines>
+</CustomField>

@@ -1,0 +1,916 @@
+<template>
+  <div class="mgr-dashboard">
+    <!-- Loading State -->
+    <template lwc:if={isLoading}>
+      <div class="loading-state">
+        <lightning-spinner
+          alternative-text="Loading dashboard"
+          size="medium"
+        ></lightning-spinner>
+        <p class="loading-text">Loading manager dashboard...</p>
+      </div>
+    </template>
+
+    <!-- Error State -->
+    <template lwc:if={hasError}>
+      <div class="error-state">
+        <div class="error-icon">!</div>
+        <p class="error-text">{errorMessage}</p>
+      </div>
+    </template>
+
+    <!-- Dashboard Content -->
+    <template lwc:if={hasPipelineData}>
+      <!-- Header Bar -->
+      <div class="dash-header">
+        <div class="header-left">
+          <div class="header-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path
+                d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 class="header-title">
+              MarginArc Manager Dashboard
+              <span class="version-badge">v{widgetVersion}</span>
+            </h2>
+            <span class="header-subtitle"
+              >{kpis.dealCount} open deals in pipeline</span
+            >
+          </div>
+        </div>
+        <div class="header-right">
+          <template lwc:if={userContext.hasTeamSelector}>
+            <div class="team-selector" onblur={handleTeamBlur}>
+              <button class="btn-team-select" onclick={handleTeamToggle}>
+                <span class="team-icon">&#9783;</span>
+                {selectedTeamLabel}
+                <span class="dropdown-caret">&#9662;</span>
+              </button>
+              <template lwc:if={showTeamDropdown}>
+                <div class="dropdown-menu">
+                  <template for:each={teamSelectorOptions} for:item="team">
+                    <button
+                      key={team.value}
+                      class="dropdown-item"
+                      data-value={team.value}
+                      onclick={handleTeamChange}
+                    >
+                      {team.label}
+                    </button>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+          <div class="time-range-wrapper" onblur={handleTimeRangeBlur}>
+            <button class="btn-time-range" onclick={handleTimeRangeToggle}>
+              {selectedTimeRangeLabel}
+              <span class="dropdown-caret">&#9662;</span>
+            </button>
+            <template lwc:if={showTimeRangeDropdown}>
+              <div class="dropdown-menu">
+                <template for:each={timeRangeOptions} for:item="opt">
+                  <button
+                    key={opt.value}
+                    class="dropdown-item"
+                    data-value={opt.value}
+                    onclick={handleTimeRangeSelect}
+                  >
+                    {opt.label}
+                  </button>
+                </template>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Strip -->
+      <div class="kpi-strip">
+        <div class="kpi-card">
+          <div class="kpi-value">{kpis.totalPipeline}</div>
+          <div class="kpi-label">TOTAL PIPELINE</div>
+          <div class="kpi-sub">{kpis.dealCount} deals</div>
+        </div>
+        <div class="kpi-card">
+          <div class={kpis.ragpDeltaClass}>{kpis.ragpDelta}</div>
+          <div class="kpi-label">MARGINARC VALUE</div>
+          <div class="kpi-sub">additional GP Upside if followed</div>
+        </div>
+        <div class="kpi-card">
+          <div class={winRateClass}>{winRateDisplay}</div>
+          <div class="kpi-label">WIN RATE</div>
+          <div class="kpi-sub">{selectedTimeRangeLabel}</div>
+        </div>
+        <div class="kpi-card">
+          <div class={kpis.adoptionClass}>{kpis.adoptionRate}</div>
+          <div class="kpi-label">ALIGNMENT</div>
+          <div class="kpi-sub">deals scored by MarginArc</div>
+        </div>
+        <div class="kpi-card">
+          <div class={kpis.avgPredictionQualityClass}>
+            {kpis.avgPredictionQuality}
+          </div>
+          <div class="kpi-label">DATA QUALITY</div>
+          <div class="kpi-sub">avg prediction readiness</div>
+        </div>
+      </div>
+
+      <!-- Alert Bar -->
+      <template lwc:if={hasAlerts}>
+        <div class="alert-bar">
+          <span class="alert-icon">&#9888;</span>
+          <span class="alert-text">{alertSummaryText}</span>
+        </div>
+      </template>
+
+      <!-- ═══ PIPELINE HEALTH ═══ -->
+      <div class="section">
+        <div
+          class="section-header"
+          data-section="pipeline"
+          onclick={toggleSection}
+        >
+          <span class="section-chevron">{pipelineChevron}</span>
+          <h3 class="section-title">Pipeline Health</h3>
+          <span class="section-count">{pipelineFilteredCount}</span>
+          <button
+            class="btn-export"
+            onclick={handleExportPipeline}
+            aria-label="Export pipeline data as CSV"
+          >
+            <svg
+              class="export-icon"
+              viewBox="0 0 16 16"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+            >
+              <path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M3 13h10" />
+            </svg>
+            Export CSV
+          </button>
+        </div>
+        <template lwc:if={showPipeline}>
+          <!-- Filter Pills -->
+          <div class="filter-pills">
+            <template for:each={filterPills} for:item="pill">
+              <button
+                key={pill.value}
+                class={pill.pillClass}
+                data-filter={pill.value}
+                onclick={handleFilterChange}
+              >
+                {pill.label}
+              </button>
+            </template>
+          </div>
+
+          <div class="pipeline-table">
+            <!-- Column Headers -->
+            <div class="table-header">
+              <div
+                class={scoreSortClass}
+                data-field="dealScore"
+                onclick={handleSort}
+              >
+                Score{scoreIndicator}
+              </div>
+              <div class={nameSortClass} data-field="name" onclick={handleSort}>
+                Deal{nameIndicator}
+              </div>
+              <div class="col-header">Account</div>
+              <div class="col-header">Rep</div>
+              <div
+                class={amountSortClass}
+                data-field="amount"
+                onclick={handleSort}
+              >
+                Amount{amountIndicator}
+              </div>
+              <div class="col-header">Stage</div>
+              <div
+                class={planSortClass}
+                data-field="plannedMargin"
+                onclick={handleSort}
+              >
+                Plan{planIndicator}
+              </div>
+              <div
+                class={recSortClass}
+                data-field="recommendedMargin"
+                onclick={handleSort}
+              >
+                Rec{recIndicator}
+              </div>
+              <div
+                class={gapSortClass}
+                data-field="marginGap"
+                onclick={handleSort}
+              >
+                Gap{gapIndicator}
+              </div>
+              <div
+                class={qualitySortClass}
+                data-field="predictionQuality"
+                onclick={handleSort}
+              >
+                Quality{qualityIndicator}
+              </div>
+            </div>
+            <!-- Data Rows -->
+            <template for:each={sortedDeals} for:item="deal">
+              <div
+                key={deal.id}
+                class="table-row"
+                data-id={deal.id}
+                onclick={handleDealClick}
+              >
+                <div class="cell-score">
+                  <span class={deal.scoreClass}>{deal.dealScore}</span>
+                </div>
+                <div class="cell-name" title={deal.name}>{deal.name}</div>
+                <div class="cell-account" title={deal.accountName}>
+                  {deal.accountName}
+                </div>
+                <div class="cell-rep">{deal.ownerName}</div>
+                <div class="cell-amount">{deal.amount}</div>
+                <div class="cell-stage">{deal.stageName}</div>
+                <div class="cell-plan">{deal.plannedMargin}</div>
+                <div class="cell-rec">{deal.recommendedMargin}</div>
+                <div class={deal.gapClass}>
+                  {deal.marginGapArrow}{deal.marginGap}
+                </div>
+                <div class="cell-quality">
+                  <span class={deal.qualityClass}>{deal.qualityLabel}</span>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- Pagination Controls -->
+          <div class="pagination-bar">
+            <span class="pagination-text">{paginationText}</span>
+            <div class="pagination-btns">
+              <button
+                class={prevBtnClass}
+                onclick={handlePrevPage}
+                disabled={isPrevDisabled}
+              >
+                &#8249; Prev
+              </button>
+              <span class="page-indicator"
+                >Page {currentPage} of {totalPages}</span
+              >
+              <button
+                class={nextBtnClass}
+                onclick={handleNextPage}
+                disabled={isNextDisabled}
+              >
+                Next &#8250;
+              </button>
+            </div>
+          </div>
+        </template>
+      </div>
+
+      <!-- ═══ REP PERFORMANCE ═══ -->
+      <template lwc:if={hasHistoricalData}>
+        <div class="section">
+          <div
+            class="section-header"
+            data-section="rep"
+            onclick={toggleSection}
+          >
+            <span class="section-chevron">{repChevron}</span>
+            <h3 class="section-title">Rep Performance</h3>
+            <span class="section-count">{selectedTimeRangeLabel}</span>
+            <button
+              class="btn-export"
+              onclick={handleExportPerformance}
+              aria-label="Export rep performance data as CSV"
+            >
+              <svg
+                class="export-icon"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M8 2v9M4.5 7.5 8 11l3.5-3.5M3 13h10" />
+              </svg>
+              Export CSV
+            </button>
+          </div>
+          <template lwc:if={showRep}>
+            <template lwc:if={hasRepData}>
+              <div class="rep-table">
+                <div class="rep-header">
+                  <div class="col-header">Rep</div>
+                  <div class="col-header">Deals</div>
+                  <div class="col-header">Win Rate</div>
+                  <div class="col-header">Avg Margin</div>
+                  <div class="col-header">Revenue Won</div>
+                  <div class="col-header">Alignment</div>
+                </div>
+                <template for:each={repPerformance} for:item="rep">
+                  <div key={rep.ownerId} class="rep-row">
+                    <div
+                      class="cell-rep-name cell-rep-name-link"
+                      data-repid={rep.ownerId}
+                      data-repname={rep.ownerName}
+                      onclick={handleRepClick}
+                    >
+                      {rep.ownerName}
+                    </div>
+                    <div class="cell-deals">
+                      {rep.wonDeals}W / {rep.totalDeals} total
+                    </div>
+                    <div class="cell-winrate">{rep.winRate}</div>
+                    <div class="cell-margin">{rep.avgMargin}</div>
+                    <div class="cell-revenue">{rep.totalAmount}</div>
+                    <div class={rep.compClass}>{rep.complianceRate}</div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+        </div>
+
+        <!-- ═══ TEAM COMPARISON ═══ -->
+        <template lwc:if={hasTeamComparison}>
+          <div class="section">
+            <div
+              class="section-header"
+              data-section="teamComp"
+              onclick={toggleSection}
+            >
+              <span class="section-chevron">{teamCompChevron}</span>
+              <h3 class="section-title">Team Comparison</h3>
+              <span class="section-count">{selectedTimeRangeLabel}</span>
+            </div>
+            <template lwc:if={showTeamComp}>
+              <div class="team-table">
+                <div class="team-header">
+                  <div class="col-header">Team</div>
+                  <div class="col-header">Reps</div>
+                  <div class="col-header">Deals</div>
+                  <div class="col-header">Win Rate</div>
+                  <div class="col-header">Revenue Won</div>
+                  <div class="col-header">Alignment</div>
+                  <div class="col-header">GP Upside</div>
+                </div>
+                <template for:each={teamComparison} for:item="team">
+                  <div key={team.managerId} class="team-row">
+                    <div class="cell-team-name">{team.managerName}</div>
+                    <div class="cell-team-reps">{team.repCount}</div>
+                    <div class="cell-team-deals">
+                      {team.wonDeals}W / {team.totalDeals} total
+                    </div>
+                    <div class="cell-team-winrate">{team.winRate}</div>
+                    <div class="cell-team-revenue">{team.totalAmount}</div>
+                    <div class={team.compClass}>{team.complianceRate}</div>
+                    <div class={team.ragpClass}>{team.ragpDelta}</div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </div>
+        </template>
+
+        <!-- ═══ MARGIN OPPORTUNITY ═══ -->
+        <div class="section">
+          <div
+            class="section-header"
+            data-section="margin"
+            onclick={toggleSection}
+          >
+            <span class="section-chevron">{marginChevron}</span>
+            <h3 class="section-title">Margin Opportunity</h3>
+          </div>
+          <template lwc:if={showMargin}>
+            <template lwc:if={hasMarginOpportunity}>
+              <div class="margin-opportunity">
+                <div class="value-headline">
+                  <template lwc:if={marginOpportunity.ragpPositive}>
+                    <p class="margin-headline">
+                      Across
+                      <strong
+                        >{marginOpportunity.ragpDealCount} won deals</strong
+                      >, following MarginArc recommendations would have
+                      generated
+                      <strong class="value-positive"
+                        >{marginOpportunity.ragpDelta}</strong
+                      >
+                      additional GP Upside
+                    </p>
+                  </template>
+                  <template lwc:else>
+                    <p class="margin-headline">
+                      Across
+                      <strong
+                        >{marginOpportunity.ragpDealCount} won deals</strong
+                      >, GP Upside impact:
+                      <strong>{marginOpportunity.ragpDelta}</strong>
+                    </p>
+                  </template>
+                </div>
+                <div class="ragp-comparison">
+                  <div class="ragp-card">
+                    <div class="ragp-label">Planned GP Upside</div>
+                    <div class="ragp-value">
+                      {marginOpportunity.plannedRAGP}
+                    </div>
+                    <div class="ragp-sub">at rep-set margins</div>
+                  </div>
+                  <div class="ragp-arrow">&#8594;</div>
+                  <div class="ragp-card ragp-card-rec">
+                    <div class="ragp-label">Recommended GP Upside</div>
+                    <div class="ragp-value">{marginOpportunity.recRAGP}</div>
+                    <div class="ragp-sub">at MarginArc margins</div>
+                  </div>
+                </div>
+                <div class="margin-bars">
+                  <div class="bar-row">
+                    <span class="bar-label">Avg Plan Margin</span>
+                    <div class="bar-track">
+                      <div
+                        class="bar-fill bar-current"
+                        style={currentBarStyle}
+                      ></div>
+                    </div>
+                    <span class="bar-value"
+                      >{marginOpportunity.currentMargin}</span
+                    >
+                  </div>
+                  <div class="bar-row">
+                    <span class="bar-label">Avg Rec Margin</span>
+                    <div class="bar-track">
+                      <div
+                        class="bar-fill bar-potential"
+                        style={potentialBarStyle}
+                      ></div>
+                    </div>
+                    <span class="bar-value"
+                      >{marginOpportunity.potentialMargin}</span
+                    >
+                  </div>
+                </div>
+                <p class="ragp-explainer">
+                  GP Upside = Margin x Amount x Win Probability. MarginArc
+                  optimizes this tradeoff — sometimes recommending lower margins
+                  that win more often, generating more expected profit.
+                </p>
+              </div>
+            </template>
+
+            <!-- ── Margin vs Win Probability Scatter Plot ── -->
+            <template lwc:if={hasScatterData}>
+              <div class="scatter-container">
+                <h4 class="scatter-title">Margin vs Win Probability</h4>
+                <div class="scatter-legend">
+                  <span class="legend-item">
+                    <svg class="legend-swatch" viewBox="0 0 12 12">
+                      <circle cx="6" cy="6" r="5" fill="#2563eb" />
+                    </svg>
+                    Aligned (within 3pp)
+                  </span>
+                  <span class="legend-item">
+                    <svg class="legend-swatch" viewBox="0 0 12 12">
+                      <polygon
+                        points="6,1 11,6 6,11 1,6"
+                        fill="#374151"
+                      />
+                    </svg>
+                    Off-target (&gt;3pp gap)
+                  </span>
+                  <span class="legend-item">
+                    <svg class="legend-swatch" viewBox="0 0 12 12">
+                      <circle
+                        cx="6"
+                        cy="6"
+                        r="5"
+                        fill="none"
+                        stroke="#94a3b8"
+                        stroke-width="1.5"
+                        stroke-dasharray="2,2"
+                      />
+                    </svg>
+                    Unanalyzed
+                  </span>
+                </div>
+                <svg
+                  class="scatter-svg"
+                  viewBox="0 0 600 400"
+                  role="img"
+                  aria-label={scatterAriaLabel}
+                >
+                  <!-- Grid lines -->
+                  <template for:each={scatterYGridLines} for:item="line">
+                    <line
+                      key={line.key}
+                      x1="60"
+                      y1={line.y}
+                      x2="580"
+                      y2={line.y}
+                      class="scatter-grid"
+                    />
+                    <text
+                      key={line.labelKey}
+                      x="55"
+                      y={line.labelY}
+                      class="scatter-axis-label scatter-axis-right"
+                    >
+                      {line.label}
+                    </text>
+                  </template>
+                  <template for:each={scatterXGridLines} for:item="line">
+                    <line
+                      key={line.key}
+                      x1={line.x}
+                      y1="20"
+                      x2={line.x}
+                      y2="360"
+                      class="scatter-grid"
+                    />
+                    <text
+                      key={line.labelKey}
+                      x={line.x}
+                      y="380"
+                      class="scatter-axis-label scatter-axis-center"
+                    >
+                      {line.label}
+                    </text>
+                  </template>
+                  <!-- Axis labels -->
+                  <text x="320" y="398" class="scatter-axis-title">
+                    Planned Margin %
+                  </text>
+                  <text
+                    x="15"
+                    y="190"
+                    class="scatter-axis-title"
+                    transform="rotate(-90, 15, 190)"
+                  >
+                    Win Probability %
+                  </text>
+                  <!-- Data points -->
+                  <template for:each={scatterPoints} for:item="pt">
+                    <template lwc:if={pt.isAligned}>
+                      <circle
+                        key={pt.key}
+                        cx={pt.cx}
+                        cy={pt.cy}
+                        r={pt.r}
+                        class="scatter-dot scatter-dot-aligned"
+                      >
+                        <title>{pt.tooltip}</title>
+                      </circle>
+                    </template>
+                    <template lwc:elseif={pt.isOffTarget}>
+                      <polygon
+                        key={pt.key}
+                        points={pt.diamondPoints}
+                        class="scatter-dot scatter-dot-offtarget"
+                      >
+                        <title>{pt.tooltip}</title>
+                      </polygon>
+                    </template>
+                    <template lwc:else>
+                      <circle
+                        key={pt.key}
+                        cx={pt.cx}
+                        cy={pt.cy}
+                        r={pt.r}
+                        class="scatter-dot scatter-dot-unanalyzed"
+                      >
+                        <title>{pt.tooltip}</title>
+                      </circle>
+                    </template>
+                  </template>
+                </svg>
+              </div>
+            </template>
+          </template>
+        </div>
+
+        <!-- ═══ DOES FOLLOWING MARGINARC WORK? ═══ -->
+        <template lwc:if={hasComplianceCohorts}>
+          <div class="section">
+            <div
+              class="section-header"
+              data-section="cohorts"
+              onclick={toggleSection}
+            >
+              <span class="section-chevron">{cohortsChevron}</span>
+              <h3 class="section-title">Does Following MarginArc Work?</h3>
+            </div>
+            <template lwc:if={showCohorts}>
+              <div class="cohorts-container">
+                <div class="cohort-card">
+                  <div class="cohort-header cohort-aligned">
+                    MarginArc-Aligned
+                  </div>
+                  <div class="cohort-sub">
+                    Priced within 3pp of recommendation
+                  </div>
+                  <div class="cohort-stats">
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value">
+                        {complianceCohorts.alignedDeals}
+                      </div>
+                      <div class="cohort-stat-label">Deals</div>
+                    </div>
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value cohort-stat-highlight">
+                        {complianceCohorts.alignedWinRate}
+                      </div>
+                      <div class="cohort-stat-label">Win Rate</div>
+                    </div>
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value">
+                        {complianceCohorts.alignedAvgMargin}
+                      </div>
+                      <div class="cohort-stat-label">Avg Margin</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="cohort-vs">vs</div>
+                <div class="cohort-card">
+                  <div class="cohort-header cohort-diverged">Off-target</div>
+                  <div class="cohort-sub">
+                    Priced &gt;3pp from recommendation
+                  </div>
+                  <div class="cohort-stats">
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value">
+                        {complianceCohorts.divergedDeals}
+                      </div>
+                      <div class="cohort-stat-label">Deals</div>
+                    </div>
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value">
+                        {complianceCohorts.divergedWinRate}
+                      </div>
+                      <div class="cohort-stat-label">Win Rate</div>
+                    </div>
+                    <div class="cohort-stat">
+                      <div class="cohort-stat-value">
+                        {complianceCohorts.divergedAvgMargin}
+                      </div>
+                      <div class="cohort-stat-label">Avg Margin</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <template lwc:if={complianceCohorts.winRateLiftPositive}>
+                <p class="cohort-takeaway">
+                  MarginArc-aligned deals win
+                  <strong>{complianceCohorts.winRateLift}</strong> more often.
+                </p>
+              </template>
+            </template>
+          </div>
+        </template>
+
+        <!-- ═══ COMPETITIVE PERFORMANCE ═══ -->
+        <div class="section">
+          <div
+            class="section-header"
+            data-section="comp"
+            onclick={toggleSection}
+          >
+            <span class="section-chevron">{compChevron}</span>
+            <h3 class="section-title">Competitive Performance</h3>
+            <span class="section-count">Top 5</span>
+          </div>
+          <template lwc:if={showComp}>
+            <template lwc:if={hasCompetitorData}>
+              <div class="comp-table">
+                <div class="comp-header">
+                  <div class="col-header">Competitor</div>
+                  <div class="col-header">W/L</div>
+                  <div class="col-header">Win Rate</div>
+                  <div class="col-header">Avg Margin Won</div>
+                  <div class="col-header">Avg Margin Lost</div>
+                </div>
+                <template for:each={competitorData} for:item="comp">
+                  <div key={comp.name} class="comp-row">
+                    <div class="cell-comp-name">{comp.name}</div>
+                    <div class="cell-wl">{comp.wins}W / {comp.losses}L</div>
+                    <div class="cell-comp-winrate">
+                      <div class="comp-bar-track">
+                        <div class={comp.barClass} style={comp.barStyle}></div>
+                      </div>
+                      <span class="comp-wr-label">{comp.winRate}</span>
+                    </div>
+                    <div class="cell-comp-margin">{comp.avgMarginWon}</div>
+                    <div class="cell-comp-margin">{comp.avgMarginLost}</div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ HISTORICAL BACKFILL ANALYSIS ═══ -->
+      <template lwc:if={hasBackfillData}>
+        <div class="section">
+          <div
+            class="section-header"
+            data-section="backfill"
+            onclick={toggleSection}
+          >
+            <span class="section-chevron">{backfillChevron}</span>
+            <h3 class="section-title">Historical Backfill Analysis</h3>
+            <span class="section-count"
+              >{backfillSummary.totalCount} deals analyzed</span
+            >
+          </div>
+          <template lwc:if={showBackfill}>
+            <!-- Summary Strip -->
+            <div class="backfill-summary-strip">
+              <div class="backfill-stat">
+                <div class="backfill-stat-value">
+                  {backfillSummary.totalCount}
+                </div>
+                <div class="backfill-stat-label">DEALS ANALYZED</div>
+              </div>
+              <div class="backfill-stat">
+                <div class={backfillSummary.avgMarginDeltaClass}>
+                  {backfillSummary.avgMarginDelta}
+                </div>
+                <div class="backfill-stat-label">AVG MARGIN DELTA</div>
+              </div>
+              <div class="backfill-stat">
+                <div class={backfillSummary.totalGPDeltaClass}>
+                  {backfillSummary.totalGPDelta}
+                </div>
+                <div class="backfill-stat-label">TOTAL GP OPPORTUNITY</div>
+              </div>
+              <div class="backfill-stat">
+                <div class="backfill-stat-value">
+                  {backfillSummary.lastAnalysisDate}
+                </div>
+                <div class="backfill-stat-label">LAST ANALYSIS</div>
+              </div>
+            </div>
+
+            <!-- Backfill Deals Table -->
+            <template lwc:if={hasBackfillDeals}>
+              <div class="backfill-table">
+                <div class="backfill-header">
+                  <div class="col-header">Deal</div>
+                  <div class="col-header">OEM</div>
+                  <div class="col-header">Rep</div>
+                  <div class="col-header">Actual</div>
+                  <div class="col-header">Recommended</div>
+                  <div class="col-header">Delta</div>
+                  <div class="col-header">GP Delta</div>
+                </div>
+                <template for:each={backfillDeals} for:item="deal">
+                  <div
+                    key={deal.id}
+                    class="backfill-row"
+                    data-id={deal.opportunityId}
+                    onclick={handleBackfillDealClick}
+                  >
+                    <div class="cell-name" title={deal.opportunityName}>
+                      {deal.opportunityName}
+                    </div>
+                    <div class="cell-oem">{deal.oem}</div>
+                    <div class="cell-rep">{deal.repName}</div>
+                    <div class="cell-plan">{deal.actualMargin}</div>
+                    <div class="cell-rec">{deal.recommendedMargin}</div>
+                    <div class={deal.deltaClass}>{deal.marginDelta}</div>
+                    <div class={deal.gpDeltaClass}>{deal.gpDelta}</div>
+                  </div>
+                </template>
+              </div>
+            </template>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ REP DRILL-DOWN MODAL ═══ -->
+      <template lwc:if={showRepModal}>
+        <div
+          class="modal-overlay"
+          onclick={closeRepModal}
+          onkeydown={handleRepModalKeydown}
+        >
+          <div
+            class="modal-content"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="rep-modal-title"
+            onclick={stopPropagation}
+          >
+            <div class="modal-header">
+              <h3 class="modal-title" id="rep-modal-title">{repModalTitle}</h3>
+              <button
+                class="modal-close"
+                onclick={closeRepModal}
+                aria-label="Close"
+              >
+                &#10005;
+              </button>
+            </div>
+            <div class="modal-body">
+              <template lwc:if={repModalStats}>
+                <div class="modal-stats">
+                  <div class="modal-stat">
+                    <div class={repModalStats.winRateClass}>
+                      {repModalStats.winRate}
+                    </div>
+                    <div class="modal-stat-label">Win Rate</div>
+                    <div class="modal-stat-sub">
+                      {repModalStats.wonDeals}W / {repModalStats.totalDeals}
+                      total
+                    </div>
+                  </div>
+                  <div class="modal-stat">
+                    <div class={repModalStats.adoptionClass}>
+                      {repModalStats.adoptionRate}
+                    </div>
+                    <div class="modal-stat-label">Alignment</div>
+                  </div>
+                  <div class="modal-stat">
+                    <div class={repModalStats.complianceClass}>
+                      {repModalStats.complianceRate}
+                    </div>
+                    <div class="modal-stat-label">Alignment Rate</div>
+                  </div>
+                </div>
+
+                <!-- Coaching Insight -->
+                <template lwc:if={repModalCoaching}>
+                  <div class="coaching-insight">
+                    <span class="coaching-icon">&#128161;</span>
+                    <span class="coaching-text">
+                      Coaching opportunity:
+                      <strong>{repModalCoaching.oem}</strong> deals &mdash;
+                      {repModalCoaching.dealCount} deal(s) priced
+                      <strong>{repModalCoaching.avgGap}</strong> below
+                      recommendation on average.
+                    </span>
+                  </div>
+                </template>
+
+                <!-- Deals Table -->
+                <div class="modal-deals-table">
+                  <div class="modal-deals-header">
+                    <div class="col-header">Deal</div>
+                    <div class="col-header">Account</div>
+                    <div class="col-header">Amount</div>
+                    <div class="col-header">Stage</div>
+                    <div class="col-header">Plan %</div>
+                    <div class="col-header">Rec %</div>
+                    <div class="col-header">Gap</div>
+                    <div class="col-header">Aligned?</div>
+                  </div>
+                  <template for:each={repModalDeals} for:item="deal">
+                    <div key={deal.id} class="modal-deals-row">
+                      <div class="cell-modal-name" title={deal.name}>
+                        {deal.name}
+                      </div>
+                      <div class="cell-modal-account" title={deal.accountName}>
+                        {deal.accountName}
+                      </div>
+                      <div class="cell-modal-amount">{deal.amount}</div>
+                      <div class={deal.stageClass}>{deal.stageName}</div>
+                      <div class="cell-modal-plan">{deal.plannedMargin}</div>
+                      <div class="cell-modal-rec">{deal.recommendedMargin}</div>
+                      <div class={deal.gapClass}>{deal.marginGap}</div>
+                      <div class={deal.compliantClass}>
+                        {deal.compliantLabel}
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+              <template lwc:else>
+                <div class="modal-loading">
+                  <lightning-spinner
+                    alternative-text="Loading rep detail"
+                    size="small"
+                  ></lightning-spinner>
+                  <p class="loading-text">Loading rep detail...</p>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+    </template>
+  </div>
+</template>

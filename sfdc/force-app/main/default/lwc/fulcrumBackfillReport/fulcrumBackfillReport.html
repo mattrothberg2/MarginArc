@@ -1,0 +1,239 @@
+<template>
+  <div class="report-container">
+    <!-- Header -->
+    <div class="report-header">
+      <div class="header-left">
+        <div class="logo-mark">F</div>
+        <div class="header-text">
+          <h1 class="report-title">MarginArc ROI Report</h1>
+          <p class="report-subtitle">
+            Historical margin analysis: what MarginArc would have recommended on
+            your closed deals
+          </p>
+        </div>
+      </div>
+      <template lwc:if={hasData}>
+        <div class="header-date">Last analyzed: {lastAnalysisDate}</div>
+      </template>
+    </div>
+
+    <!-- Loading -->
+    <template lwc:if={loading}>
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Loading backfill analysis...</p>
+      </div>
+    </template>
+
+    <!-- Error -->
+    <template lwc:if={error}>
+      <div class="empty-state">
+        <p class="empty-title">Unable to Load Report</p>
+        <p class="empty-message">{error}</p>
+      </div>
+    </template>
+
+    <!-- No Data -->
+    <template lwc:if={showEmptyState}>
+      <div class="empty-state">
+        <p class="empty-icon">&#128202;</p>
+        <p class="empty-title">No Backfill Data Available</p>
+        <p class="empty-message">
+          Run a historical backfill from the MarginArc Setup Wizard to analyze
+          closed deals and generate ROI insights.
+        </p>
+      </div>
+    </template>
+
+    <!-- Main Content -->
+    <template lwc:if={hasData}>
+      <!-- Hero KPI Strip -->
+      <div class="hero-strip">
+        <div class="hero-card hero-primary">
+          <div class="hero-label">TOTAL GP OPPORTUNITY</div>
+          <div class={headlineGPDeltaClass}>{headlineGPDelta}</div>
+          <div class="hero-caption">
+            Additional gross profit if MarginArc recommendations had been
+            followed
+          </div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-label">DEALS ANALYZED</div>
+          <div class="hero-value">{totalDeals}</div>
+          <div class="hero-caption">Closed deals processed</div>
+        </div>
+        <div class="hero-card">
+          <div class="hero-label">AVG MARGIN DELTA</div>
+          <div class={avgMarginDeltaClass}>{avgMarginDelta}</div>
+          <div class="hero-caption">
+            Recommended vs. actual margin difference
+          </div>
+        </div>
+      </div>
+
+      <!-- Margin Comparison Bar -->
+      <div class="comparison-section">
+        <div class="comparison-row">
+          <div class="comparison-label">Actual Avg. Margin</div>
+          <div class="comparison-value">{avgActualMargin}</div>
+          <div class="comparison-bar-bg">
+            <div class="comparison-bar actual-bar"></div>
+          </div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-label">Recommended Avg. Margin</div>
+          <div class="comparison-value">{avgRecommendedMargin}</div>
+          <div class="comparison-bar-bg">
+            <div class="comparison-bar recommended-bar"></div>
+          </div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-label">Actual Total GP</div>
+          <div class="comparison-value">{totalActualGP}</div>
+        </div>
+        <div class="comparison-row">
+          <div class="comparison-label">Recommended Total GP</div>
+          <div class="comparison-value value-positive">
+            {totalRecommendedGP}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="tab-bar">
+        <button class={oemTabClass} data-tab="oem" onclick={handleTabClick}>
+          By OEM
+        </button>
+        <button class={repTabClass} data-tab="rep" onclick={handleTabClick}>
+          By Rep
+        </button>
+        <button class={dealsTabClass} data-tab="deals" onclick={handleTabClick}>
+          Top Opportunities
+        </button>
+      </div>
+
+      <!-- OEM Tab -->
+      <template lwc:if={isOemTab}>
+        <div class="tab-content">
+          <template lwc:if={hasOemData}>
+            <div class="breakdown-table">
+              <div class="bt-header">
+                <div class="bt-col bt-col-name">OEM Vendor</div>
+                <div class="bt-col bt-col-num">Deals</div>
+                <div class="bt-col bt-col-num">Avg. Delta</div>
+                <div class="bt-col bt-col-num">GP Opportunity</div>
+                <div class="bt-col bt-col-bar"></div>
+              </div>
+              <template for:each={oemRows} for:item="row">
+                <div key={row.key} class="bt-row">
+                  <div class="bt-col bt-col-name bt-oem">{row.oem}</div>
+                  <div class="bt-col bt-col-num">{row.dealCount}</div>
+                  <div class="bt-col bt-col-num">
+                    <span class={row.avgDeltaClass}>{row.avgDelta}</span>
+                  </div>
+                  <div class="bt-col bt-col-num">
+                    <span class={row.gpDeltaClass}>{row.gpDelta}</span>
+                  </div>
+                  <div class="bt-col bt-col-bar">
+                    <div class="bar-track">
+                      <div class={row.barClass} style={row.barStyle}></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template lwc:else>
+            <p class="no-data-msg">No OEM breakdown available.</p>
+          </template>
+        </div>
+      </template>
+
+      <!-- Rep Tab -->
+      <template lwc:if={isRepTab}>
+        <div class="tab-content">
+          <template lwc:if={hasRepData}>
+            <div class="breakdown-table">
+              <div class="bt-header">
+                <div class="bt-col bt-col-name">Rep Name</div>
+                <div class="bt-col bt-col-num">Deals</div>
+                <div class="bt-col bt-col-num">Avg. Actual</div>
+                <div class="bt-col bt-col-num">Avg. Rec.</div>
+                <div class="bt-col bt-col-num">GP Opportunity</div>
+                <div class="bt-col bt-col-bar"></div>
+              </div>
+              <template for:each={repRows} for:item="row">
+                <div key={row.key} class="bt-row">
+                  <div class="bt-col bt-col-name">{row.rep}</div>
+                  <div class="bt-col bt-col-num">{row.dealCount}</div>
+                  <div class="bt-col bt-col-num">{row.avgActual}</div>
+                  <div class="bt-col bt-col-num">{row.avgRecommended}</div>
+                  <div class="bt-col bt-col-num">
+                    <span class={row.gpDeltaClass}>{row.gpDelta}</span>
+                  </div>
+                  <div class="bt-col bt-col-bar">
+                    <div class="bar-track">
+                      <div class={row.barClass} style={row.barStyle}></div>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template lwc:else>
+            <p class="no-data-msg">No rep breakdown available.</p>
+          </template>
+        </div>
+      </template>
+
+      <!-- Deals Tab -->
+      <template lwc:if={isDealsTab}>
+        <div class="tab-content">
+          <template lwc:if={hasDealData}>
+            <div class="breakdown-table">
+              <div class="bt-header">
+                <div class="bt-col bt-col-deal">Deal</div>
+                <div class="bt-col bt-col-sm">OEM</div>
+                <div class="bt-col bt-col-sm">Rep</div>
+                <div class="bt-col bt-col-num">Actual</div>
+                <div class="bt-col bt-col-num">Rec.</div>
+                <div class="bt-col bt-col-num">Delta</div>
+                <div class="bt-col bt-col-num">GP Delta</div>
+              </div>
+              <template for:each={dealRows} for:item="deal">
+                <div
+                  key={deal.key}
+                  class="bt-row bt-row-clickable"
+                  data-id={deal.opportunityId}
+                  onclick={handleDealClick}
+                >
+                  <div
+                    class="bt-col bt-col-deal bt-deal-name"
+                    title={deal.name}
+                  >
+                    {deal.name}
+                  </div>
+                  <div class="bt-col bt-col-sm">{deal.oem}</div>
+                  <div class="bt-col bt-col-sm">{deal.repName}</div>
+                  <div class="bt-col bt-col-num">{deal.actualMargin}</div>
+                  <div class="bt-col bt-col-num">{deal.recommendedMargin}</div>
+                  <div class="bt-col bt-col-num">
+                    <span class={deal.marginDeltaClass}
+                      >{deal.marginDelta}</span
+                    >
+                  </div>
+                  <div class="bt-col bt-col-num">
+                    <span class={deal.gpDeltaClass}>{deal.gpDelta}</span>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </template>
+          <template lwc:else>
+            <p class="no-data-msg">No deal data available.</p>
+          </template>
+        </div>
+      </template>
+    </template>
+  </div>
+</template>
