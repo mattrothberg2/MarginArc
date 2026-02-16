@@ -96,8 +96,8 @@ global class MarginArcInstallHandler implements InstallHandler {
         'MarginArc has been installed successfully in your Salesforce org.\n\n' +
         'Next steps:\n' +
         '1. Navigate to the "MarginArc Setup" tab to activate your license\n' +
-        '2. Assign the Fulcrum_Admin permission set to yourself\n' +
-        '3. Assign Fulcrum_User or Fulcrum_Manager to your team\n' +
+        '2. Assign the "MarginArc Admin" permission set to yourself\n' +
+        '3. Assign "MarginArc User" or "MarginArc Manager" to your team\n' +
         '4. Complete the setup wizard in "Getting Started"\n\n' +
         'The nightly analyzer has been scheduled to run at 2 AM daily.\n\n' +
         'Best,\nMarginArc'
