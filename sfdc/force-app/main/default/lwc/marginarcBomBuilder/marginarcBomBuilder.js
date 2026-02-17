@@ -145,7 +145,8 @@ export default class MarginarcBomBuilder extends LightningElement {
         }));
         this.isDirty = false;
       }
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       // No saved lines — start empty
     }
   }
@@ -360,7 +361,7 @@ export default class MarginarcBomBuilder extends LightningElement {
     this.searchQuery = e.target.value;
     clearTimeout(this._searchTimeout);
     if (this.searchQuery.length >= 2) {
-      this._searchTimeout = setTimeout(() => this.doSearch(), 300);
+      this._searchTimeout = setTimeout(() => this.doSearch(), 300); // eslint-disable-line @lwc/lwc/no-async-operation
     } else {
       this.searchResults = [];
       this.showSearchResults = false;
@@ -395,7 +396,8 @@ export default class MarginarcBomBuilder extends LightningElement {
         label: r.partNumber + " — " + (r.description || r.family || r.category)
       }));
       this.showSearchResults = this.searchResults.length > 0;
-    } catch (e) {
+      // eslint-disable-next-line no-unused-vars
+    } catch (err) {
       this.showSearchResults = false;
     }
     this.isSearching = false;
@@ -449,6 +451,7 @@ export default class MarginarcBomBuilder extends LightningElement {
 
   handleSearchBlur() {
     // Delay to allow click on result
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
     setTimeout(() => {
       this.showSearchResults = false;
     }, 250);
