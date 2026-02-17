@@ -556,8 +556,168 @@
         </div>
       </template>
 
-      <!-- ═══ STEP 6: INTELLIGENCE MATURITY & COMPLETE ═══ -->
+      <!-- ═══ STEP 6: ALGORITHM PHASES ═══ -->
       <template lwc:if={isStep6}>
+        <div class="step-card">
+          <h3 class="step-title">Algorithm Phases</h3>
+          <p class="step-description">
+            MarginArc's recommendation engine operates in three phases. Each
+            phase unlocks more sophisticated algorithms as your data matures.
+          </p>
+
+          <template lwc:if={isLoadingPhase}>
+            <div class="loading-inline">
+              <lightning-spinner
+                alternative-text="Loading phase status"
+                size="small"
+              ></lightning-spinner>
+              <span class="loading-text"
+                >Loading algorithm phase status...</span
+              >
+            </div>
+          </template>
+
+          <template lwc:if={hasPhaseData}>
+            <!-- Phase Track Indicator -->
+            <div class="phase-track">
+              <template for:each={phaseIndicators} for:item="phase">
+                <div key={phase.number} class={phase.containerClass}>
+                  <div class={phase.iconClass}>
+                    <template lwc:if={phase.isCompleted}>
+                      <span class="phase-check">&#10003;</span>
+                    </template>
+                    <template lwc:else>
+                      <span class="phase-number">{phase.number}</span>
+                    </template>
+                  </div>
+                  <div class="phase-info">
+                    <span class={phase.titleClass}>{phase.title}</span>
+                    <span class={phase.descClass}>{phase.description}</span>
+                  </div>
+                  <template lwc:if={phase.hasConnector}>
+                    <div class={phase.connectorClass}></div>
+                  </template>
+                </div>
+              </template>
+            </div>
+
+            <!-- Phase 2 Requirements -->
+            <template lwc:if={showPhase2Requirements}>
+              <div class="phase-requirements">
+                <h4 class="phase-req-title">Requirements for Phase 2</h4>
+                <div class="phase-req-item">
+                  <div class="phase-req-header">
+                    <span class="phase-req-label">Scored deals</span>
+                    <span class="phase-req-value"
+                      >{phase2ScoredDealsText}</span
+                    >
+                  </div>
+                  <div class="phase-progress-track">
+                    <div
+                      class={phase2ScoredDealsBarClass}
+                      style={phase2ScoredDealsBarStyle}
+                    ></div>
+                  </div>
+                </div>
+                <div class="phase-req-item">
+                  <div class="phase-req-header">
+                    <span class="phase-req-label">Data quality</span>
+                    <span class="phase-req-value"
+                      >{phase2DataQualityText}</span
+                    >
+                  </div>
+                  <div class="phase-progress-track">
+                    <div
+                      class={phase2DataQualityBarClass}
+                      style={phase2DataQualityBarStyle}
+                    ></div>
+                  </div>
+                </div>
+                <div class="phase-req-actions">
+                  <template lwc:if={canEnablePhase2}>
+                    <button class="btn-action" onclick={handleEnablePhase2}>
+                      Enable Phase 2
+                    </button>
+                  </template>
+                  <template lwc:else>
+                    <button class="btn-action" disabled>
+                      Enable Phase 2
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Phase 3 Requirements -->
+            <template lwc:if={showPhase3Requirements}>
+              <div class="phase-requirements">
+                <h4 class="phase-req-title">Requirements for Phase 3</h4>
+                <div class="phase-req-item">
+                  <div class="phase-req-header">
+                    <span class="phase-req-label">Phase 2 active</span>
+                    <span class={phase2ActiveStatusClass}
+                      >{phase2ActiveText}</span
+                    >
+                  </div>
+                </div>
+                <div class="phase-req-item">
+                  <div class="phase-req-header">
+                    <span class="phase-req-label">Deals with BOM data</span>
+                    <span class="phase-req-value">{phase3BomDealsText}</span>
+                  </div>
+                  <div class="phase-progress-track">
+                    <div
+                      class={phase3BomDealsBarClass}
+                      style={phase3BomDealsBarStyle}
+                    ></div>
+                  </div>
+                </div>
+                <div class="phase-req-actions">
+                  <template lwc:if={canEnablePhase3}>
+                    <button class="btn-action" onclick={handleEnablePhase3}>
+                      Enable Phase 3
+                    </button>
+                  </template>
+                  <template lwc:else>
+                    <button class="btn-action" disabled>
+                      Enable Phase 3
+                    </button>
+                  </template>
+                </div>
+              </div>
+            </template>
+
+            <!-- Phase 3 Active -->
+            <template lwc:if={isPhase3Active}>
+              <div class="phase-complete-banner">
+                <span class="phase-complete-icon">&#10003;</span>
+                <span class="phase-complete-text"
+                  >All algorithm phases are active. Full recommendation
+                  capabilities enabled.</span
+                >
+              </div>
+            </template>
+
+            <!-- Phase Descriptions -->
+            <div class="phase-descriptions">
+              <template for:each={phaseDescriptions} for:item="desc">
+                <div key={desc.number} class="phase-desc-card">
+                  <h5 class="phase-desc-title">{desc.title}</h5>
+                  <p class="phase-desc-text">{desc.description}</p>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Error state -->
+          <template lwc:if={phaseError}>
+            <div class="config-warning">{phaseErrorMessage}</div>
+          </template>
+        </div>
+      </template>
+
+      <!-- ═══ STEP 7: INTELLIGENCE MATURITY & COMPLETE ═══ -->
+      <template lwc:if={isStep7}>
         <div class="step-card">
           <h3 class="step-title">Intelligence Maturity</h3>
           <p class="step-description">
@@ -680,4 +840,37 @@
       </div>
     </div>
   </div>
+
+  <!-- ═══ PHASE CONFIRMATION MODAL ═══ -->
+  <template lwc:if={showPhaseConfirmModal}>
+    <section class="phase-modal-backdrop" onclick={handleClosePhaseModal}>
+      <div class="phase-modal" onclick={handleModalContentClick}>
+        <div class="phase-modal-header">
+          <h3 class="phase-modal-title">Enable Phase {pendingPhase}</h3>
+          <button class="phase-modal-close" onclick={handleClosePhaseModal}>
+            &#215;
+          </button>
+        </div>
+        <div class="phase-modal-body">
+          <p class="phase-modal-text">{phaseConfirmMessage}</p>
+        </div>
+        <div class="phase-modal-footer">
+          <button class="btn-secondary" onclick={handleClosePhaseModal}>
+            Cancel
+          </button>
+          <button
+            class="btn-action"
+            onclick={handleConfirmEnablePhase}
+            disabled={isEnablingPhase}
+          >
+            <template lwc:if={isEnablingPhase}>
+              <span class="spinner-small"></span>
+              Enabling...
+            </template>
+            <template lwc:else> Confirm Enable </template>
+          </button>
+        </div>
+      </div>
+    </section>
+  </template>
 </template>

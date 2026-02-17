@@ -828,4 +828,159 @@ private class MarginArcSetupControllerTest {
       'Should have at least 11 applied recommendations, got: ' + appliedCount
     );
   }
+
+  // ── Algorithm Phase Tests ──
+
+  private class PhaseStatusMock implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest req) {
+      HttpResponse res = new HttpResponse();
+      res.setStatusCode(200);
+      res.setHeader('Content-Type', 'application/json');
+      res.setBody(
+        '{"currentPhase":1,"phase2":{"scoredDeals":{"required":50,"current":32},"dataQuality":{"required":60,"current":45},"eligible":false},"phase3":{"phase2Active":false,"bomDeals":{"required":20,"current":5},"eligible":false}}'
+      );
+      return res;
+    }
+  }
+
+  private class PhaseEnableMock implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest req) {
+      HttpResponse res = new HttpResponse();
+      res.setStatusCode(200);
+      res.setHeader('Content-Type', 'application/json');
+      res.setBody('{"currentPhase":2,"message":"Phase 2 enabled successfully"}');
+      return res;
+    }
+  }
+
+  private class PhaseErrorMock implements HttpCalloutMock {
+    public HttpResponse respond(HttpRequest req) {
+      HttpResponse res = new HttpResponse();
+      res.setStatusCode(400);
+      res.setBody('{"error":"Requirements not met"}');
+      return res;
+    }
+  }
+
+  @isTest
+  static void testGetAlgorithmPhaseStatusNoLicense() {
+    // No license configured — should return error
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.getAlgorithmPhaseStatus();
+    Test.stopTest();
+
+    System.assertEquals(false, result.get('success'));
+    System.assert(
+      ((String) result.get('message')).contains('license'),
+      'Error message should mention license'
+    );
+  }
+
+  @isTest
+  static void testGetAlgorithmPhaseStatusNoConfig() {
+    // License present but no API config
+    Fulcrum_License__c license = new Fulcrum_License__c();
+    license.Customer_ID__c = 'cust-123';
+    license.License_Key__c = 'FULC-TEST-KEY';
+    license.Status__c = 'active';
+    upsert license;
+
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.getAlgorithmPhaseStatus();
+    Test.stopTest();
+
+    System.assertEquals(false, result.get('success'));
+    System.assert(
+      ((String) result.get('message')).contains('API URL'),
+      'Error message should mention API URL'
+    );
+  }
+
+  @isTest
+  static void testGetAlgorithmPhaseStatusSuccess() {
+    // Configure license and API
+    Fulcrum_License__c license = new Fulcrum_License__c();
+    license.Customer_ID__c = 'cust-456';
+    license.License_Key__c = 'FULC-TEST-KEY';
+    license.Status__c = 'active';
+    upsert license;
+
+    Fulcrum_Config__c cfg = Fulcrum_Config__c.getOrgDefaults();
+    cfg.API_URL__c = 'https://api.marginarc.com/api/recommend';
+    cfg.API_Key__c = 'test-key';
+    upsert cfg;
+
+    Test.setMock(HttpCalloutMock.class, new PhaseStatusMock());
+
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.getAlgorithmPhaseStatus();
+    Test.stopTest();
+
+    System.assertEquals(true, result.get('success'));
+    System.assertEquals(1, (Integer) result.get('currentPhase'));
+    System.assertNotEquals(null, result.get('phase2'));
+    System.assertNotEquals(null, result.get('phase3'));
+  }
+
+  @isTest
+  static void testEnableAlgorithmPhaseNoLicense() {
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(2);
+    Test.stopTest();
+
+    System.assertEquals(false, result.get('success'));
+    System.assert(
+      ((String) result.get('message')).contains('license'),
+      'Error message should mention license'
+    );
+  }
+
+  @isTest
+  static void testEnableAlgorithmPhaseSuccess() {
+    Fulcrum_License__c license = new Fulcrum_License__c();
+    license.Customer_ID__c = 'cust-789';
+    license.License_Key__c = 'FULC-TEST-KEY';
+    license.Status__c = 'active';
+    upsert license;
+
+    Fulcrum_Config__c cfg = Fulcrum_Config__c.getOrgDefaults();
+    cfg.API_URL__c = 'https://api.marginarc.com/api/recommend';
+    cfg.API_Key__c = 'test-key';
+    upsert cfg;
+
+    Test.setMock(HttpCalloutMock.class, new PhaseEnableMock());
+
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(2);
+    Test.stopTest();
+
+    System.assertEquals(true, result.get('success'));
+    System.assertEquals(2, (Integer) result.get('currentPhase'));
+  }
+
+  @isTest
+  static void testEnableAlgorithmPhaseApiError() {
+    Fulcrum_License__c license = new Fulcrum_License__c();
+    license.Customer_ID__c = 'cust-err';
+    license.License_Key__c = 'FULC-TEST-KEY';
+    license.Status__c = 'active';
+    upsert license;
+
+    Fulcrum_Config__c cfg = Fulcrum_Config__c.getOrgDefaults();
+    cfg.API_URL__c = 'https://api.marginarc.com/api/recommend';
+    cfg.API_Key__c = 'test-key';
+    upsert cfg;
+
+    Test.setMock(HttpCalloutMock.class, new PhaseErrorMock());
+
+    Test.startTest();
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(3);
+    Test.stopTest();
+
+    System.assertEquals(false, result.get('success'));
+    System.assert(
+      ((String) result.get('message')).contains('400'),
+      'Error message should contain status code'
+    );
+  }
 }
