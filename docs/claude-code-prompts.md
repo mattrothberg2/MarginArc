@@ -1090,7 +1090,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 8: POC Readiness — Sprint 25
 
-### 8A — Fix Phase Counter + Industry Intelligence Contradictions (P1 #6, #9)
+### 8A — Fix Phase Counter + Industry Intelligence Contradictions (P1 #6, #9) [COMPLETE — PR #48]
 
 ```
 Read these files:
@@ -1132,7 +1132,7 @@ Run prettier and eslint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 8B — Dashboard KPI Tooltips + Pipeline Search (P1 #7, P2 #12)
+### 8B — Dashboard KPI Tooltips + Pipeline Search (P1 #7, P2 #12) [COMPLETE — PR #47]
 
 ```
 Read these files:
