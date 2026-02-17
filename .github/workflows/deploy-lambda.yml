@@ -26,8 +26,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "18"
-          cache: "npm"
-          cache-dependency-path: lambda/server/package-lock.json
 
       - name: Install production dependencies
         working-directory: lambda/server
@@ -71,7 +69,7 @@ jobs:
             https://api.marginarc.com/api/recommend \
             -H "Content-Type: application/json" \
             -H "x-api-key: ${{ secrets.MARGINARC_API_KEY }}" \
-            -d '{"input":{"oem":"Cisco","oemCost":100000,"customerSegment":"MidMarket","varStrategicImportance":"Medium"},"plannedMarginPct":15}')
+            -d '{"input":{"oem":"Cisco","oemCost":100000,"customerSegment":"MidMarket","varStrategicImportance":"Medium","productCategory":"Hardware","relationshipStrength":"Good","customerTechSophistication":"Medium","dealRegType":"StandardApproved","competitors":"1","valueAdd":"Medium","solutionComplexity":"Medium","customerIndustry":"Technology"},"plannedMarginPct":15}')
           echo "API response code: $RESPONSE"
           if [ "$RESPONSE" != "200" ]; then
             echo "API verification failed with status $RESPONSE"
