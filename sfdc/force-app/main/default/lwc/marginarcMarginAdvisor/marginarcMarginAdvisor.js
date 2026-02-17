@@ -31,6 +31,8 @@ const OPPORTUNITY_FIELDS = [
   "Opportunity.StageName",
   "Opportunity.Account.Name",
   "Opportunity.Account.Industry",
+  "Opportunity.Account.AnnualRevenue",
+  "Opportunity.Account.NumberOfEmployees",
   "Opportunity.Fulcrum_OEM__c",
   "Opportunity.Fulcrum_Competitor_Names__c",
   "Opportunity.Fulcrum_OEM_Cost__c",
@@ -52,10 +54,11 @@ const OPPORTUNITY_FIELDS = [
 
 export default class MarginarcMarginAdvisor extends LightningElement {
   @api recordId;
-  @track isLoading = false;
+  @track isLoading = true;
   @track error = null;
   @track recommendation = null;
   @track opportunityData = null;
+  @track isSegmentInferred = false;
 
   // State tracking
   @track degradationLevel = 0; // 0=full, 1=AI unavail, 2=network unavail, 3=API unavail, 4=offline
@@ -68,6 +71,8 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   @track isBomOptimizing = false;
   @track isDetailExpanded = false;
   hasCalculated = false;
+  _hasAutoScored = false;
+  _autoScoredRecordId = null;
   wiredOpportunityResult; // Store for refreshApex
   _oemDataMap = {}; // OEM Name → { baseMargin, dealRegBoost, ... } from Fulcrum_OEM__c
   _competitorDataMap = {}; // Competitor Name → { priceAggression, marginAggression, ... } from Fulcrum_Competitor__c
@@ -145,14 +150,35 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       data,
       recordId: this.recordId
     });
+
+    // Reset auto-score guard when recordId changes
+    if (this._autoScoredRecordId !== this.recordId) {
+      this._hasAutoScored = false;
+    }
+
     if (data) {
       this.opportunityData = this.mapOpportunityData(data);
+      this.isSegmentInferred = this.opportunityData.isSegmentInferred || false;
       console.log("Mapped opportunity data:", this.opportunityData);
       this.error = null;
+
+      // Auto-score on page load
+      if (this.recordId && this.opportunityData && !this._hasAutoScored) {
+        this._hasAutoScored = true;
+        this._autoScoredRecordId = this.recordId;
+        this.fetchRecommendation({ silent: true });
+      }
     } else if (error) {
       console.error("Wire error, using fallback:", error);
-      // Use fallback with recordId
       this.loadOpportunityFallback();
+      this.isSegmentInferred = true;
+
+      // Auto-score with fallback data
+      if (this.recordId && !this._hasAutoScored) {
+        this._hasAutoScored = true;
+        this._autoScoredRecordId = this.recordId;
+        this.fetchRecommendation({ silent: true });
+      }
     }
   }
 
@@ -211,14 +237,33 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     const aiConfidence = fields.Fulcrum_AI_Confidence__c?.value || null;
     const winProbability = fields.Fulcrum_Win_Probability__c?.value || null;
 
-    // Use MarginArc field for customer segment, fallback to derivation from amount
-    const customerSegment =
-      fields.Fulcrum_Customer_Segment__c?.value ||
-      (amount >= 300000
-        ? "Enterprise"
-        : amount >= 100000
-          ? "MidMarket"
-          : "SMB");
+    // Use MarginArc field for customer segment, with cascading fallback:
+    // 1. Explicit field, 2. Account.AnnualRevenue, 3. Deal Amount (last resort)
+    const explicitSegment = fields.Fulcrum_Customer_Segment__c?.value;
+    const annualRevenue = fields.Account?.value?.fields?.AnnualRevenue?.value;
+    let customerSegment;
+    let isSegmentInferred = false;
+
+    if (explicitSegment) {
+      customerSegment = explicitSegment;
+    } else if (annualRevenue != null && annualRevenue > 0) {
+      isSegmentInferred = true;
+      if (annualRevenue >= 100000000) {
+        customerSegment = "Enterprise";
+      } else if (annualRevenue >= 10000000) {
+        customerSegment = "MidMarket";
+      } else {
+        customerSegment = "SMB";
+      }
+    } else {
+      isSegmentInferred = true;
+      customerSegment =
+        amount >= 500000
+          ? "Enterprise"
+          : amount >= 100000
+            ? "MidMarket"
+            : "SMB";
+    }
 
     // Derive complexity from amount and stage
     const stageName = fields.StageName?.value || "";
@@ -241,6 +286,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       aiConfidence: aiConfidence,
       winProbability: winProbability,
       customerSegment: customerSegment,
+      isSegmentInferred: isSegmentInferred,
       dealRegType:
         fields.Fulcrum_Deal_Reg_Type__c?.value ||
         (amount >= 200000 ? "PremiumHunting" : "StandardApproved"),
@@ -1516,7 +1562,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     );
   }
 
-  async fetchRecommendation() {
+  async fetchRecommendation(options = {}) {
     if (!this.opportunityData) {
       this.error = "No opportunity data available";
       return;
@@ -1637,14 +1683,16 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       this._lastApiError = `outer: ${err.message || err}`;
       this.degradationLevel = 3;
       this.recommendation = this.generateMockRecommendation();
-      this.dispatchEvent(
-        new ShowToastEvent({
-          title: "Using Estimated Data",
-          message:
-            "Could not reach MarginArc API. Showing estimated recommendation based on deal parameters.",
-          variant: "warning"
-        })
-      );
+      if (!options.silent) {
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: "Using Estimated Data",
+            message:
+              "Could not reach MarginArc API. Showing estimated recommendation based on deal parameters.",
+            variant: "warning"
+          })
+        );
+      }
     } finally {
       this.isLoading = false;
     }
