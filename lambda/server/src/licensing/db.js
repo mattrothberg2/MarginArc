@@ -228,5 +228,27 @@ export async function ensureApiKeySchema() {
   }
 }
 
+/**
+ * Ensure MFA columns exist on the admin_users table.
+ * Idempotent — safe to call on every cold start.
+ */
+export async function ensureMfaSchema() {
+  const pool = await getPool();
+  try {
+    await pool.query(`
+      ALTER TABLE admin_users
+      ADD COLUMN IF NOT EXISTS mfa_secret TEXT,
+      ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT FALSE
+    `);
+    console.log('MFA schema columns ensured');
+  } catch (err) {
+    if (err.message && err.message.includes('already exists')) {
+      console.log('MFA columns already exist');
+    } else {
+      console.error('Failed to add MFA columns:', err.message);
+    }
+  }
+}
+
 // Export a default pool getter
 export default getPool;

@@ -1,8 +1,10 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { TOTP, Secret } from 'otpauth';
 import { query } from './db.js';
 import { generateLicenseKey } from './license.js';
-import { verifyToken, generateToken, requireRole } from '../middleware/auth.js';
+import { verifyToken, generateToken, generateMfaToken, verifyMfaPendingToken, loadJWTSecret, requireRole } from '../middleware/auth.js';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { rotateApiKey, promoteApiKey } from '../api-keys.js';
 import { makeApiCall } from '../salesforce/oauth.js';
@@ -65,6 +67,74 @@ function validatePasswordStrength(password) {
   if (!/[0-9]/.test(password)) return 'Password must contain a digit';
   if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain a special character';
   return null; // valid
+}
+
+// ---------------------------------------------------------------------------
+// MFA helpers — TOTP secret encryption and OTP generation
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive a 32-byte AES-256 encryption key from the JWT secret.
+ * Used to encrypt TOTP secrets at rest in the admin_users table.
+ */
+function deriveEncryptionKey(jwtSecret) {
+  return crypto.createHash('sha256').update(jwtSecret).digest();
+}
+
+/**
+ * Encrypt a TOTP secret using AES-256-GCM.
+ * @param {string} plaintext - The base32 TOTP secret
+ * @param {string} jwtSecret - The JWT signing secret (used to derive the encryption key)
+ * @returns {string} Encrypted string in format "iv:authTag:ciphertext" (base64-encoded)
+ */
+function encryptMfaSecret(plaintext, jwtSecret) {
+  const key = deriveEncryptionKey(jwtSecret);
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
+  let encrypted = cipher.update(plaintext, 'utf8', 'base64');
+  encrypted += cipher.final('base64');
+  const authTag = cipher.getAuthTag();
+  return `${iv.toString('base64')}:${authTag.toString('base64')}:${encrypted}`;
+}
+
+/**
+ * Decrypt a TOTP secret encrypted with encryptMfaSecret.
+ * @param {string} encryptedStr - The encrypted string in "iv:authTag:ciphertext" format
+ * @param {string} jwtSecret - The JWT signing secret
+ * @returns {string} The decrypted base32 TOTP secret
+ */
+function decryptMfaSecret(encryptedStr, jwtSecret) {
+  const key = deriveEncryptionKey(jwtSecret);
+  const [ivB64, authTagB64, ciphertext] = encryptedStr.split(':');
+  const iv = Buffer.from(ivB64, 'base64');
+  const authTag = Buffer.from(authTagB64, 'base64');
+  const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+  decipher.setAuthTag(authTag);
+  let decrypted = decipher.update(ciphertext, 'base64', 'utf8');
+  decrypted += decipher.final('utf8');
+  return decrypted;
+}
+
+/**
+ * Create a TOTP instance for a given secret and username.
+ */
+function createTOTP(base32Secret, username) {
+  return new TOTP({
+    issuer: 'MarginArc Admin',
+    label: username,
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret: Secret.fromBase32(base32Secret)
+  });
+}
+
+/**
+ * Generate a new random TOTP secret (base32-encoded, 20 bytes).
+ */
+function generateTOTPSecret() {
+  const secret = new Secret({ size: 20 });
+  return secret.base32;
 }
 
 /** Whitelist of allowed sort columns per resource to prevent SQL injection */
@@ -253,6 +323,22 @@ router.post('/auth/login', async (req, res) => {
         // Update last_login
         await query('UPDATE admin_users SET last_login = NOW() WHERE id = $1', [dbUser.id]);
 
+        // Check if MFA is enabled for this user
+        if (dbUser.mfa_enabled) {
+          const mfaToken = await generateMfaToken(username, dbUser.role);
+          await logAudit(req, 'login_mfa_pending', 'admin_users', dbUser.id, { method: 'db' });
+          return res.json({
+            mfa_required: true,
+            mfa_token: mfaToken,
+            user: {
+              id: dbUser.id,
+              username: dbUser.username,
+              fullName: dbUser.full_name,
+              role: dbUser.role
+            }
+          });
+        }
+
         const token = await generateToken(username, dbUser.role);
         await logAudit(req, 'login', 'admin_users', dbUser.id, { method: 'db' });
         return res.json({
@@ -364,6 +450,76 @@ router.post('/auth/refresh', verifyToken, async (req, res) => {
     return res.json({ token });
   } catch (error) {
     console.error('Error refreshing token:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// MFA authenticate — accepts mfa_pending tokens (before verifyToken middleware)
+// ---------------------------------------------------------------------------
+
+/**
+ * POST /auth/mfa/authenticate
+ * Step 2 of MFA login: verify TOTP code against the user's stored secret.
+ * Accepts the short-lived mfa_token from step 1 and a TOTP code.
+ * Returns a full admin JWT on success.
+ */
+router.post('/auth/mfa/authenticate', async (req, res) => {
+  try {
+    const { mfa_token, totp_code } = req.body;
+
+    if (!mfa_token || !totp_code) {
+      return res.status(400).json({ message: 'mfa_token and totp_code are required' });
+    }
+
+    // Verify the MFA pending token
+    let decoded;
+    try {
+      decoded = await verifyMfaPendingToken(mfa_token);
+    } catch (err) {
+      return res.status(401).json({ message: 'Invalid or expired MFA token' });
+    }
+
+    const { username, role } = decoded;
+
+    // Look up the user and their MFA secret
+    const result = await query(
+      'SELECT id, username, full_name, role, mfa_secret, mfa_enabled FROM admin_users WHERE username = $1 AND is_active = true',
+      [username]
+    );
+    const dbUser = result.rows[0];
+
+    if (!dbUser || !dbUser.mfa_enabled || !dbUser.mfa_secret) {
+      return res.status(401).json({ message: 'MFA not configured for this user' });
+    }
+
+    // Decrypt the stored TOTP secret
+    const jwtSecret = await loadJWTSecret();
+    const base32Secret = decryptMfaSecret(dbUser.mfa_secret, jwtSecret);
+
+    // Verify the TOTP code (window=1 allows ±1 time step for clock drift)
+    const totp = createTOTP(base32Secret, username);
+    const delta = totp.validate({ token: totp_code, window: 1 });
+
+    if (delta === null) {
+      await logAudit(req, 'mfa_failed', 'admin_users', dbUser.id, { username });
+      return res.status(401).json({ message: 'Invalid TOTP code' });
+    }
+
+    // MFA verified — issue the full admin JWT
+    const token = await generateToken(username, role);
+    await logAudit(req, 'login', 'admin_users', dbUser.id, { method: 'db', mfa: true });
+    return res.json({
+      token,
+      user: {
+        id: dbUser.id,
+        username: dbUser.username,
+        fullName: dbUser.full_name,
+        role: dbUser.role
+      }
+    });
+  } catch (error) {
+    console.error('Error in MFA authenticate:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -1089,6 +1245,188 @@ router.get('/dashboard/expiring', async (req, res) => {
 });
 
 // ===========================
+// MFA MANAGEMENT
+// ===========================
+
+/**
+ * POST /mfa/setup
+ * Generate a TOTP secret for the authenticated user.
+ * Returns the secret and provisioning URI for authenticator app setup.
+ * Does NOT enable MFA — the user must verify with /mfa/verify first.
+ */
+router.post('/mfa/setup', async (req, res) => {
+  try {
+    const username = req.user?.username;
+    if (!username) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Look up the user
+    const result = await query(
+      'SELECT id, username, mfa_enabled FROM admin_users WHERE username = $1 AND is_active = true',
+      [username]
+    );
+    const dbUser = result.rows[0];
+    if (!dbUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (dbUser.mfa_enabled) {
+      return res.status(400).json({ message: 'MFA is already enabled. Disable it first to re-configure.' });
+    }
+
+    // Generate a new TOTP secret
+    const base32Secret = generateTOTPSecret();
+    const totp = createTOTP(base32Secret, username);
+    const provisioningUri = totp.toString();
+
+    // Encrypt and store the secret (not yet enabled)
+    const jwtSecret = await loadJWTSecret();
+    const encryptedSecret = encryptMfaSecret(base32Secret, jwtSecret);
+
+    await query(
+      'UPDATE admin_users SET mfa_secret = $1, updated_at = NOW() WHERE id = $2',
+      [encryptedSecret, dbUser.id]
+    );
+
+    await logAudit(req, 'mfa_setup', 'admin_users', dbUser.id, { username });
+
+    return res.json({
+      secret: base32Secret,
+      provisioning_uri: provisioningUri,
+      message: 'Scan the QR code or enter the secret in your authenticator app, then verify with POST /mfa/verify'
+    });
+  } catch (error) {
+    console.error('Error in MFA setup:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /mfa/verify
+ * Verify a TOTP code to confirm the user has set up their authenticator app.
+ * On success, enables MFA for the user.
+ */
+router.post('/mfa/verify', async (req, res) => {
+  try {
+    const username = req.user?.username;
+    const { totp_code } = req.body;
+
+    if (!totp_code) {
+      return res.status(400).json({ message: 'totp_code is required' });
+    }
+
+    // Look up the user
+    const result = await query(
+      'SELECT id, username, mfa_secret, mfa_enabled FROM admin_users WHERE username = $1 AND is_active = true',
+      [username]
+    );
+    const dbUser = result.rows[0];
+    if (!dbUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (dbUser.mfa_enabled) {
+      return res.status(400).json({ message: 'MFA is already enabled' });
+    }
+
+    if (!dbUser.mfa_secret) {
+      return res.status(400).json({ message: 'MFA setup not initiated. Call POST /mfa/setup first.' });
+    }
+
+    // Decrypt the stored secret
+    const jwtSecret = await loadJWTSecret();
+    const base32Secret = decryptMfaSecret(dbUser.mfa_secret, jwtSecret);
+
+    // Verify the TOTP code
+    const totp = createTOTP(base32Secret, username);
+    const delta = totp.validate({ token: totp_code, window: 1 });
+
+    if (delta === null) {
+      return res.status(400).json({ message: 'Invalid TOTP code. Please try again.' });
+    }
+
+    // Enable MFA
+    await query(
+      'UPDATE admin_users SET mfa_enabled = true, updated_at = NOW() WHERE id = $1',
+      [dbUser.id]
+    );
+
+    await logAudit(req, 'mfa_enabled', 'admin_users', dbUser.id, { username });
+
+    return res.json({
+      success: true,
+      message: 'MFA has been enabled successfully'
+    });
+  } catch (error) {
+    console.error('Error in MFA verify:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /mfa/disable
+ * Disable MFA for a specific admin user. Requires super_admin role (emergency recovery).
+ */
+router.post('/mfa/disable', requireRole('super_admin'), async (req, res) => {
+  try {
+    const { user_id } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ message: 'user_id is required' });
+    }
+
+    const result = await query(
+      'UPDATE admin_users SET mfa_enabled = false, mfa_secret = NULL, updated_at = NOW() WHERE id = $1 RETURNING id, username',
+      [user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Admin user not found' });
+    }
+
+    const targetUser = result.rows[0];
+    await logAudit(req, 'mfa_disabled', 'admin_users', targetUser.id, {
+      target_username: targetUser.username,
+      disabled_by: req.user?.username
+    });
+
+    return res.json({
+      success: true,
+      message: `MFA disabled for user ${targetUser.username}`
+    });
+  } catch (error) {
+    console.error('Error in MFA disable:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /mfa/status
+ * Check MFA status for the currently authenticated user.
+ */
+router.get('/mfa/status', async (req, res) => {
+  try {
+    const username = req.user?.username;
+    const result = await query(
+      'SELECT id, mfa_enabled FROM admin_users WHERE username = $1 AND is_active = true',
+      [username]
+    );
+    const dbUser = result.rows[0];
+    if (!dbUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    return res.json({
+      mfa_enabled: dbUser.mfa_enabled || false
+    });
+  } catch (error) {
+    console.error('Error in MFA status:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ===========================
 // ADMIN USERS CRUD
 // ===========================
 
@@ -1177,16 +1515,33 @@ router.post('/admin-users', requireRole('super_admin'), async (req, res) => {
 
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // Generate MFA secret for the new user (not enabled until verified)
+    const mfaBase32Secret = generateTOTPSecret();
+    const jwtSecret = await loadJWTSecret();
+    const encryptedMfaSecret = encryptMfaSecret(mfaBase32Secret, jwtSecret);
+
     const result = await query(
-      `INSERT INTO admin_users (username, password_hash, email, full_name, role)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO admin_users (username, password_hash, email, full_name, role, mfa_secret)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING id, username, email, full_name, role, is_active, last_login, created_at, updated_at`,
-      [username, passwordHash, email || null, full_name || null, role || 'admin']
+      [username, passwordHash, email || null, full_name || null, role || 'admin', encryptedMfaSecret]
     );
 
     const user = result.rows[0];
-    await logAudit(req, 'create', 'admin_users', user.id, { username, role: role || 'admin' });
-    return res.status(201).json(user);
+
+    // Build the MFA provisioning URI for the new user
+    const totp = createTOTP(mfaBase32Secret, username);
+    const mfaProvisioningUri = totp.toString();
+
+    await logAudit(req, 'create', 'admin_users', user.id, { username, role: role || 'admin', mfa_setup_provided: true });
+    return res.status(201).json({
+      ...user,
+      mfa_setup: {
+        secret: mfaBase32Secret,
+        provisioning_uri: mfaProvisioningUri,
+        message: 'Share this MFA setup link with the user. They must verify with POST /admin/api/mfa/verify after first login.'
+      }
+    });
   } catch (error) {
     if (error.code === '23505') {
       return res.status(409).json({ message: 'Username already exists' });
