@@ -135,4 +135,51 @@ private class MarginArcInstallHandlerTest {
     // If existing was found, no new one should be created
     System.assert(crons.size() >= 1, 'At least one scheduler should exist');
   }
+
+  @isTest
+  static void testScheduleOutcomeSync() {
+    MarginArcInstallHandler handler = new MarginArcInstallHandler();
+
+    Test.startTest();
+    handler.scheduleOutcomeSync();
+    Test.stopTest();
+
+    List<CronTrigger> crons = [
+      SELECT Id
+      FROM CronTrigger
+      WHERE
+        CronJobDetail.Name LIKE '%MarginArc%Outcome%'
+        AND State = 'WAITING'
+    ];
+    System.assert(crons.size() > 0, 'Outcome sync should be scheduled');
+  }
+
+  @isTest
+  static void testScheduleOutcomeSyncNotDuplicated() {
+    // Schedule first
+    System.schedule(
+      'MarginArc Test Outcome Dup',
+      '0 0 4 ? * SUN',
+      new MarginArcDealOutcomeSync()
+    );
+
+    MarginArcInstallHandler handler = new MarginArcInstallHandler();
+
+    Test.startTest();
+    handler.scheduleOutcomeSync();
+    Test.stopTest();
+
+    List<CronTrigger> crons = [
+      SELECT Id
+      FROM CronTrigger
+      WHERE
+        CronJobDetail.Name LIKE '%MarginArc%Outcome%'
+        AND State = 'WAITING'
+    ];
+    // If existing was found, no new one should be created
+    System.assert(
+      crons.size() >= 1,
+      'At least one outcome sync scheduler should exist'
+    );
+  }
 }

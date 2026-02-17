@@ -59,7 +59,7 @@ jobs:
             --target-org deploy-org \
             --source-dir force-app \
             --test-level RunSpecifiedTests \
-            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest MarginArcLicenseActivatorTest MarginArcLicenseValidatorTest \
+            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest MarginArcLicenseActivatorTest MarginArcLicenseValidatorTest MarginArcDealOutcomeSyncTest \
             --dry-run \
             --wait 20
 
@@ -69,7 +69,7 @@ jobs:
             --target-org deploy-org \
             --source-dir force-app \
             --test-level RunSpecifiedTests \
-            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest MarginArcLicenseActivatorTest MarginArcLicenseValidatorTest \
+            --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest MarginArcLicenseActivatorTest MarginArcLicenseValidatorTest MarginArcDealOutcomeSyncTest \
             --wait 20
 
       - name: Upload logs on failure
