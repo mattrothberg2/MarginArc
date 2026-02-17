@@ -364,7 +364,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   // =========================================================================
 
   get phase() {
-    return this.phaseInfo?.phase || 2; // Default to phase 2 (current behavior)
+    return this.phaseInfo?.current || 2; // Default to phase 2 (current behavior)
   }
 
   get isPhaseOne() {
@@ -438,31 +438,22 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   get bomLineItems() {
     if (!this.activeBomData?.items?.length) return [];
     return this.activeBomData.items.map((item) => {
-      const currentPct =
-        item.marginPct != null ? item.marginPct * 100 : null;
+      const currentPct = item.marginPct != null ? item.marginPct * 100 : null;
       const recPct =
         item.recommendedMarginPct != null
           ? item.recommendedMarginPct * 100
           : null;
       const hasRec = recPct != null;
-      const gap =
-        hasRec && currentPct != null ? recPct - currentPct : 0;
+      const gap = hasRec && currentPct != null ? recPct - currentPct : 0;
       return {
         key: item.key,
         label: item.label || item.key,
         category: item.category || "Hardware",
         currentMarginDisplay:
           currentPct != null ? currentPct.toFixed(1) + "%" : "\u2014",
-        recommendedMarginDisplay: hasRec
-          ? recPct.toFixed(1) + "%"
-          : "\u2014",
+        recommendedMarginDisplay: hasRec ? recPct.toFixed(1) + "%" : "\u2014",
         hasRecommendation: hasRec,
-        gapClass:
-          gap > 0
-            ? "delta-positive"
-            : gap < 0
-              ? "delta-negative"
-              : "",
+        gapClass: gap > 0 ? "delta-positive" : gap < 0 ? "delta-negative" : "",
         gapDisplay: hasRec
           ? (gap >= 0 ? "+" : "") + gap.toFixed(1) + "%"
           : "\u2014"
