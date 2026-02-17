@@ -51,6 +51,14 @@ jobs:
           sf org login sfdx-url --sfdx-url-file ./SFDX_AUTH_URL.txt --alias deploy-org --set-default
           rm -f ./SFDX_AUTH_URL.txt
 
+      - name: Abort scheduled jobs (prevent deploy conflicts)
+        run: |
+          sf apex run --target-org deploy-org -f <(echo "
+          for (CronTrigger ct : [SELECT Id, CronJobDetail.Name FROM CronTrigger WHERE CronJobDetail.Name LIKE '%MarginArc%' OR CronJobDetail.Name LIKE '%Fulcrum%']) {
+              System.abortJob(ct.Id);
+          }
+          ")
+
       - name: Validate deployment (dry run)
         run: |
           sf project deploy start \
@@ -69,6 +77,17 @@ jobs:
             --test-level RunSpecifiedTests \
             --tests MarginArcControllerTest MarginArcCompetitiveControllerTest MarginArcManagerControllerTest MarginArcBatchAnalyzerTest MarginArcAdminControllerTest MarginArcBackfillAnalyzerTest MarginArcSetupControllerTest MarginArcInstallHandlerTest MarginArcDemoDataLoaderTest MarginArcLicenseGateTest MarginArcDemoDataServiceTest MarginArcLicenseActivatorTest MarginArcLicenseValidatorTest MarginArcDealOutcomeSyncTest \
             --wait 20
+
+      - name: Reschedule nightly jobs
+        run: |
+          sf apex run --target-org deploy-org -f <(echo "
+          if ([SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE '%MarginArc%Analyzer%' AND State = 'WAITING'] == 0) {
+              System.schedule('MarginArc Nightly Analyzer', '0 0 2 * * ?', new MarginArcBatchAnalyzer());
+          }
+          if ([SELECT COUNT() FROM CronTrigger WHERE CronJobDetail.Name LIKE '%MarginArc%Outcome%' AND State = 'WAITING'] == 0) {
+              System.schedule('MarginArc Deal Outcome Sync', '0 0 3 ? * SUN', new MarginArcDealOutcomeSync());
+          }
+          ")
 
       - name: Upload logs on failure
         if: failure()
