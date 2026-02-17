@@ -5,11 +5,46 @@ import { fileURLToPath } from 'url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const VENDOR_SKUS = JSON.parse(
+const VENDOR_SKUS_RAW = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'data/vendor_skus.json'), 'utf-8')
 )
 
-// Normalize OEM name to match vendor_skus.json keys
+// Build nested index from flat array: { vendor: { category: { role: [skus] } } }
+const VENDOR_SKUS = {}
+for (const item of VENDOR_SKUS_RAW) {
+  const vendor = item.manufacturer
+  if (!VENDOR_SKUS[vendor]) VENDOR_SKUS[vendor] = {}
+  if (!VENDOR_SKUS[vendor][item.category]) VENDOR_SKUS[vendor][item.category] = {}
+  // Map flat roles to BOM template sub-roles for lookup compatibility
+  const subRoles = mapToSubRoles(item.category, item.role)
+  for (const sr of subRoles) {
+    if (!VENDOR_SKUS[vendor][item.category][sr]) VENDOR_SKUS[vendor][item.category][sr] = []
+    VENDOR_SKUS[vendor][item.category][sr].push({
+      sku: item.partNumber,
+      name: item.description,
+      listPrice: item.listPrice
+    })
+  }
+}
+
+function mapToSubRoles(category, role) {
+  if (role === 'core') return ['core', 'platform']
+  if (role === 'accessory') return ['core']
+  if (role === 'support') return ['support']
+  if (role === 'license') {
+    if (category === 'Software') return ['subscription', 'software']
+    if (category === 'Cloud') return ['capacity']
+    return ['subscription']
+  }
+  if (role === 'service') {
+    if (category === 'ProfessionalServices') return ['consulting', 'specialists', 'services', 'program']
+    if (category === 'ManagedServices') return ['subscription', 'managed', 'automation']
+    return ['services', 'onboarding', 'enablement']
+  }
+  return [role]
+}
+
+// Normalize OEM name to match vendor_skus.json manufacturers
 const OEM_ALIASES = {
   'cisco': 'Cisco',
   'cisco systems': 'Cisco',
@@ -29,10 +64,11 @@ const OEM_ALIASES = {
   'microsoft': 'Microsoft',
   'pure storage': 'Pure Storage',
   'pure': 'Pure Storage',
-  'netapp': 'NetApp',
-  'net app': 'NetApp',
-  'arista': 'Arista',
-  'arista networks': 'Arista'
+  'aruba': 'Aruba',
+  'aruba networks': 'Aruba',
+  'hpe aruba': 'Aruba',
+  'juniper': 'Juniper',
+  'juniper networks': 'Juniper'
 }
 
 function resolveVendor(oem) {
