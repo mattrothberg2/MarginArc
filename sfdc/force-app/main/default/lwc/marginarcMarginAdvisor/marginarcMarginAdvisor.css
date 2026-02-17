@@ -867,8 +867,7 @@
 
 /* Comparison Section */
 .comparison-section {
-  padding: 24px;
-  border-bottom: 1px solid var(--slate-100);
+  padding: 0 24px 24px;
   background: white;
 }
 
@@ -973,28 +972,8 @@
 
 /* Drivers Section */
 .drivers-section {
-  padding: 24px;
-  border-bottom: 1px solid var(--slate-100);
+  padding: 0 24px 24px;
   background: white;
-}
-
-.drivers-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.drivers-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--navy-900);
-}
-
-.drivers-count {
-  font-size: 13px;
-  color: var(--slate-500);
-  font-weight: 500;
 }
 
 .drivers-list {
@@ -1219,40 +1198,22 @@
 }
 
 .marginarc-details-expanded {
-  max-height: 3000px;
+  max-height: 500px;
+  overflow-y: auto;
   opacity: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* AI Summary Section */
 .ai-summary-section {
-  padding: 24px;
+  padding: 0 24px 24px;
   background: linear-gradient(
     135deg,
     rgba(2, 177, 181, 0.08),
     rgba(10, 26, 47, 0.03)
   );
-  border: 1px solid rgba(2, 177, 181, 0.15);
-  border-radius: 12px;
-  margin: 20px 24px;
-}
-
-.ai-summary-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
-}
-
-.ai-icon {
-  width: 24px;
-  height: 24px;
-  color: var(--teal-500);
-}
-
-.ai-summary-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--navy-900);
+  margin: 0 24px 16px;
+  border-radius: 0 0 12px 12px;
 }
 
 .ai-summary-text {
@@ -1597,6 +1558,99 @@
   margin-top: 1px;
 }
 
+/* =========================================================================
+   Accordion Section Headers (detail panel)
+   ========================================================================= */
+.accordion-section {
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.accordion-section:last-of-type {
+  border-bottom: none;
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px;
+  cursor: pointer;
+  user-select: none;
+  background: white;
+  transition: background 0.15s ease;
+}
+
+.accordion-header:hover {
+  background: var(--slate-50);
+}
+
+.accordion-chevron {
+  font-size: 12px;
+  color: var(--slate-400);
+  width: 14px;
+  flex-shrink: 0;
+}
+
+.accordion-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy-900);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.accordion-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-400);
+}
+
+/* Collapse All link */
+.collapse-all-bar {
+  display: flex;
+  justify-content: center;
+  padding: 10px 24px 14px;
+  background: white;
+}
+
+.btn-collapse-all {
+  background: transparent;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-400);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  padding: 4px 8px;
+  transition: color 0.15s ease;
+}
+
+.btn-collapse-all:hover {
+  color: var(--slate-600);
+}
+
+/* =========================================================================
+   Secondary Vendor Badges (multi-vendor BOM deals)
+   ========================================================================= */
+.marginarc-secondary-oem-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  margin-left: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 14px;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.marginarc-overflow-badge {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.5);
+}
+
 /* Responsive */
 @media (max-width: 480px) {
   .metrics-grid {
@@ -1623,44 +1677,8 @@
 
 /* BOM Summary (compact view — full editing in BOM Builder widget) */
 .bom-summary-section {
-  margin: 16px;
-  padding: 12px 16px;
-  background: var(--slate-50);
-  border: 1px solid var(--slate-200);
-  border-radius: 8px;
-}
-
-.bom-summary-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.bom-summary-icon {
-  display: flex;
-  align-items: center;
-}
-
-.bom-summary-icon svg {
-  width: 18px;
-  height: 18px;
-  color: var(--navy-800);
-}
-
-.bom-summary-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--navy-900);
-}
-
-.bom-summary-count {
-  font-size: 11px;
-  background: var(--teal-500);
-  color: #fff;
-  padding: 1px 8px;
-  border-radius: 10px;
-  font-weight: 500;
+  padding: 0 24px 16px;
+  background: white;
 }
 
 .bom-summary-stats {
