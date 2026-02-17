@@ -1708,3 +1708,305 @@ Keep it practical and actionable — this is the playbook the MarginArc team wil
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
+
+---
+
+## Epic 11: Founder UX Fixes — Sprint 28 (Critical Path to POC)
+
+Context: The founder tested the live product and identified 6 UX/product issues. All 5 evaluator agents (VP Product, CTO, Sales Rep, VP Sales, CFO) reviewed the issues and unanimously agreed on priority order. These fixes are required before putting MarginArc in front of design partner reps.
+
+Key finding: The client-side `computeDealScore()` in the LWC and the server-side version in `phases.js` use **completely different formulas** (5 factors at 35/25/20/10/10 vs 4 factors at 40/25/20/15). The server must become the single source of truth.
+
+### Concurrency Map — Epic 11
+
+| Prompt | Modifies | Safe to run with |
+|--------|----------|-----------------|
+| **11A** | `marginarcMarginAdvisor/*` (SFDC), `MarginArcController.cls` | 11B (Lambda-only) |
+| **11B** | `index.js`, `phases.js`, `rules.js` (Lambda) | 11A (SFDC-only) |
+| **11C** | `index.js` (Lambda) + `marginarcMarginAdvisor/*` (SFDC) | Nothing — depends on 11A + 11B |
+| **11D** | `marginarcMarginAdvisor/*` (SFDC) | Nothing — depends on 11C |
+| **11E** | `marginarcMarginAdvisor/*` (SFDC) | Nothing — depends on 11D |
+
+**Execution order:** 11A + 11B in parallel → 11C → 11D → 11E
+
+### 11A — Fix Segment Detection + Auto-Score on Page Load (Founder Issues #5, #1)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/classes/MarginArcController.cls
+
+Two critical fixes. The segment fix is a trust-destroying bug; the auto-score is the #1 adoption blocker.
+
+**Fix 1: Segment detection uses deal amount instead of account size (CRITICAL)**
+
+Regeneron is a $12B pharma company but shows as "SMB" because the $56K deal falls below the $100K threshold. The fallback logic at line ~215 of the JS derives segment from `Amount` when `Fulcrum_Customer_Segment__c` is empty.
+
+Fix:
+1. Add `Account.AnnualRevenue` and `Account.NumberOfEmployees` to the `OPPORTUNITY_FIELDS` array at the top of the JS file. Use the relationship field syntax: `"Opportunity.Account.AnnualRevenue"` and `"Opportunity.Account.NumberOfEmployees"`.
+2. Change the segment derivation in `mapOpportunityData()` to use a cascading fallback:
+   - First: explicit `Fulcrum_Customer_Segment__c` field (existing behavior)
+   - Second: Account.AnnualRevenue — if >= $1B → Enterprise, >= $100M → Enterprise, >= $10M → MidMarket, < $10M → SMB
+   - Third (last resort): deal Amount — keep existing thresholds as final fallback
+3. Also fix the DIVERGED thresholds: the LWC uses $300K for Enterprise while MarginArcController.cls `mapSegmentFromAmount()` uses $500K. Align both to $500K.
+4. When segment is INFERRED (not from the explicit field), add a visual indicator. Set a tracked property `isSegmentInferred = true` and render a small "(estimated)" label next to the segment badge in the HTML. This tells the rep the data came from a guess and encourages them to fill in the field.
+
+**Fix 2: Auto-score on page load (HIGHEST PRIORITY from all 5 reviewers)**
+
+Currently reps must click "Score My Deal" to trigger scoring. All 5 reviewers agree this kills adoption — the CFO estimates it's the difference between 30% and 90% deal coverage, a 3x ROI impact.
+
+Fix:
+1. In the `wiredOpportunity()` handler (the `@wire(getRecord)` callback), after `opportunityData` is populated and `recordId` exists, automatically call `fetchRecommendation()`.
+2. Add a guard property `_hasAutoScored = false` to prevent double-firing (the wire adapter may fire multiple times). Set it to `true` after the first auto-score. Reset it when the recordId changes.
+3. Remove the "Score My Deal" landing card entirely. Replace the initial state with the loading spinner state — the user should see "Analyzing your deal..." within 200ms of page load.
+4. Keep the "Refresh" button for manual re-scoring after field changes.
+5. IMPORTANT: The `@wire` adapter fires asynchronously and may fire with incomplete data first. Only auto-score when ALL required fields in `OPPORTUNITY_FIELDS` have been received (check that `opportunityData` is not null/undefined and `recordId` is truthy).
+6. Handle the failure case: if the API call fails during auto-score, show the degraded state (mock recommendation) silently — do NOT show an error toast on page load. Only show error toasts on manual Refresh clicks.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx prettier --write force-app/main/default/classes/MarginArcController.cls
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 11B — Unify Deal Scoring + Natural Language Factor Labels (Founder Issues #3, server-side)
+
+```
+Read these files:
+- lambda/server/src/phases.js — server-side `computeDealScore()` at line ~170
+- lambda/server/index.js — the /api/recommend endpoint response shape
+- lambda/server/src/rules.js — the rule-based recommendation that produces drivers
+
+Two issues found by the CTO and VP Product agents independently:
+
+**Issue 1: Client-side and server-side deal scoring are completely diverged**
+
+The server-side `computeDealScore()` in phases.js uses 4 factors:
+- Margin alignment: 40% weight
+- Win probability: 25% weight
+- Data quality: 20% weight
+- Algorithm confidence: 15% weight
+
+The client-side `computeDealScore()` in the LWC uses 5 factors:
+- Margin alignment: 35% weight
+- Win probability: 25% weight
+- Risk-adjusted value: 20% weight
+- Deal structure: 10% weight
+- Competitive position: 10% weight
+
+These are DIFFERENT FORMULAS producing DIFFERENT SCORES. The server is the authoritative source.
+
+Fix:
+1. The server ALREADY returns `dealScore` and `scoreFactors` in the /api/recommend response. Ensure these are always included in the response — both Phase 1 and Phase 2.
+2. Extend the `scoreFactors` object in the response to include human-readable labels for each factor. Add a `label` field with a contextual sentence:
+
+   For each factor, generate the label based on the score/max ratio:
+   - marginAlignment: If score/max < 0.33 → "Your margin is significantly below market for this deal profile"
+     If score/max 0.33-0.66 → "Your margin is in the right range but could be optimized"
+     If score/max > 0.66 → "Your margin is well-aligned with market benchmarks"
+   - winProbability: If < 0.33 → "Win probability is low — competitive pressure or pricing risk"
+     If 0.33-0.66 → "Moderate win probability — deal structure is reasonable"
+     If > 0.66 → "Strong win probability — deal is well-positioned"
+   - dataQuality: If < 0.33 → "Missing deal data is reducing scoring accuracy — fill in more fields"
+     If 0.33-0.66 → "Good data coverage — a few more fields would improve accuracy"
+     If > 0.66 → "Excellent data quality — scoring is highly confident"
+   - algorithmConfidence: If < 0.33 → "Limited comparable deals — recommendation based on general benchmarks"
+     If 0.33-0.66 → "Some comparable deals found — recommendation is moderately confident"
+     If > 0.66 → "Many comparable deals — recommendation is highly confident"
+
+3. Also include the factor `direction` ("positive" or "negative") based on whether the factor contributes positively or negatively to the deal score.
+
+4. If drivers are available from the rules engine, include the top 3 drivers (sorted by absolute impact) as an array of strings in the response. Example:
+   ```json
+   "topDrivers": [
+     "Deal registration (Premium Hunting) is protecting your margin",
+     "2 competitors are pressuring price — consider differentiation",
+     "Services attached typically support higher blended margins"
+   ]
+   ```
+   Generate these driver strings by mapping the driver names to plain-English sentences. This is a deterministic lookup, not an LLM call.
+
+5. In Phase 1 specifically, since `suggestedMarginPct` is null, add a `phase1Guidance` array to the response with 2-3 directional tips derived from the drivers:
+   - Sort drivers by absolute impact value
+   - Top positive drivers → "Deal strengths: [driver name]"
+   - Top negative drivers → "Watch out for: [driver name]"
+   - If dealRegType is "NotRegistered" → "Registering this deal could improve your margin position"
+   - If competitors >= 3 → "With multiple competitors, focus on value differentiation"
+
+6. Run all tests: cd lambda/server && npm test
+   Update any tests that assert on the /api/recommend response shape.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 11C — Phase 1 Actionable Guidance + Fix "Rec: 0.0%" (Founder Issue #6)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+
+DEPENDS ON: 11A (auto-score) and 11B (server-side scoring unification) must be merged first.
+
+The Phase 1 experience is currently a dead end — all 5 reviewers flagged it as a POC-killer. Reps see a bare score ("43 — FAIR"), a progress bar to 50, and "Rec: 0.0%" with zero actionable guidance. The CFO calculated that half the POC period produces no measurable value.
+
+**Fix 1: Remove "Rec: 0.0%" from Phase 1 summary line**
+
+The summary line (around line 126-132 of HTML) shows "Score: 43/100 | Rec: 0.0% | Medium" in Phase 1. The "Rec: 0.0%" looks like the tool recommends zero margin — actively misleading.
+
+Fix: In the summary line template, conditionally hide the "Rec:" segment when in Phase 1 (`isPhaseOne` is true). Replace it with the score label:
+- Phase 1: "Score: 43/100 | Fair | [Data Quality tier]"
+- Phase 2+: "Score: 43/100 | Rec: 18.5% | High" (existing behavior)
+
+**Fix 2: Render Phase 1 guidance panel**
+
+After 11B lands, the API response will include `phase1Guidance` (array of tip strings), `topDrivers` (array of driver sentences), and `scoreFactors` with human-readable `label` fields. Render these in the widget:
+
+1. Below the Deal Score circle and spectrum bar, add a "Deal Insights" section that renders in Phase 1:
+   ```html
+   <template lwc:if={isPhaseOne}>
+     <div class="marginarc-phase1-insights">
+       <h3 class="insights-header">Deal Insights</h3>
+       <template for:each={phase1Tips} for:item="tip">
+         <div key={tip.id} class="insight-row">
+           <lightning-icon icon-name={tip.icon} size="x-small"></lightning-icon>
+           <span class="insight-text">{tip.text}</span>
+         </div>
+       </template>
+     </div>
+   </template>
+   ```
+2. The `phase1Tips` getter should consume the API response's `phase1Guidance` and `topDrivers` arrays and format them with appropriate icons (utility:like for strengths, utility:warning for risks, utility:info for neutral tips).
+3. Style the insights section with the existing dark navy theme. Each tip should be a single line with an icon, fitting within the card width.
+
+**Fix 3: Make Phase 1 progress counter org-wide**
+
+The VP Sales pointed out that "1 of 50" is demoralizing for an individual rep. Make it team-based.
+
+1. The API response already includes `phaseInfo.scoredDeals` (the deal count). Check if this is per-org or global (it should be per-org after 8D's org_id fix). If it's per-org, display it as: "Your team has scored X of 50 deals needed to unlock margin recommendations."
+2. Change the pronoun from "You've scored" to "Your team has scored" since the threshold is org-wide, not per-rep.
+
+**Fix 4: Replace raw score factor pills with natural language**
+
+After 11B lands, `scoreFactors` will include a `label` field with a human-readable sentence. Replace the current pill rendering:
+
+1. Instead of pills showing "0/35 Margin alignment", render a compact list of the factor labels from the API response.
+2. Use a 3-tier color system based on score/max ratio: red (< 0.33), amber (0.33-0.66), green (> 0.66).
+3. Each label should be one line of text (the sentence from the API), colored appropriately.
+4. If the API didn't return labels (degraded mode), fall back to a simplified format: "Margin: Low", "Win Prob: Medium", "Data: High" — NOT the raw numbers.
+
+**Fix 5: Remove the client-side `computeDealScore()` as primary scoring**
+
+After 11B makes the server the source of truth:
+1. The LWC should use the `dealScore` and `scoreFactors` from the API response as the PRIMARY display values.
+2. Move the client-side `computeDealScore()` to only fire when `degradationLevel >= 3` (API unavailable). It becomes the fallback, not the default.
+3. This eliminates the score divergence bug where reps see different scores than the manager dashboard.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 11D — Details Panel Accordion + Multi-Vendor Badge (Founder Issues #2, #4)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+
+DEPENDS ON: 11C must be merged first.
+
+Two lower-priority but important UX fixes.
+
+**Fix 1: Convert details panel from monolithic toggle to accordion sections**
+
+The current "Show Details" toggle expands ALL detail sections at once, pushing the BOM Builder and other components off-screen. The recommendation history section already has its own accordion pattern (`toggleHistory()`, `collapsedSections` tracked property).
+
+Fix:
+1. Extend the `collapsedSections` tracked property (currently only tracks 'history') to also track: 'comparison', 'drivers', 'aiSummary', 'bomSummary'.
+2. Add toggle methods for each section: `toggleComparison()`, `toggleDrivers()`, `toggleAiSummary()`, `toggleBomSummary()`. Follow the existing `toggleSection()` pattern.
+3. Each section inside the details panel gets its own collapsible header with a chevron icon (right = collapsed, down = expanded). Use the existing `.section-header` styling pattern from the history section.
+4. Default state when "Show Details" is clicked: 'comparison' expanded, all others collapsed. This shows the most important detail (Plan vs Recommended table) without overwhelming the viewport.
+5. Add `max-height: 500px; overflow-y: auto;` to the `.marginarc-details-expanded` CSS class as a safety net. Add `-webkit-overflow-scrolling: touch` for mobile.
+6. Add a "Collapse All" link at the bottom of the expanded details panel so users can close it without scrolling back to the toggle button.
+7. Remember: LWC templates don't allow `!` unary expressions. Use computed getters like `get isComparisonCollapsed() { return this.collapsedSections.has('comparison'); }` for each section.
+
+**Fix 2: Show BOM-derived vendor badges for multi-vendor deals**
+
+The badge currently shows one OEM (e.g., "Cisco · Enterprise"). For multi-vendor deals, the BOM lines already contain per-line vendor data.
+
+Fix:
+1. Add a computed getter `secondaryVendors` that extracts unique vendor names from `activeBomData.items`, excluding the primary OEM:
+   ```javascript
+   get secondaryVendors() {
+     if (!this.activeBomData?.items?.length) return [];
+     const primary = this.opportunityData?.oem;
+     const vendors = [...new Set(
+       this.activeBomData.items
+         .map(item => item.vendor)
+         .filter(v => v && v !== primary && v !== 'Unknown')
+     )];
+     return vendors.slice(0, 3); // max 3 secondary badges
+   }
+   ```
+2. In the HTML, after the primary OEM badge, render secondary badges:
+   ```html
+   <template for:each={secondaryVendors} for:item="vendor">
+     <span key={vendor} class="marginarc-secondary-oem-badge">+{vendor}</span>
+   </template>
+   ```
+3. Style the secondary badges smaller than the primary, with a muted color (e.g., semi-transparent white background instead of the solid teal).
+4. If there are more than 3 secondary vendors, show "+2 more" as the last badge.
+
+**Fix 3: Hide "MANUAL Applied +0.0pp" in Phase 1**
+
+The screenshot shows "MANUAL Applied +0.0pp" below the phase callout. In Phase 1, there is no recommendation to apply, so this is confusing leftover UI. Gate the recommendation history section behind `isPhaseOne` — only show it in Phase 2+.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+## Epic 12: UX Quick Wins — Sprint 29
+
+### 11E — "Apply Recommendation" Safety + Copy Button (Sales Rep Feedback)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+
+The Sales Rep evaluator flagged that the "Apply Recommendation" button is too scary — it overwrites the Opportunity Amount, Planned Margin, Recommended Margin, and Win Probability all at once. The confirmation dialog says "This action cannot be undone from this widget." For a rep, changing the Amount field flows into forecasting and pipeline reports. Reps will not trust an AI tool enough to let it change their forecast number.
+
+Fix:
+1. **Add a "Copy Recommendation" button** as the PRIMARY action, placed before the "Apply" button. This copies the recommended sell price and margin percentage to the clipboard in a clean format:
+   "MarginArc Recommendation: 18.5% margin ($X sell price, $Y GP)"
+   Use the `navigator.clipboard.writeText()` API. Show a brief toast: "Recommendation copied to clipboard."
+
+2. **Demote "Apply Recommendation"** to a secondary/text-style button. Change it from `brand` variant to `neutral` variant. Keep the confirmation dialog.
+
+3. **Add an "Undo" capability** to the Apply action. Before overwriting fields, save the current values in a tracked property `_preApplyValues`. After applying, show an "Undo" link for 30 seconds that restores the original values. This dramatically reduces the perceived risk of clicking Apply.
+
+4. **In the confirmation dialog**, be more specific about what changes:
+   - "This will update:" followed by a comparison table:
+     | Field | Current | New |
+     |-------|---------|-----|
+     | Amount | $56,448 | $58,200 |
+     | Planned Margin | 15.0% | 18.5% |
+   - This lets the rep see the exact impact before confirming.
+
+Run prettier and eslint on modified files.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
