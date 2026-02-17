@@ -439,7 +439,7 @@ Implement the POST /api/bom/analyze endpoint that provides per-line margin optim
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 3C — Expand Product Catalog to 200+ Items (no dependencies)
+### 3C — Expand Product Catalog to 200+ Items (no dependencies) [COMPLETE]
 
 ```
 Read lambda/server/src/data/vendor_skus.json and lambda/server/src/data/bom_catalog.json to understand the current catalog structure.
