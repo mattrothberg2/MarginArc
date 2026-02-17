@@ -28,10 +28,12 @@ const orgJson = JSON.parse(
 )
 const { instanceUrl, accessToken } = orgJson.result
 
+// Tab API names are still Fulcrum_* (file names weren't renamed, only labels)
 const TABS = [
-  { name: 'dashboard', path: '/lightning/n/MarginArc_Dashboard' },
-  { name: 'setup', path: '/lightning/n/MarginArc_Setup' },
-  { name: 'getting-started', path: '/lightning/n/MarginArc_Getting_Started' }
+  { name: 'dashboard', path: '/lightning/n/Fulcrum_Manager_Dashboard' },
+  { name: 'setup', path: '/lightning/n/Fulcrum_Admin' },
+  { name: 'getting-started', path: '/lightning/n/Fulcrum_Getting_Started' },
+  { name: 'roi-report', path: '/lightning/n/Fulcrum_ROI_Report' }
 ]
 
 ;(async () => {
