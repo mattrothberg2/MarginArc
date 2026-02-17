@@ -10,6 +10,7 @@ import { computeRecommendation } from './src/rules.js'
 import { explainRecommendation, summarizeQualitative } from './src/gemini.js'
 import { compareWithPlan } from './src/metrics.js'
 import { buildBillOfMaterials, computeManualBomStats } from './src/bom.js'
+import { optimizeBom } from './src/bom-optimizer.js'
 import { searchCatalog } from './src/bom-search.js'
 import { assessPredictionQuality } from './src/quality.js'
 import rateLimit from 'express-rate-limit'
@@ -350,6 +351,19 @@ app.post('/api/bom/search', (req, res) => {
     res.json(result)
   } catch (e) {
     res.status(400).json({ error: e?.message || 'Invalid request' })
+  }
+})
+
+app.post('/api/bom/analyze', async (req, res) => {
+  try {
+    const { bomLines, context } = req.body || {}
+    if (!Array.isArray(bomLines)) {
+      return res.status(400).json({ error: 'bomLines must be an array' })
+    }
+    const result = optimizeBom(bomLines, context || {})
+    return res.json(result)
+  } catch (e) {
+    return res.status(400).json({ error: e?.message || 'Invalid request' })
   }
 })
 

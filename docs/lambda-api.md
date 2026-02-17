@@ -114,8 +114,84 @@ All fields are optional. `query` performs case-insensitive substring matching on
 }
 ```
 
-### POST /api/bom/analyze (NOT YET IMPLEMENTED)
-Analyze BOM lines and return per-line margin recommendations.
+### POST /api/bom/analyze
+Analyze BOM lines and return per-line margin optimization. Solves for per-line margins that meet category floors, achieve a target blended margin (weighted by extended cost), and maximize margin on high-elasticity lines (services/software) while keeping hardware competitive.
+
+Uses margin-on-selling-price convention throughout.
+
+**Request**:
+```json
+{
+  "bomLines": [
+    {
+      "partNumber": "C9300-48P-A",
+      "manufacturer": "Cisco",
+      "category": "Hardware",
+      "quantity": 10,
+      "unitCost": 5717,
+      "marginPct": 12
+    },
+    {
+      "description": "Implementation Services",
+      "category": "ProfessionalServices",
+      "quantity": 80,
+      "unitCost": 175,
+      "marginPct": 30
+    }
+  ],
+  "context": {
+    "oem": "Cisco",
+    "customerSegment": "MidMarket",
+    "dealRegType": "StandardApproved",
+    "competitors": "1",
+    "solutionComplexity": "Medium",
+    "relationshipStrength": "Good",
+    "valueAdd": "High",
+    "targetBlendedMargin": 18.5
+  }
+}
+```
+
+**Fields**:
+- `bomLines` (required, array): Each line has `category` (Hardware | Software | Cloud | ProfessionalServices | ManagedServices | ComplexSolution), `quantity`, `unitCost`, `marginPct` (current margin %), and optionally `partNumber` or `description`.
+- `context` (optional, object): Deal context used to adjust category targets. `targetBlendedMargin` is the desired blended margin % across all lines.
+
+**Category margin floors**: Hardware 5%, Software 8%, Cloud 6%, ProfessionalServices 15%, ManagedServices 12%, ComplexSolution 10%.
+
+**Response**:
+```json
+{
+  "lines": [
+    {
+      "index": 0,
+      "partNumber": "C9300-48P-A",
+      "currentMarginPct": 12,
+      "recommendedMarginPct": 10.5,
+      "marginFloor": 5,
+      "extendedCost": 57170,
+      "extendedPrice": 63522,
+      "grossProfit": 6352,
+      "rationale": "Hardware in competitive Cisco deal — keep tight to win"
+    }
+  ],
+  "totals": {
+    "totalCost": 71170,
+    "totalPrice": 85127,
+    "blendedMarginPct": 16.4,
+    "totalGrossProfit": 13957,
+    "targetAchieved": false,
+    "targetMarginPct": 18.5,
+    "gap": 2.1
+  },
+  "recommendations": {
+    "healthScore": 72,
+    "insights": [
+      "Services margin can absorb 5pp more to close the gap",
+      "Consider deal registration to unlock 3pp of OEM margin"
+    ]
+  }
+}
+```
 
 ### GET /api/bom/catalog/stats (NOT YET IMPLEMENTED)
 Catalog metadata (size, category breakdown).
