@@ -4,6 +4,7 @@ import { query } from './db.js';
 import { generateLicenseKey } from './license.js';
 import { verifyToken, generateToken, requireRole } from '../middleware/auth.js';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { rotateApiKey, promoteApiKey } from '../api-keys.js';
 import { makeApiCall } from '../salesforce/oauth.js';
 import { getCustomerPhaseById, setCustomerPhase, checkPhaseReadiness } from '../phases.js';
 
@@ -1553,6 +1554,55 @@ router.delete('/doc-users/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting doc user:', error);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ===========================
+// API KEY ROTATION
+// ===========================
+
+/**
+ * POST /rotate-api-key
+ * Generate a new secondary API key in SSM. The current primary key remains
+ * valid so there is zero downtime. The admin must update the SFDC org's
+ * Fulcrum_Config__c.API_Key__c with the returned key, then call
+ * /promote-api-key once the org is confirmed working.
+ *
+ * Requires super_admin role.
+ */
+router.post('/rotate-api-key', requireRole('super_admin'), async (req, res) => {
+  try {
+    const newKey = await rotateApiKey();
+    await logAudit(req, 'rotate_api_key', 'api_key', null, { action: 'secondary_created' });
+    return res.json({
+      success: true,
+      newKey,
+      message: 'Secondary API key created. Update SFDC org with the new key, verify connectivity, then call /admin/api/promote-api-key to complete rotation.'
+    });
+  } catch (error) {
+    console.error('Error rotating API key:', error);
+    return res.status(500).json({ message: `API key rotation failed: ${error.message}` });
+  }
+});
+
+/**
+ * POST /promote-api-key
+ * Promote the secondary key to primary and remove the old primary.
+ * After this call only the new key (the one returned by rotate-api-key) works.
+ *
+ * Requires super_admin role.
+ */
+router.post('/promote-api-key', requireRole('super_admin'), async (req, res) => {
+  try {
+    await promoteApiKey();
+    await logAudit(req, 'promote_api_key', 'api_key', null, { action: 'secondary_promoted_to_primary' });
+    return res.json({
+      success: true,
+      message: 'Secondary key promoted to primary. The old primary key is no longer valid.'
+    });
+  } catch (error) {
+    console.error('Error promoting API key:', error);
+    return res.status(400).json({ message: error.message });
   }
 });
 

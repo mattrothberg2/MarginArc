@@ -26,6 +26,11 @@ components:
       in: header
       name: x-api-key
       description: API key provided during onboarding. Set in Salesforce custom setting `Fulcrum_Config__c.API_Key__c`.
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Admin JWT token obtained from `/admin/api/auth/login`.
 
   schemas:
     # ── Enums ──────────────────────────────────────────────────────────────────
@@ -1300,6 +1305,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /admin/api/rotate-api-key:
+    post:
+      operationId: rotateApiKey
+      summary: Generate a secondary API key
+      description: |
+        Generate a new secondary API key and store it in SSM. The current primary key
+        remains valid, so there is zero downtime during the rotation window.
+
+        **Rotation flow:**
+        1. Call this endpoint → receive a new key.
+        2. Update the SFDC org's `Fulcrum_Config__c.API_Key__c` with the new key.
+        3. Verify the SFDC org can reach the Lambda API using the new key.
+        4. Call `/admin/api/promote-api-key` → the old key stops working.
+
+        Both keys are accepted simultaneously between steps 1 and 4.
+
+        Requires `super_admin` role.
+      tags: [Admin — API Key Rotation]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Secondary key created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  newKey:
+                    type: string
+                    description: The newly generated API key. Store securely — it will not be shown again.
+                    example: MARC-a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2
+                  message:
+                    type: string
+                    example: Secondary API key created. Update SFDC org with the new key, verify connectivity, then call /admin/api/promote-api-key to complete rotation.
+        "401":
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "403":
+          description: Insufficient role (requires super_admin).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /admin/api/promote-api-key:
+    post:
+      operationId: promoteApiKey
+      summary: Promote secondary key to primary
+      description: |
+        Promote the secondary API key (created by `rotate-api-key`) to primary and
+        remove the old primary key. After this call, only the new key is valid.
+
+        **Prerequisites:** A secondary key must exist (call `rotate-api-key` first).
+
+        Requires `super_admin` role.
+      tags: [Admin — API Key Rotation]
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Promotion successful.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Secondary key promoted to primary. The old primary key is no longer valid.
+        "400":
+          description: No secondary key exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Not authenticated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "403":
+          description: Insufficient role (requires super_admin).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 tags:
   - name: Recommendations
     description: Margin recommendation engine
@@ -1309,3 +1412,8 @@ tags:
     description: Deal outcome recording for model training
   - name: Reference Data
     description: Reference data and configuration
+  - name: Admin — API Key Rotation
+    description: |
+      Dual-key API key rotation endpoints for zero-downtime key changes.
+      Both the primary and secondary keys are accepted simultaneously during
+      the rotation window. Requires `super_admin` role and Bearer JWT auth.

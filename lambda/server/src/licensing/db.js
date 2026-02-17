@@ -207,5 +207,26 @@ export async function ensureDocsSchema() {
   console.log('Docs schema tables ensured');
 }
 
+/**
+ * Ensure the api_key column exists on the customers table for per-customer
+ * API key support (Epic 10A). Idempotent — safe to call on every cold start.
+ */
+export async function ensureApiKeySchema() {
+  const pool = await getPool();
+  try {
+    await pool.query(`
+      ALTER TABLE customers ADD COLUMN IF NOT EXISTS api_key VARCHAR(50) UNIQUE
+    `);
+    console.log('customers.api_key column ensured');
+  } catch (err) {
+    // IF NOT EXISTS may not be supported on older PG — ignore if column already present
+    if (err.message && err.message.includes('already exists')) {
+      console.log('customers.api_key column already exists');
+    } else {
+      console.error('Failed to add api_key column:', err.message);
+    }
+  }
+}
+
 // Export a default pool getter
 export default getPool;

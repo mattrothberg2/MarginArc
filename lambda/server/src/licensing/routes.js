@@ -1,6 +1,7 @@
 import express from 'express';
 import { query } from './db.js';
 import { validateLicenseKey } from './license.js';
+import { generateApiKey } from '../api-keys.js';
 
 const router = express.Router();
 
@@ -152,6 +153,27 @@ router.post('/activate', validateLicenseRequest, async (req, res) => {
 
     const activatedLicense = updateResult.rows[0];
 
+    // Generate a per-customer API key if the customer doesn't have one yet
+    let customerApiKey = null;
+    try {
+      const custResult = await query(
+        'SELECT api_key FROM customers WHERE id = $1',
+        [license.customer_id]
+      );
+      if (custResult.rows[0] && !custResult.rows[0].api_key) {
+        customerApiKey = generateApiKey();
+        await query(
+          'UPDATE customers SET api_key = $1 WHERE id = $2',
+          [customerApiKey, license.customer_id]
+        );
+      } else if (custResult.rows[0]) {
+        customerApiKey = custResult.rows[0].api_key;
+      }
+    } catch (keyErr) {
+      // api_key column may not exist yet — non-fatal
+      console.warn('Per-customer API key generation skipped:', keyErr.message);
+    }
+
     // Get customer config
     const configResult = await query(
       `SELECT * FROM customer_config WHERE customer_id = $1`,
@@ -166,7 +188,7 @@ router.post('/activate', validateLicenseRequest, async (req, res) => {
       settings: {}
     };
 
-    // Return success with configuration
+    // Return success with configuration (includes per-customer API key)
     res.json({
       success: true,
       config: {
@@ -175,6 +197,7 @@ router.post('/activate', validateLicenseRequest, async (req, res) => {
         seats_licensed: activatedLicense.seats_licensed,
         expiry_date: activatedLicense.expiry_date,
         status: activatedLicense.status,
+        api_key: customerApiKey,
         gemini_api_key: config.gemini_api_key,
         fulcrum_api_url: config.fulcrum_api_url,
         phone_home_interval_days: config.phone_home_interval_days,
