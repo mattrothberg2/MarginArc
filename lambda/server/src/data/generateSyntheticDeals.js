@@ -484,6 +484,9 @@ function generateDeals() {
       // --- Quarter end (more likely in Q4) ---
       const quarterEnd = quarter === 4 ? Math.random() < 0.40 : Math.random() < 0.15
 
+      // --- Displacement deal (competitive deals with 2+ competitors, ~5% chance) ---
+      const displacementDeal = competitors >= 2 ? Math.random() < 0.05 : false
+
       // --- Build input for rules engine ---
       const rulesInput = {
         oemCost,
@@ -587,7 +590,11 @@ function generateDeals() {
         customerLoyalty,
         dealUrgency,
         solutionDifferentiation,
-        isNewLogo
+        isNewLogo,
+        oem,
+        servicesAttached,
+        quarterEnd,
+        displacementDeal
       }
 
       if (cust.avgDealSize) lambdaDeal.avgDealSize = cust.avgDealSize
@@ -649,6 +656,7 @@ function generateDeals() {
         Fulcrum_Value_Add__c: valueAdd,
         Fulcrum_Services_Attached__c: servicesAttached,
         Fulcrum_Quarter_End__c: quarterEnd,
+        Fulcrum_Displacement_Deal__c: displacementDeal,
         Fulcrum_Planned_Margin__c: plannedMargin !== null ? +(plannedMargin * 100).toFixed(1) : null,
         Fulcrum_GP_Percent__c: +(achievedMargin * 100).toFixed(1),
         Fulcrum_Product_Category__c: sfdcCategory,
