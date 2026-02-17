@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import express from 'express'
 import cors from 'cors'
+import helmet from 'helmet'
 import morgan from 'morgan'
 import path from 'path'
 import fs from 'fs'
@@ -106,6 +107,25 @@ app.use(cors({
     callback(allowed ? null : new Error('CORS blocked'), allowed)
   },
   exposedHeaders: ['Content-Range']
+}))
+
+// Security headers — protects admin/docs SPAs against clickjacking, XSS, etc.
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],   // needed for admin SPA, docs SPA, Swagger UI
+      styleSrc: ["'self'", "'unsafe-inline'"],     // needed for admin SPA, docs SPA, Swagger UI
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.marginarc.com"],
+      fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false,  // needed for external fonts
+  hsts: { maxAge: 31536000, includeSubDomains: true }
 }))
 
 // Secondary CORS enforcement for admin routes: reject browser requests from
