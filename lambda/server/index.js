@@ -6,6 +6,8 @@ import path from 'path'
 import fs from 'fs'
 import { fileURLToPath } from 'url'
 import { z } from 'zod'
+import swaggerUi from 'swagger-ui-express'
+import yaml from 'js-yaml'
 import { computeRecommendation } from './src/rules.js'
 import { explainRecommendation, summarizeQualitative } from './src/gemini.js'
 import { compareWithPlan } from './src/metrics.js'
@@ -650,6 +652,15 @@ app.post('/api/deals', async (req,res)=> {
     res.status(400).json({ error: e?.message || 'Invalid input' })
   }
 })
+
+// OpenAPI / Swagger UI — interactive API documentation
+const openapiSpec = yaml.load(
+  fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf-8')
+)
+app.use('/docs/api-reference', swaggerUi.serve, swaggerUi.setup(openapiSpec, {
+  customSiteTitle: 'MarginArc API Reference',
+  customCss: '.swagger-ui .topbar { display: none }'
+}))
 
 // Docs portal API routes
 app.use('/docs/api', docsAuthRouter)

@@ -1,0 +1,1272 @@
+openapi: 3.0.3
+info:
+  title: MarginArc Engine API
+  description: |
+    The MarginArc Engine API provides margin recommendation, BOM optimization,
+    deal outcome recording, and product catalog search for Value-Added Resellers (VARs).
+
+    All margin values use the **margin-on-selling-price** convention:
+    `marginPct = (price − cost) / price`.
+  version: 1.0.0
+  contact:
+    name: MarginArc Support
+    url: https://marginarc.com
+
+servers:
+  - url: https://api.marginarc.com
+    description: Production
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key provided during onboarding. Set in Salesforce custom setting `Fulcrum_Config__c.API_Key__c`.
+
+  schemas:
+    # ── Enums ──────────────────────────────────────────────────────────────────
+    ProductCategory:
+      type: string
+      enum:
+        - Hardware
+        - Software
+        - Cloud
+        - ProfessionalServices
+        - ManagedServices
+        - ComplexSolution
+
+    CustomerSegment:
+      type: string
+      enum: [SMB, MidMarket, Enterprise]
+
+    RelationshipStrength:
+      type: string
+      enum: [New, Good, Strategic]
+
+    CustomerTechSophistication:
+      type: string
+      enum: [Low, Medium, High]
+
+    DealRegType:
+      type: string
+      enum: [NotRegistered, StandardApproved, PremiumHunting, Teaming]
+
+    Competitors:
+      type: string
+      enum: ["0", "1", "2", "3+"]
+
+    ValueAdd:
+      type: string
+      enum: [Low, Medium, High]
+
+    SolutionComplexity:
+      type: string
+      enum: [Low, Medium, High]
+
+    VarStrategicImportance:
+      type: string
+      enum: [Low, Medium, High]
+
+    CustomerIndustry:
+      type: string
+      description: Industry vertical of the end customer.
+      enum:
+        - Consumer Goods & Food
+        - Diversified Conglomerates
+        - Energy
+        - Financial Services
+        - Life Sciences & Healthcare
+        - Manufacturing & Automotive
+        - Media & Telecommunications
+        - Retail
+        - Technology
+        - Transportation & Logistics
+
+    DealStatus:
+      type: string
+      enum: [Won, Lost]
+
+    # ── Shared objects ─────────────────────────────────────────────────────────
+    OemProfile:
+      type: object
+      description: Optional OEM-specific margin parameters configured in admin portal.
+      properties:
+        baseMargin:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Base margin percentage for this OEM.
+        dealRegBoost:
+          type: number
+          minimum: 0
+          maximum: 50
+          description: Additional margin points when deal is registered.
+        quarterEndDiscount:
+          type: number
+          minimum: 0
+          maximum: 50
+          description: Typical OEM quarter-end discount percentage.
+        servicesBoost:
+          type: number
+          minimum: 0
+          maximum: 50
+          description: Additional margin when services are attached.
+        productCategory:
+          type: string
+          description: Primary product category for this OEM.
+      nullable: true
+
+    CompetitorProfile:
+      type: object
+      description: Competitor intelligence used to adjust recommendations.
+      properties:
+        name:
+          type: string
+          description: Competitor company name.
+        priceAggression:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: How aggressively the competitor prices (1=passive, 5=very aggressive).
+        marginAggression:
+          type: number
+          minimum: -5
+          maximum: 5
+          description: Margin aggression factor.
+        typicalDiscount:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Typical discount percentage offered by this competitor.
+        servicesCapability:
+          type: number
+          minimum: 1
+          maximum: 5
+          description: Competitor's services capability (1=weak, 5=strong).
+        primaryOems:
+          type: string
+          description: Primary OEM partnerships.
+        primaryStrength:
+          type: string
+          description: Competitor's primary competitive advantage.
+      required: [name]
+
+    DealInput:
+      type: object
+      description: Deal parameters used by the recommendation engine.
+      required:
+        - oemCost
+        - productCategory
+        - customerSegment
+        - relationshipStrength
+        - customerTechSophistication
+        - dealRegType
+        - competitors
+        - valueAdd
+        - solutionComplexity
+        - varStrategicImportance
+        - customerIndustry
+      properties:
+        oem:
+          type: string
+          description: OEM vendor name (e.g. "Cisco", "Dell Technologies").
+          example: Cisco
+        oemCost:
+          type: number
+          description: Total OEM cost (buy price) in dollars. Must be positive.
+          example: 100000
+        productCategory:
+          $ref: '#/components/schemas/ProductCategory'
+        customerSegment:
+          $ref: '#/components/schemas/CustomerSegment'
+        relationshipStrength:
+          $ref: '#/components/schemas/RelationshipStrength'
+        customerTechSophistication:
+          $ref: '#/components/schemas/CustomerTechSophistication'
+        dealRegType:
+          $ref: '#/components/schemas/DealRegType'
+        competitors:
+          $ref: '#/components/schemas/Competitors'
+        valueAdd:
+          $ref: '#/components/schemas/ValueAdd'
+        solutionComplexity:
+          $ref: '#/components/schemas/SolutionComplexity'
+        varStrategicImportance:
+          $ref: '#/components/schemas/VarStrategicImportance'
+        customerIndustry:
+          $ref: '#/components/schemas/CustomerIndustry'
+        customerPriceSensitivity:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Customer's price sensitivity (1=not sensitive, 5=very sensitive).
+        customerLoyalty:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: Customer loyalty to your company (1=low, 5=very loyal).
+        dealUrgency:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: How urgently the customer needs to close (1=no rush, 5=critical).
+        isNewLogo:
+          type: boolean
+          description: Whether this is a new customer (true) or existing (false).
+        solutionDifferentiation:
+          type: integer
+          minimum: 1
+          maximum: 5
+          description: How differentiated your solution is (1=commodity, 5=unique).
+        servicesAttached:
+          type: boolean
+          description: Whether professional/managed services are attached to this deal.
+        quarterEnd:
+          type: boolean
+          description: Whether the deal is closing at OEM quarter-end (may unlock extra discounts).
+        displacementDeal:
+          type: boolean
+          description: Whether this deal displaces an incumbent competitor.
+        dealSize:
+          type: number
+          description: Total deal size in dollars (optional, informational).
+        dealType:
+          type: string
+          description: Free-text deal type label.
+        accountName:
+          type: string
+          description: Customer account name.
+        competitorNames:
+          type: array
+          items:
+            type: string
+          description: List of competing VAR names on this deal.
+          example: ["CDW", "SHI"]
+        oemProfile:
+          $ref: '#/components/schemas/OemProfile'
+        competitorProfiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompetitorProfile'
+          nullable: true
+          description: Detailed competitor profiles for named competitors.
+
+    BomLineInput:
+      type: object
+      description: A single BOM line item submitted with a deal recommendation request.
+      required:
+        - description
+        - listPrice
+        - discountedPrice
+        - priceAfterMargin
+      properties:
+        description:
+          type: string
+          description: Line item description.
+          example: Catalyst 9300 48-Port PoE+ Switch
+        key:
+          type: string
+          description: Optional unique key for the line.
+        category:
+          type: string
+          default: Hardware
+          description: Product category for this line.
+        unit:
+          type: string
+          default: ea
+          description: Unit of measure.
+        productNumber:
+          type: string
+          description: Vendor part number.
+          example: C9300-48P-A
+        productId:
+          type: string
+          description: Internal product identifier.
+        vendor:
+          type: string
+          description: Vendor/manufacturer name.
+          example: Cisco
+        listPrice:
+          type: number
+          minimum: 0
+          description: List (MSRP) price per unit.
+          example: 12495
+        discountedPrice:
+          type: number
+          minimum: 0
+          description: Your cost after OEM discount.
+          example: 8746.50
+        priceAfterMargin:
+          type: number
+          minimum: 0
+          description: Sell price to customer (cost + margin).
+          example: 10295.88
+        recommendedMarginPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: Recommended margin percentage for this line.
+        quantity:
+          type: number
+          minimum: 0.01
+          default: 1
+          description: Quantity of this line item.
+          example: 10
+        note:
+          type: string
+          description: Optional note for this line.
+
+    # ── Response schemas ───────────────────────────────────────────────────────
+    Driver:
+      type: object
+      properties:
+        factor:
+          type: string
+          description: Name of the margin driver.
+          example: OEM Profile
+        direction:
+          type: string
+          enum: [up, down]
+          description: Whether this factor pushes margin up or down.
+        impact:
+          type: number
+          description: Magnitude of impact in margin percentage points.
+          example: 2.5
+        explanation:
+          type: string
+          description: Human-readable explanation of this driver.
+
+    PredictionQuality:
+      type: object
+      description: Data quality assessment of the input fields.
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Overall quality score (0–100).
+          example: 72
+        grade:
+          type: string
+          enum: [Excellent, Good, Fair, Poor]
+          description: Quality grade based on score.
+          example: Good
+        missingFields:
+          type: array
+          items:
+            type: string
+          description: Up to 5 optional fields that would improve prediction quality.
+          example: ["Price sensitivity (1-5)", "Deal urgency (1-5)"]
+
+    ScoreFactors:
+      type: object
+      description: Breakdown of the deal score components.
+      properties:
+        marginAlignment:
+          type: object
+          properties:
+            score:
+              type: integer
+              description: Points earned for margin alignment.
+            max:
+              type: integer
+              description: Maximum possible points.
+              example: 40
+        winProbability:
+          type: object
+          properties:
+            score:
+              type: integer
+            max:
+              type: integer
+              example: 25
+        dataQuality:
+          type: object
+          properties:
+            score:
+              type: integer
+            max:
+              type: integer
+              example: 20
+        algorithmConfidence:
+          type: object
+          properties:
+            score:
+              type: integer
+            max:
+              type: integer
+              example: 15
+
+    Metrics:
+      type: object
+      description: Financial comparison between planned and recommended margins.
+      properties:
+        planned:
+          type: object
+          properties:
+            marginPct:
+              type: number
+            price:
+              type: number
+            grossProfit:
+              type: number
+            riskAdjusted:
+              type: number
+        recommended:
+          type: object
+          properties:
+            marginPct:
+              type: number
+            price:
+              type: number
+            grossProfit:
+              type: number
+            riskAdjusted:
+              type: number
+        delta:
+          type: object
+          properties:
+            marginPct:
+              type: number
+            price:
+              type: number
+            grossProfit:
+              type: number
+            riskAdjusted:
+              type: number
+
+    RecommendResponse:
+      type: object
+      properties:
+        suggestedMarginPct:
+          type: number
+          nullable: true
+          description: Recommended margin percentage (margin-on-selling-price). Null in Phase 1.
+          example: 18.5
+        suggestedPrice:
+          type: number
+          nullable: true
+          description: Recommended sell price based on suggestedMarginPct. Null in Phase 1.
+          example: 122699.39
+        algorithmMarginPct:
+          type: number
+          description: Raw algorithm margin before any BOM override.
+          example: 18.5
+        algorithmSuggestedPrice:
+          type: number
+          description: Raw algorithm price before any BOM override.
+        winProbability:
+          type: number
+          description: Estimated win probability (0–1).
+          example: 0.72
+        confidence:
+          type: number
+          description: Algorithm confidence in this recommendation (0–1).
+          example: 0.85
+        method:
+          type: string
+          description: Method used to compute margin (e.g. "kNN + rules", "Manual BOM blend").
+          example: kNN + rules
+        drivers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Driver'
+          description: Factors that influenced the margin recommendation.
+        policyFloor:
+          type: number
+          description: Minimum margin enforced by policy guardrails.
+          example: 5
+        explanation:
+          type: string
+          description: AI-generated natural language explanation of the recommendation.
+        qualitativeSummary:
+          type: string
+          description: AI-generated qualitative deal narrative.
+        metrics:
+          $ref: '#/components/schemas/Metrics'
+        bom:
+          type: object
+          description: Synthesized or manual Bill of Materials. Lines included in Phase 3 only.
+          properties:
+            origin:
+              type: string
+              enum: [synthesized, manual]
+            totals:
+              type: object
+              properties:
+                price:
+                  type: number
+                marginPct:
+                  type: number
+            stats:
+              type: object
+              properties:
+                lineCount:
+                  type: integer
+            lines:
+              type: array
+              items:
+                type: object
+              description: Detailed BOM lines (Phase 3 only).
+        predictionQuality:
+          $ref: '#/components/schemas/PredictionQuality'
+        dealScore:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Composite deal score (0–100).
+          example: 74
+        scoreFactors:
+          $ref: '#/components/schemas/ScoreFactors'
+        phaseInfo:
+          type: object
+          description: Customer phase information.
+          properties:
+            current:
+              type: integer
+              enum: [1, 2, 3]
+              description: Current algorithm phase.
+            message:
+              type: string
+              description: Phase guidance message (Phase 1 only).
+            nextPhaseReady:
+              type: boolean
+              description: Whether the customer is ready for the next phase (Phase 1 only).
+
+    # ── BOM Search ─────────────────────────────────────────────────────────────
+    CatalogItem:
+      type: object
+      properties:
+        partNumber:
+          type: string
+          description: Vendor part number / SKU.
+          example: C9300-48P-A
+        description:
+          type: string
+          description: Product description.
+          example: Catalyst 9300 48-Port PoE+ Switch
+        manufacturer:
+          type: string
+          description: Manufacturer / vendor name.
+          example: Cisco
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        role:
+          type: string
+          description: Product role in a solution (e.g. "core", "accessory").
+          example: core
+        listPrice:
+          type: number
+          description: Manufacturer list price.
+          example: 12495
+        suggestedDiscount:
+          type: number
+          description: Typical discount rate (0–1).
+          example: 0.30
+        typicalMarginRange:
+          type: object
+          properties:
+            low:
+              type: number
+              description: Low end of typical margin percentage.
+              example: 8
+            high:
+              type: number
+              description: High end of typical margin percentage.
+              example: 18
+
+    BomSearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+        total:
+          type: integer
+          description: Total number of matching items (before limit).
+          example: 4
+        query:
+          type: string
+          nullable: true
+          description: The search query that was used.
+          example: C9300
+
+    # ── BOM Analyze ────────────────────────────────────────────────────────────
+    BomAnalyzeLineInput:
+      type: object
+      description: A BOM line for optimization analysis.
+      properties:
+        partNumber:
+          type: string
+          description: Vendor part number.
+          example: C9300-48P-A
+        description:
+          type: string
+          description: Line item description.
+          example: Implementation Services
+        category:
+          $ref: '#/components/schemas/ProductCategory'
+        quantity:
+          type: number
+          minimum: 1
+          description: Quantity.
+          example: 10
+        unitCost:
+          type: number
+          minimum: 0
+          description: Per-unit cost.
+          example: 5717
+        marginPct:
+          type: number
+          description: Current margin percentage for this line.
+          example: 12
+
+    BomAnalyzeContext:
+      type: object
+      description: Deal context for adjusting category margin targets.
+      properties:
+        oem:
+          type: string
+          description: OEM vendor name.
+          example: Cisco
+        customerSegment:
+          $ref: '#/components/schemas/CustomerSegment'
+        dealRegType:
+          $ref: '#/components/schemas/DealRegType'
+        competitors:
+          $ref: '#/components/schemas/Competitors'
+        solutionComplexity:
+          $ref: '#/components/schemas/SolutionComplexity'
+        relationshipStrength:
+          $ref: '#/components/schemas/RelationshipStrength'
+        valueAdd:
+          $ref: '#/components/schemas/ValueAdd'
+        targetBlendedMargin:
+          type: number
+          description: Desired blended margin percentage across all lines.
+          example: 18.5
+
+    BomAnalyzeLineOutput:
+      type: object
+      properties:
+        index:
+          type: integer
+          description: Zero-based line index.
+        partNumber:
+          type: string
+          description: Part number (if provided).
+        description:
+          type: string
+          description: Description (if provided).
+        currentMarginPct:
+          type: number
+          description: The margin percentage submitted in the request.
+          example: 12
+        recommendedMarginPct:
+          type: number
+          description: Optimized margin percentage for this line.
+          example: 10.5
+        marginFloor:
+          type: number
+          description: Category minimum margin percentage.
+          example: 5
+        extendedCost:
+          type: number
+          description: Total cost (unitCost × quantity).
+          example: 57170
+        extendedPrice:
+          type: number
+          description: Recommended sell price for this line.
+          example: 63522
+        grossProfit:
+          type: number
+          description: Gross profit for this line.
+          example: 6352
+        rationale:
+          type: string
+          description: Short explanation of the margin recommendation.
+          example: "Hardware in competitive Cisco deal — keep tight to win"
+
+    BomAnalyzeResponse:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/BomAnalyzeLineOutput'
+        totals:
+          type: object
+          properties:
+            totalCost:
+              type: number
+              description: Sum of extended costs across all lines.
+              example: 71170
+            totalPrice:
+              type: number
+              description: Sum of recommended prices across all lines.
+              example: 85127
+            blendedMarginPct:
+              type: number
+              description: Cost-weighted blended margin percentage.
+              example: 16.4
+            totalGrossProfit:
+              type: number
+              description: Total gross profit.
+              example: 13957
+            targetAchieved:
+              type: boolean
+              description: Whether the target blended margin was achieved (within 0.5pp).
+              example: false
+            targetMarginPct:
+              type: number
+              description: The target blended margin requested.
+              example: 18.5
+            gap:
+              type: number
+              description: Shortfall from target in percentage points (0 if achieved).
+              example: 2.1
+        recommendations:
+          type: object
+          properties:
+            healthScore:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: Overall BOM health score (0–100).
+              example: 72
+            insights:
+              type: array
+              items:
+                type: string
+              description: Actionable insights for improving the BOM.
+              example:
+                - "Services margin can absorb 5pp more to close the gap"
+                - "Consider deal registration to unlock 3pp of OEM margin"
+
+    # ── Deal Recording ─────────────────────────────────────────────────────────
+    DealRecordRequest:
+      type: object
+      required:
+        - input
+        - achievedMarginPct
+        - status
+      properties:
+        input:
+          $ref: '#/components/schemas/DealInput'
+        achievedMarginPct:
+          type: number
+          minimum: 0
+          maximum: 100
+          description: |
+            Actual achieved margin percentage (0–100). This is a percentage value,
+            NOT a decimal. For example, 18.5 means 18.5%.
+          example: 18.5
+        status:
+          $ref: '#/components/schemas/DealStatus'
+        lossReason:
+          type: string
+          description: Reason for loss (relevant when status is "Lost").
+          example: Price too high
+        bomLines:
+          type: array
+          items:
+            $ref: '#/components/schemas/BomLineInput'
+          description: Optional BOM lines associated with this deal.
+
+    # ── BOM Catalog ────────────────────────────────────────────────────────────
+    BomCatalogItem:
+      type: object
+      properties:
+        vendor:
+          type: string
+          example: Dell Technologies
+        productId:
+          type: string
+          example: DEL-PWX820
+        name:
+          type: string
+          example: PowerEdge MX820 Compute Block
+        category:
+          type: string
+          example: Hardware
+        listPrice:
+          type: number
+          example: 42000
+        discountRate:
+          type: number
+          description: Typical discount rate (0–1).
+          example: 0.25
+        marginTarget:
+          type: number
+          description: Target margin rate (0–1).
+          example: 0.18
+
+    BomPreset:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+
+    BomCatalogResponse:
+      type: object
+      properties:
+        catalog:
+          type: array
+          items:
+            $ref: '#/components/schemas/BomCatalogItem'
+        presets:
+          type: array
+          items:
+            $ref: '#/components/schemas/BomPreset'
+
+    # ── Errors ─────────────────────────────────────────────────────────────────
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Human-readable error message.
+          example: Invalid or missing API key
+
+paths:
+  /api/recommend:
+    post:
+      operationId: recommend
+      summary: Get margin recommendation
+      description: |
+        Core recommendation endpoint. Accepts deal parameters (and optionally a planned
+        margin and BOM lines), returns a recommended margin percentage, win probability,
+        confidence score, margin drivers, financial metrics, and an AI-generated explanation.
+
+        The response varies by customer phase:
+        - **Phase 1 (Score Only)**: Returns `dealScore` and `scoreFactors` but `suggestedMarginPct` is null.
+        - **Phase 2 (Recommend)**: Full recommendation without detailed BOM lines.
+        - **Phase 3 (Optimize)**: Full recommendation including detailed BOM lines.
+      tags: [Recommendations]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [input]
+              properties:
+                input:
+                  $ref: '#/components/schemas/DealInput'
+                plannedMarginPct:
+                  type: number
+                  nullable: true
+                  description: The sales rep's planned margin percentage. Used for comparison metrics.
+                  example: 15
+                bomLines:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BomLineInput'
+                  description: Optional manual BOM lines. When provided, the blended BOM margin overrides the algorithm margin.
+                  maxItems: 50
+            example:
+              input:
+                oem: Cisco
+                oemCost: 100000
+                productCategory: Hardware
+                customerSegment: MidMarket
+                dealRegType: StandardApproved
+                competitors: "1"
+                competitorNames: ["CDW"]
+                valueAdd: High
+                solutionComplexity: Medium
+                relationshipStrength: Good
+                customerIndustry: Technology
+                customerTechSophistication: Medium
+                servicesAttached: false
+                quarterEnd: false
+                isNewLogo: false
+                varStrategicImportance: Medium
+              plannedMarginPct: 15
+              bomLines: []
+      responses:
+        "200":
+          description: Recommendation computed successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendResponse'
+              example:
+                suggestedMarginPct: 18.5
+                suggestedPrice: 122699.39
+                algorithmMarginPct: 18.5
+                algorithmSuggestedPrice: 122699.39
+                winProbability: 0.72
+                confidence: 0.85
+                method: "kNN + rules"
+                drivers:
+                  - factor: OEM Profile
+                    direction: up
+                    impact: 2.5
+                    explanation: "Cisco standard approved deal registration unlocks higher margin"
+                policyFloor: 5
+                explanation: "Margin set at 18.5%. Key contributors: Deal Registration 4.0%, Relationship 2.0%."
+                qualitativeSummary: "With 1 competitor, a good relationship, and standard approved registration, an 18.5% blend balances win odds and profitability."
+                metrics:
+                  planned:
+                    marginPct: 15
+                    price: 117647.06
+                    grossProfit: 17647.06
+                    riskAdjusted: 12705.88
+                  recommended:
+                    marginPct: 18.5
+                    price: 122699.39
+                    grossProfit: 22699.39
+                    riskAdjusted: 16343.56
+                  delta:
+                    marginPct: 3.5
+                    price: 5052.33
+                    grossProfit: 5052.33
+                    riskAdjusted: 3637.68
+                predictionQuality:
+                  score: 72
+                  grade: Good
+                  missingFields:
+                    - "Price sensitivity (1-5)"
+                    - "Deal urgency (1-5)"
+                dealScore: 74
+                scoreFactors:
+                  marginAlignment:
+                    score: 26
+                    max: 40
+                  winProbability:
+                    score: 18
+                    max: 25
+                  dataQuality:
+                    score: 14
+                    max: 20
+                  algorithmConfidence:
+                    score: 13
+                    max: 15
+                phaseInfo:
+                  current: 2
+        "400":
+          description: Invalid input (validation error).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "Expected 'Hardware' | 'Software' | 'Cloud' | 'ProfessionalServices' | 'ManagedServices' | 'ComplexSolution'"
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: Invalid or missing API key
+
+  /api/bom/search:
+    post:
+      operationId: bomSearch
+      summary: Search product catalog
+      description: |
+        Search the unified product catalog (vendor SKUs + curated catalog) by free-text query,
+        manufacturer, and/or category. All filter parameters are optional. Free-text query
+        uses case-insensitive substring matching on part number and description; multiple
+        words use AND logic.
+      tags: [BOM]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                query:
+                  type: string
+                  description: Free-text search across part numbers and descriptions. Multiple words use AND logic.
+                  example: C9300
+                manufacturer:
+                  type: string
+                  description: Exact manufacturer filter (case-insensitive).
+                  example: Cisco
+                category:
+                  type: string
+                  description: Exact category filter (case-insensitive).
+                  example: Hardware
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 100
+                  default: 20
+                  description: Maximum number of results to return.
+            example:
+              query: C9300
+              manufacturer: Cisco
+              category: Hardware
+              limit: 20
+      responses:
+        "200":
+          description: Search results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BomSearchResponse'
+              example:
+                results:
+                  - partNumber: C9300-48P-A
+                    description: Catalyst 9300 48-Port PoE+ Switch
+                    manufacturer: Cisco
+                    category: Hardware
+                    role: core
+                    listPrice: 12495
+                    suggestedDiscount: 0.30
+                    typicalMarginRange:
+                      low: 8
+                      high: 18
+                total: 4
+                query: C9300
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bom/analyze:
+    post:
+      operationId: bomAnalyze
+      summary: Optimize BOM margins
+      description: |
+        Analyze BOM lines and return per-line margin optimization. Solves for per-line margins
+        that meet category floors, achieve a target blended margin (weighted by extended cost),
+        and maximize margin on high-elasticity lines (services/software) while keeping hardware competitive.
+
+        Uses **margin-on-selling-price** convention: `marginPct = (price − cost) / price`.
+
+        **Category margin floors**: Hardware 5%, Software 8%, Cloud 6%,
+        ProfessionalServices 15%, ManagedServices 12%, ComplexSolution 10%.
+      tags: [BOM]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [bomLines]
+              properties:
+                bomLines:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/BomAnalyzeLineInput'
+                  description: BOM lines to optimize. Maximum 50 lines.
+                  maxItems: 50
+                context:
+                  $ref: '#/components/schemas/BomAnalyzeContext'
+            example:
+              bomLines:
+                - partNumber: C9300-48P-A
+                  category: Hardware
+                  quantity: 10
+                  unitCost: 5717
+                  marginPct: 12
+                - description: Implementation Services
+                  category: ProfessionalServices
+                  quantity: 80
+                  unitCost: 175
+                  marginPct: 30
+              context:
+                oem: Cisco
+                customerSegment: MidMarket
+                dealRegType: StandardApproved
+                competitors: "1"
+                solutionComplexity: Medium
+                relationshipStrength: Good
+                valueAdd: High
+                targetBlendedMargin: 18.5
+      responses:
+        "200":
+          description: Optimization results.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BomAnalyzeResponse'
+              example:
+                lines:
+                  - index: 0
+                    partNumber: C9300-48P-A
+                    currentMarginPct: 12
+                    recommendedMarginPct: 10.5
+                    marginFloor: 5
+                    extendedCost: 57170
+                    extendedPrice: 63522
+                    grossProfit: 6352
+                    rationale: "Hardware in competitive Cisco deal — keep tight to win"
+                  - index: 1
+                    description: Implementation Services
+                    currentMarginPct: 30
+                    recommendedMarginPct: 35.2
+                    marginFloor: 15
+                    extendedCost: 14000
+                    extendedPrice: 21605
+                    grossProfit: 7605
+                    rationale: "Professional services — high value-add justifies premium"
+                totals:
+                  totalCost: 71170
+                  totalPrice: 85127
+                  blendedMarginPct: 16.4
+                  totalGrossProfit: 13957
+                  targetAchieved: false
+                  targetMarginPct: 18.5
+                  gap: 2.1
+                recommendations:
+                  healthScore: 72
+                  insights:
+                    - "Services margin can absorb 5pp more to close the gap"
+                    - "Consider deal registration to unlock 3pp of OEM margin"
+        "400":
+          description: Invalid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/deals:
+    post:
+      operationId: recordDeal
+      summary: Record deal outcome
+      description: |
+        Record a won or lost deal outcome for model training and analytics.
+        Persists the deal to PostgreSQL for use in future recommendations.
+
+        **Important**: `achievedMarginPct` is a percentage (0–100), not a decimal.
+        For example, use `18.5` for 18.5% margin, not `0.185`.
+      tags: [Deals]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DealRecordRequest'
+            example:
+              input:
+                oem: Cisco
+                oemCost: 100000
+                productCategory: Hardware
+                customerSegment: MidMarket
+                dealRegType: StandardApproved
+                competitors: "1"
+                valueAdd: High
+                solutionComplexity: Medium
+                relationshipStrength: Good
+                customerIndustry: Technology
+                customerTechSophistication: Medium
+                varStrategicImportance: Medium
+              achievedMarginPct: 18.5
+              status: Won
+      responses:
+        "200":
+          description: Deal recorded successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                    example: true
+        "400":
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/bomcatalog:
+    get:
+      operationId: getBomCatalog
+      summary: Get full product catalog
+      description: Returns the full curated BOM product catalog and preset configurations.
+      tags: [BOM]
+      responses:
+        "200":
+          description: Full catalog and presets.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BomCatalogResponse'
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/industries:
+    get:
+      operationId: getIndustries
+      summary: Get valid industry list
+      description: Returns the sorted list of valid `customerIndustry` values accepted by the API.
+      tags: [Reference Data]
+      responses:
+        "200":
+          description: Array of industry strings.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CustomerIndustry'
+              example:
+                - Consumer Goods & Food
+                - Diversified Conglomerates
+                - Energy
+                - Financial Services
+                - Life Sciences & Healthcare
+                - Manufacturing & Automotive
+                - Media & Telecommunications
+                - Retail
+                - Technology
+                - Transportation & Logistics
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+tags:
+  - name: Recommendations
+    description: Margin recommendation engine
+  - name: BOM
+    description: Bill of Materials catalog, search, and optimization
+  - name: Deals
+    description: Deal outcome recording for model training
+  - name: Reference Data
+    description: Reference data and configuration
