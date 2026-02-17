@@ -1566,3 +1566,257 @@
   color: var(--slate-400);
   text-align: center;
 }
+
+/* =========================================================================
+   Phase Callout (Phase 1 — data foundation message)
+   ========================================================================= */
+.marginarc-phase-callout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 16px 24px;
+  padding: 16px;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.08),
+    rgba(2, 177, 181, 0.06)
+  );
+  border: 1px solid rgba(99, 102, 241, 0.2);
+  border-radius: 10px;
+}
+
+.marginarc-phase-callout-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.marginarc-phase-callout-icon svg {
+  width: 24px;
+  height: 24px;
+  color: var(--indigo-500);
+}
+
+.marginarc-phase-callout-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--slate-700);
+  font-weight: 500;
+}
+
+/* =========================================================================
+   Data Quality Indicators
+   ========================================================================= */
+.marginarc-data-quality {
+  margin: 16px 24px 0;
+  padding: 14px 16px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 10px;
+}
+
+.marginarc-dq-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.marginarc-dq-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate-600);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.marginarc-dq-badge {
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.marginarc-dq-badge-gold {
+  background: rgba(234, 179, 8, 0.15);
+  color: #a16207;
+  border: 1px solid rgba(234, 179, 8, 0.3);
+}
+
+.marginarc-dq-badge-silver {
+  background: rgba(148, 163, 184, 0.15);
+  color: var(--slate-600);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+.marginarc-dq-badge-bronze {
+  background: rgba(180, 83, 9, 0.12);
+  color: #92400e;
+  border: 1px solid rgba(180, 83, 9, 0.25);
+}
+
+.marginarc-dq-bar-track {
+  height: 6px;
+  background: var(--slate-200);
+  border-radius: 3px;
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+
+.marginarc-dq-bar-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--teal-500), var(--teal-400));
+  transition: width 0.4s ease;
+}
+
+.marginarc-dq-factors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.marginarc-dq-factor {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.marginarc-dq-factor-met {
+  background: rgba(34, 197, 94, 0.1);
+  color: #15803d;
+  border: 1px solid rgba(34, 197, 94, 0.2);
+}
+
+.marginarc-dq-factor-unmet {
+  background: rgba(239, 68, 68, 0.08);
+  color: #b91c1c;
+  border: 1px solid rgba(239, 68, 68, 0.15);
+}
+
+.marginarc-dq-icon {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* =========================================================================
+   BOM Per-Line Recommendations (Phase 3)
+   ========================================================================= */
+.marginarc-bom-lines {
+  margin-top: 12px;
+  border-top: 1px solid var(--slate-200);
+  padding-top: 10px;
+}
+
+.marginarc-bom-lines-header {
+  display: grid;
+  grid-template-columns: 1fr 70px 90px 60px;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--slate-200);
+  margin-bottom: 4px;
+}
+
+.marginarc-bom-lines-col {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.marginarc-bom-lines-col:nth-child(n + 2) {
+  text-align: right;
+}
+
+.marginarc-bom-line-row {
+  display: grid;
+  grid-template-columns: 1fr 70px 90px 60px;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  align-items: center;
+}
+
+.marginarc-bom-line-row:last-child {
+  border-bottom: none;
+}
+
+.marginarc-bom-line-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.marginarc-bom-line-cat {
+  display: inline-block;
+  padding: 1px 5px;
+  background: var(--slate-200);
+  border-radius: 3px;
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--slate-500);
+  text-transform: uppercase;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.marginarc-bom-line-value {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-600);
+  text-align: right;
+}
+
+.marginarc-bom-line-rec {
+  font-weight: 700;
+  color: var(--teal-600);
+}
+
+/* BOM Optimize Button (Phase 3) */
+.btn-bom-optimize {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 12px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, var(--navy-800), var(--navy-900));
+  border: 1px solid rgba(2, 177, 181, 0.3);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal-400);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-bom-optimize:hover {
+  background: linear-gradient(135deg, var(--navy-700), var(--navy-800));
+  border-color: var(--teal-500);
+  box-shadow: 0 2px 8px rgba(2, 177, 181, 0.2);
+}
+
+.btn-bom-optimize:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-bom-optimize svg {
+  width: 16px;
+  height: 16px;
+}

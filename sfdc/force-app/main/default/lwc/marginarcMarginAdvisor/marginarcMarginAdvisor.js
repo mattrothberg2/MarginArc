@@ -68,6 +68,8 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   @track collapsedSections = {};
   @track showConfirmDialog = false;
   @track savedBomData = null;
+  @track phaseInfo = null;
+  @track isBomOptimizing = false;
   hasCalculated = false;
   wiredOpportunityResult; // Store for refreshApex
   _oemDataMap = {}; // OEM Name → { baseMargin, dealRegBoost, ... } from Fulcrum_OEM__c
@@ -354,6 +356,124 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       !this.isLoading &&
       !this.error &&
       !this.recommendation
+    );
+  }
+
+  // =========================================================================
+  // Phase-Aware Rendering (driven by API phaseInfo)
+  // =========================================================================
+
+  get phase() {
+    return this.phaseInfo?.phase || 2; // Default to phase 2 (current behavior)
+  }
+
+  get isPhaseOne() {
+    return this.phase === 1;
+  }
+
+  // LWC templates don't allow `!` unary — use computed getter for negation
+  get isNotPhaseOne() {
+    return this.phase !== 1;
+  }
+
+  get isPhaseThree() {
+    return this.phase === 3;
+  }
+
+  get showMarginRecommendation() {
+    return this.phase >= 2;
+  }
+
+  get showApplyButton() {
+    return this.phase >= 2;
+  }
+
+  get showBomOptimizeButton() {
+    return this.phase >= 3 && this.hasBomSummary;
+  }
+
+  get dealsUntilNextPhase() {
+    return this.phaseInfo?.dealsUntilNextPhase || 0;
+  }
+
+  get phaseCalloutMessage() {
+    const deals = this.dealsUntilNextPhase;
+    return `You\u2019re building your data foundation. ${deals} more scored deal${deals !== 1 ? "s" : ""} until margin recommendations unlock.`;
+  }
+
+  // Data quality indicators from phaseInfo
+  get hasDataQuality() {
+    return this.phaseInfo?.dataQuality != null;
+  }
+
+  get dataQualityTier() {
+    return this.phaseInfo?.dataQuality?.tier || "Bronze";
+  }
+
+  get dataQualityBadgeClass() {
+    const tier = this.dataQualityTier.toLowerCase();
+    return `marginarc-dq-badge marginarc-dq-badge-${tier}`;
+  }
+
+  get dataQualityScore() {
+    return this.phaseInfo?.dataQuality?.score || 0;
+  }
+
+  get dataQualityBarStyle() {
+    return `width: ${this.dataQualityScore}%`;
+  }
+
+  get dataQualityFactors() {
+    const factors = this.phaseInfo?.dataQuality?.factors || [];
+    return factors.map((f) => ({
+      ...f,
+      icon: f.met ? "\u2713" : "\u2717",
+      cssClass: f.met
+        ? "marginarc-dq-factor marginarc-dq-factor-met"
+        : "marginarc-dq-factor marginarc-dq-factor-unmet"
+    }));
+  }
+
+  // BOM per-line recommendations for Phase 3
+  get bomLineItems() {
+    if (!this.activeBomData?.items?.length) return [];
+    return this.activeBomData.items.map((item) => {
+      const currentPct =
+        item.marginPct != null ? item.marginPct * 100 : null;
+      const recPct =
+        item.recommendedMarginPct != null
+          ? item.recommendedMarginPct * 100
+          : null;
+      const hasRec = recPct != null;
+      const gap =
+        hasRec && currentPct != null ? recPct - currentPct : 0;
+      return {
+        key: item.key,
+        label: item.label || item.key,
+        category: item.category || "Hardware",
+        currentMarginDisplay:
+          currentPct != null ? currentPct.toFixed(1) + "%" : "\u2014",
+        recommendedMarginDisplay: hasRec
+          ? recPct.toFixed(1) + "%"
+          : "\u2014",
+        hasRecommendation: hasRec,
+        gapClass:
+          gap > 0
+            ? "delta-positive"
+            : gap < 0
+              ? "delta-negative"
+              : "",
+        gapDisplay: hasRec
+          ? (gap >= 0 ? "+" : "") + gap.toFixed(1) + "%"
+          : "\u2014"
+      };
+    });
+  }
+
+  get hasBomLineRecommendations() {
+    return (
+      this.isPhaseThree &&
+      this.bomLineItems.some((item) => item.hasRecommendation)
     );
   }
 
@@ -1263,6 +1383,86 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     }
   }
 
+  async handleOptimizeBom() {
+    if (!this.recordId || !this.activeBomData?.items?.length) return;
+
+    this.isBomOptimizing = true;
+    try {
+      const bomPayload = {
+        action: "bom-analyze",
+        input: this.buildInputPayload(),
+        plannedMarginPct: this.opportunityData?.plannedMargin || 15,
+        bomLines: this.activeBomData.items.map((item) => ({
+          key: item.key,
+          description: item.label,
+          category: item.category || "Hardware",
+          unit: item.unit || "ea",
+          quantity: item.quantity || 1,
+          listPrice: item.listPrice || item.unitCost || 0,
+          discountedPrice: item.unitCost || item.discountedPrice || 0,
+          priceAfterMargin: item.unitPrice || item.priceAfterMargin || 0,
+          marginPct: item.marginPct != null ? item.marginPct * 100 : null,
+          productNumber: item.productNumber || "",
+          vendor: item.vendor || ""
+        }))
+      };
+
+      const resultJson = await callMarginArcApi({
+        payload: JSON.stringify(bomPayload)
+      });
+      const result = JSON.parse(resultJson);
+
+      if (result.bomLines || result.items) {
+        const optimizedItems = result.bomLines || result.items;
+        const updatedItems = this.activeBomData.items.map((item) => {
+          const optimized = optimizedItems.find((o) => o.key === item.key);
+          if (optimized && optimized.recommendedMarginPct != null) {
+            return {
+              ...item,
+              recommendedMarginPct: optimized.recommendedMarginPct / 100
+            };
+          }
+          return item;
+        });
+
+        // Update the BOM data with per-line recommendations
+        if (this.recommendation?.bom?.items) {
+          this.recommendation = {
+            ...this.recommendation,
+            bom: { ...this.recommendation.bom, items: updatedItems }
+          };
+        } else {
+          this.savedBomData = {
+            ...this.savedBomData,
+            items: updatedItems
+          };
+        }
+
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: "BOM Margins Optimized",
+            message: `Per-line margin recommendations updated for ${optimizedItems.length} items.`,
+            variant: "success"
+          })
+        );
+      }
+    } catch (err) {
+      console.error("BOM optimization error:", err);
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "BOM Optimization Error",
+          message:
+            err.body?.message ||
+            err.message ||
+            "Could not optimize BOM margins",
+          variant: "error"
+        })
+      );
+    } finally {
+      this.isBomOptimizing = false;
+    }
+  }
+
   formatCurrency(value) {
     return (
       "$" +
@@ -1376,6 +1576,11 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       }
 
       this.recommendation = recommendation;
+
+      // Extract phase info from API response
+      if (recommendation.phaseInfo) {
+        this.phaseInfo = recommendation.phaseInfo;
+      }
     } catch (err) {
       console.error("Recommendation error:", err);
       this._lastApiError = `outer: ${err.message || err}`;
