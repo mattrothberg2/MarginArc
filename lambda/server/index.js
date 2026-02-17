@@ -30,11 +30,15 @@ import docsContentRouter from './src/docs/content.js'
 // Deal persistence
 import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, invalidateDealsCache } from './src/analytics.js'
 
+// Phase system
+import { ensurePhaseSchema, getCustomerPhase, computeDealScore } from './src/phases.js'
+
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
 ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
 ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
+ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -363,6 +367,16 @@ app.post('/api/recommend', async (req,res)=> {
     const manualBomLines = Array.isArray(req.body?.bomLines) ? BomLinesInput.parse(req.body.bomLines) : []
     const manualStats = manualBomLines.length ? computeManualBomStats(manualBomLines) : null
 
+    // Determine customer phase from org_id header
+    const orgId = req.headers['x-org-id'] || null
+    let phase = 1
+    try {
+      phase = await getCustomerPhase(orgId)
+    } catch (phaseErr) {
+      // Default to Phase 1 if lookup fails — safe fallback
+      structuredLog('warn', 'phase_lookup_failed', { orgId, error: phaseErr?.message })
+    }
+
     const deals = await fetchAllDeals(sampleDeals)
     const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
     const algorithmMarginPct = rec.suggestedMarginPct
@@ -401,6 +415,15 @@ app.post('/api/recommend', async (req,res)=> {
 
     const predictionQuality = assessPredictionQuality(input, rec)
 
+    // Compute deal score (available in all phases)
+    const { dealScore, scoreFactors } = computeDealScore({
+      plannedMarginPct: planned,
+      suggestedMarginPct: response.suggestedMarginPct,
+      winProbability: response.winProbability,
+      confidence: response.confidence,
+      predictionQuality
+    })
+
     if (isLambda) {
       structuredLog('info', 'recommendation', {
         oem: input.oem || 'unknown',
@@ -413,12 +436,48 @@ app.post('/api/recommend', async (req,res)=> {
         bomLineCount: manualBomLines.length,
         plannedMarginPct: planned,
         qualityScore: predictionQuality.score,
+        dealScore,
+        phase,
         geminiExplain: geminiExplainOk,
         geminiQual: geminiQualOk
       })
     }
 
-    return res.json({ ...response, explanation, qualitativeSummary, metrics, bom, predictionQuality })
+    // Phase 1: Score Only — return deal score but suppress margin recommendation
+    if (phase === 1) {
+      return res.json({
+        dealScore,
+        scoreFactors,
+        dataQuality: predictionQuality,
+        suggestedMarginPct: null,
+        suggestedPrice: null,
+        winProbability: response.winProbability,
+        confidence: response.confidence,
+        method: response.method,
+        drivers: response.drivers,
+        policyFloor: response.policyFloor,
+        phaseInfo: {
+          current: 1,
+          message: 'Score your deals to build your data foundation. Margin recommendations unlock at Phase 2.',
+          nextPhaseReady: false // will be enriched client-side via admin API
+        }
+      })
+    }
+
+    // Phase 2 & 3: Full recommendation + deal score
+    const fullResponse = {
+      ...response,
+      explanation,
+      qualitativeSummary,
+      metrics,
+      bom: phase === 3 ? bom : { ...bom, lines: undefined },
+      predictionQuality,
+      dealScore,
+      scoreFactors,
+      phaseInfo: { current: phase }
+    }
+
+    return res.json(fullResponse)
 
   } catch (e) {
     if (isLambda) {
