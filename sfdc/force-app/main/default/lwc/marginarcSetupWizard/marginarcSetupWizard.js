@@ -1085,8 +1085,7 @@ export default class MarginarcSetupWizard extends NavigationMixin(
       count,
       label: count + " deals",
       isSelected: this.selectedDealCount === count,
-      btnClass:
-        this.selectedDealCount === count ? "segment-active" : ""
+      btnClass: this.selectedDealCount === count ? "segment-active" : ""
     }));
   }
 
@@ -1104,9 +1103,7 @@ export default class MarginarcSetupWizard extends NavigationMixin(
 
   get isDemoLoadDisabled() {
     return (
-      this.isLoadingDemo ||
-      this.demoDataLoaded ||
-      this.selectedScenario == null
+      this.isLoadingDemo || this.demoDataLoaded || this.selectedScenario == null
     );
   }
 
@@ -1205,8 +1202,7 @@ export default class MarginarcSetupWizard extends NavigationMixin(
           this.loadSetupStatus();
           this.showSuccess(result.message);
         } else {
-          this.demoDataMessage =
-            result.message || "Failed to clear demo data.";
+          this.demoDataMessage = result.message || "Failed to clear demo data.";
           this.showError("Clear Error", { message: this.demoDataMessage });
         }
       })

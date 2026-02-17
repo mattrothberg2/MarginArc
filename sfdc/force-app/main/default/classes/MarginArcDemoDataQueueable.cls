@@ -72,8 +72,7 @@ public with sharing class MarginArcDemoDataQueueable implements Queueable {
     for (String name : accountNames) {
       String withSuffix = name.contains('(Demo)') ? name : name + ' (Demo)';
       if (
-        !accountMap.containsKey(name) &&
-        !accountMap.containsKey(withSuffix)
+        !accountMap.containsKey(name) && !accountMap.containsKey(withSuffix)
       ) {
         Account a = new Account(Name = withSuffix);
         if (accountIndustries.containsKey(name)) {

@@ -189,10 +189,7 @@ private class MarginArcDemoDataLoaderTest {
         result.containsKey('opportunities'),
         'Should have opportunities count'
       );
-      System.assert(
-        result.containsKey('message'),
-        'Should have message'
-      );
+      System.assert(result.containsKey('message'), 'Should have message');
 
       // Verify data is gone
       List<Account> accountsAfter = [
@@ -344,10 +341,7 @@ private class MarginArcDemoDataLoaderTest {
       upsert config;
 
       // Set up mock HTTP callout
-      Test.setMock(
-        HttpCalloutMock.class,
-        new ScenarioDataMock()
-      );
+      Test.setMock(HttpCalloutMock.class, new ScenarioDataMock());
 
       Test.startTest();
       Map<String, Object> result = MarginArcDemoDataLoader.loadScenarioData(

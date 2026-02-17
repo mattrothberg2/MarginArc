@@ -102,7 +102,10 @@ public with sharing class MarginArcDemoDataLoader {
     if (!existing.isEmpty()) {
       result.put('success', true);
       result.put('alreadyLoaded', true);
-      result.put('message', 'Demo data has already been loaded. Clear it first before loading a new scenario.');
+      result.put(
+        'message',
+        'Demo data has already been loaded. Clear it first before loading a new scenario.'
+      );
       return result;
     }
 
@@ -119,7 +122,12 @@ public with sharing class MarginArcDemoDataLoader {
       result.put('message', 'Invalid scenario: ' + scenario);
       return result;
     }
-    if (dealCount == null || (dealCount != 100 && dealCount != 250 && dealCount != 500)) {
+    if (
+      dealCount == null ||
+      (dealCount != 100 &&
+      dealCount != 250 &&
+      dealCount != 500)
+    ) {
       dealCount = 250;
     }
 
@@ -131,7 +139,10 @@ public with sharing class MarginArcDemoDataLoader {
 
       if (String.isBlank(apiUrl)) {
         result.put('success', false);
-        result.put('message', 'API URL not configured. Set it in MarginArc Config custom setting.');
+        result.put(
+          'message',
+          'API URL not configured. Set it in MarginArc Config custom setting.'
+        );
         return result;
       }
 
