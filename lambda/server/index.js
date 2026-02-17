@@ -40,12 +40,13 @@ import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, in
 import { ensurePhaseSchema, getCustomerPhase, computeDealScore } from './src/phases.js'
 
 // Ensure Salesforce DB schema on cold start (idempotent)
-import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, query as dbQuery } from './src/licensing/db.js'
+import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, ensureMfaSchema, query as dbQuery } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
 ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
 ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
 ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
 ensureApiKeySchema().catch(err => console.error('Failed to ensure api_key schema:', err.message))
+ensureMfaSchema().catch(err => console.error('Failed to ensure MFA schema:', err.message))
 
 // Wire up DB query function for per-customer API key lookups
 setQueryFn(dbQuery)

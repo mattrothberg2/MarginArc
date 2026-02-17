@@ -98,6 +98,15 @@ export async function verifyToken(req, res, next) {
   try {
     const secret = await loadJWTSecret();
     const decoded = jwt.verify(token, secret);
+
+    // Reject MFA-pending tokens from normal routes
+    if (decoded.mfa_pending) {
+      return res.status(401).json({
+        success: false,
+        message: 'MFA verification required'
+      });
+    }
+
     req.user = decoded;
     return next();
   } catch (primaryError) {
@@ -106,6 +115,14 @@ export async function verifyToken(req, res, next) {
       const previousSecret = await loadPreviousJWTSecret();
       if (previousSecret) {
         const decoded = jwt.verify(token, previousSecret);
+
+        if (decoded.mfa_pending) {
+          return res.status(401).json({
+            success: false,
+            message: 'MFA verification required'
+          });
+        }
+
         req.user = decoded;
         return next();
       }
@@ -147,6 +164,50 @@ export async function generateToken(username, role = 'super_admin') {
     }
   );
 }
+
+/**
+ * Generate a short-lived MFA pending token.
+ * This token has a 5-minute expiry and an `mfa_pending: true` claim.
+ * The verifyToken middleware rejects these tokens for all normal routes.
+ *
+ * @param {string} username - The admin username
+ * @param {string} role - The user role
+ * @returns {string} Signed JWT token with mfa_pending claim
+ */
+export async function generateMfaToken(username, role) {
+  const secret = await loadJWTSecret();
+  const kid = deriveKid(secret);
+  return jwt.sign(
+    { username, role, mfa_pending: true },
+    secret,
+    {
+      expiresIn: '5m',
+      header: { kid }
+    }
+  );
+}
+
+/**
+ * Verify an MFA pending token. Only accepts tokens with `mfa_pending: true`.
+ * Used by the MFA authenticate endpoint.
+ *
+ * @param {string} token - The JWT token to verify
+ * @returns {object} Decoded token payload
+ * @throws {Error} If token is invalid, expired, or not an MFA pending token
+ */
+export async function verifyMfaPendingToken(token) {
+  const secret = await loadJWTSecret();
+  const decoded = jwt.verify(token, secret);
+  if (!decoded.mfa_pending) {
+    throw new Error('Not an MFA pending token');
+  }
+  return decoded;
+}
+
+/**
+ * Export the JWT secret loader for MFA secret encryption.
+ */
+export { loadJWTSecret };
 
 /**
  * Middleware factory that enforces role-based access control (RBAC).
