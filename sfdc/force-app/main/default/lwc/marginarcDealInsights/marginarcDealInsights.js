@@ -1,10 +1,6 @@
 import { LightningElement, api, wire, track } from "lwc";
 import { getRecord } from "lightning/uiRecordApi";
 import getOemRecords from "@salesforce/apex/MarginArcController.getOemRecords";
-// Widget version
-
-const WIDGET_VERSION = "4.0";
-const LAST_UPDATED = "2026-02-07";
 
 const OPPORTUNITY_FIELDS = [
   "Opportunity.Name",
@@ -405,14 +401,6 @@ export default class MarginarcDealInsights extends LightningElement {
     insights.sort((a, b) => a.priority - b.priority);
 
     this.insights = insights.slice(0, 8);
-  }
-
-  get widgetVersion() {
-    return WIDGET_VERSION;
-  }
-
-  get lastUpdated() {
-    return LAST_UPDATED;
   }
 
   get hasInsights() {

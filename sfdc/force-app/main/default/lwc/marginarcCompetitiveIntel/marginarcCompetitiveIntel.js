@@ -10,9 +10,6 @@ import { LightningElement, api, wire, track } from "lwc";
 import { getRecord } from "lightning/uiRecordApi";
 import getAccountIntelligence from "@salesforce/apex/MarginArcCompetitiveController.getAccountIntelligence";
 import getCompetitorProfile from "@salesforce/apex/MarginArcCompetitiveController.getCompetitorProfile";
-// Widget version
-const WIDGET_VERSION = "4.0";
-const LAST_UPDATED = "2026-02-07";
 
 // Apex Decimal values don't always arrive as JS Number.
 // This helper ensures all numeric operations work correctly.
@@ -313,14 +310,6 @@ export default class MarginarcCompetitiveIntel extends LightningElement {
   // =========================================================================
   // Getters for template
   // =========================================================================
-
-  get widgetVersion() {
-    return WIDGET_VERSION;
-  }
-
-  get lastUpdated() {
-    return LAST_UPDATED;
-  }
 
   get hasAccountData() {
     return this.hasHistory && this.accountData;

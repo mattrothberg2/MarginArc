@@ -37,10 +37,7 @@
             </svg>
           </div>
           <div>
-            <h2 class="header-title">
-              MarginArc Manager Dashboard
-              <span class="version-badge">v{widgetVersion}</span>
-            </h2>
+            <h2 class="header-title">MarginArc Manager Dashboard</h2>
             <span class="header-subtitle"
               >{kpis.dealCount} open deals in pipeline</span
             >
@@ -111,9 +108,9 @@
           <div class="kpi-sub">{selectedTimeRangeLabel}</div>
         </div>
         <div class="kpi-card">
-          <div class={kpis.adoptionClass}>{kpis.adoptionRate}</div>
+          <div class={kpis.complianceClass}>{kpis.complianceRate}</div>
           <div class="kpi-label">ALIGNMENT</div>
-          <div class="kpi-sub">deals scored by MarginArc</div>
+          <div class="kpi-sub">within 3pp of recommendation</div>
         </div>
         <div class="kpi-card">
           <div class={kpis.avgPredictionQualityClass}>

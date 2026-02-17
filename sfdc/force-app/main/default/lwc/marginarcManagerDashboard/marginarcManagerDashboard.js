@@ -8,8 +8,6 @@ import getRepDetail from "@salesforce/apex/MarginArcManagerController.getRepDeta
 import getBackfillSummary from "@salesforce/apex/MarginArcManagerController.getBackfillSummary";
 import getBackfillDetails from "@salesforce/apex/MarginArcManagerController.getBackfillDetails";
 
-const WIDGET_VERSION = "1.0";
-
 // Apex Decimal → JS Number helper
 function n(val) {
   return val == null ? 0 : Number(val);
@@ -82,7 +80,6 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
   @track backfillDetailsData = null;
 
   _showDropdown = false;
-  widgetVersion = WIDGET_VERSION;
   timeRangeOptions = TIME_RANGE_OPTIONS;
 
   // User context wire
@@ -287,17 +284,17 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
         else status = "compliant";
       }
 
-      // Prediction Quality
+      // Prediction Quality — raised thresholds so synthetic data shows variance
       const pq = n(d.predictionQuality);
       let qualityClass = "quality-badge quality-poor";
       let qualityLabel = "Poor";
-      if (pq >= 80) {
+      if (pq >= 90) {
         qualityClass = "quality-badge quality-excellent";
         qualityLabel = "Excellent";
-      } else if (pq >= 60) {
+      } else if (pq >= 75) {
         qualityClass = "quality-badge quality-good";
         qualityLabel = "Good";
-      } else if (pq >= 40) {
+      } else if (pq >= 55) {
         qualityClass = "quality-badge quality-fair";
         qualityLabel = "Fair";
       }
@@ -697,11 +694,17 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
       alignedDeals: n(c.alignedDeals),
       alignedWon: n(c.alignedWon),
       alignedWinRate: fmtPct(c.alignedWinRate, 0),
-      alignedAvgMargin: fmtPct(c.alignedAvgMargin),
+      alignedAvgMargin:
+        c.alignedAvgMargin != null && n(c.alignedAvgMargin) !== 0
+          ? fmtPct(c.alignedAvgMargin)
+          : "N/A",
       divergedDeals: n(c.divergedDeals),
       divergedWon: n(c.divergedWon),
       divergedWinRate: fmtPct(c.divergedWinRate, 0),
-      divergedAvgMargin: fmtPct(c.divergedAvgMargin),
+      divergedAvgMargin:
+        c.divergedAvgMargin != null && n(c.divergedAvgMargin) !== 0
+          ? fmtPct(c.divergedAvgMargin)
+          : "N/A",
       winRateLift: fmtPp(n(c.alignedWinRate) - n(c.divergedWinRate)),
       winRateLiftPositive: n(c.alignedWinRate) >= n(c.divergedWinRate)
     };
