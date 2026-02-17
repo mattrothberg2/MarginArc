@@ -41,7 +41,41 @@ const customers = JSON.parse(fs.readFileSync(path.join(__dirname, 'customers.jso
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'bom_catalog.json'), 'utf-8'))
 const catalogById = new Map(catalog.map(item => [item.productId, item]))
 const presets = JSON.parse(fs.readFileSync(path.join(__dirname, 'bom_presets.json'), 'utf-8'))
-const vendorSkuData = JSON.parse(fs.readFileSync(path.join(__dirname, 'vendor_skus.json'), 'utf-8'))
+const vendorSkuFlat = JSON.parse(fs.readFileSync(path.join(__dirname, 'vendor_skus.json'), 'utf-8'))
+
+// Build nested index from flat array: { vendor: { category: { role: [skus] } } }
+const vendorSkuData = {}
+for (const item of vendorSkuFlat) {
+  const vendor = item.manufacturer
+  if (!vendorSkuData[vendor]) vendorSkuData[vendor] = {}
+  if (!vendorSkuData[vendor][item.category]) vendorSkuData[vendor][item.category] = {}
+  const subRoles = _mapToSubRoles(item.category, item.role)
+  for (const sr of subRoles) {
+    if (!vendorSkuData[vendor][item.category][sr]) vendorSkuData[vendor][item.category][sr] = []
+    vendorSkuData[vendor][item.category][sr].push({
+      sku: item.partNumber,
+      name: item.description,
+      listPrice: item.listPrice
+    })
+  }
+}
+
+function _mapToSubRoles(category, role) {
+  if (role === 'core') return ['core', 'platform']
+  if (role === 'accessory') return ['core']
+  if (role === 'support') return ['support']
+  if (role === 'license') {
+    if (category === 'Software') return ['subscription', 'software']
+    if (category === 'Cloud') return ['capacity']
+    return ['subscription']
+  }
+  if (role === 'service') {
+    if (category === 'ProfessionalServices') return ['consulting', 'specialists', 'services', 'program']
+    if (category === 'ManagedServices') return ['subscription', 'managed', 'automation']
+    return ['services', 'onboarding', 'enablement']
+  }
+  return [role]
+}
 
 // ---------------------------------------------------------------------------
 // Utility functions

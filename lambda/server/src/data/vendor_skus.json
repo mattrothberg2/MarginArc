@@ -1,801 +1,1919 @@
-{
-  "Cisco": {
-    "Hardware": {
-      "core": [
-        { "sku": "C9300-48P-A", "name": "Catalyst 9300 48-Port PoE+ Switch", "listPrice": 12495 },
-        { "sku": "ISR4431/K9", "name": "ISR 4431 Integrated Services Router", "listPrice": 14800 },
-        { "sku": "C9200L-48P-4G", "name": "Catalyst 9200L 48-Port PoE+ Switch", "listPrice": 6995 },
-        { "sku": "C8300-2N2S-4T2X", "name": "Catalyst 8300 Series Edge Platform", "listPrice": 18700 }
-      ],
-      "services": [
-        { "sku": "CON-ECMU-IMPL", "name": "Cisco Advanced Implementation Services", "listPrice": 245 }
-      ],
-      "support": [
-        { "sku": "CON-SNT-C930048", "name": "SmartNet 24x7x4 Support (12 mo)", "listPrice": 2495 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "DNA-E-T-48-A", "name": "Cisco DNA Essentials 48-Port License (3yr)", "listPrice": 4500 },
-        { "sku": "UMB-INSIGHTS-K9", "name": "Umbrella Secure Internet Gateway", "listPrice": 14000 }
-      ],
-      "onboarding": [
-        { "sku": "CON-ECMU-DNAONB", "name": "DNA Center Onboarding & Migration Services", "listPrice": 225 }
-      ],
-      "enablement": [
-        { "sku": "CON-ECMU-WRKSHP", "name": "Cisco Solution Enablement Workshop", "listPrice": 3200 }
-      ],
-      "support": [
-        { "sku": "CON-SSSNP-DNAE48", "name": "Solution Support for DNA Enterprise", "listPrice": 1800 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "MSLA-INTERSIGHT", "name": "Intersight SaaS Infrastructure Platform", "listPrice": 3600 }
-      ],
-      "managed": [
-        { "sku": "CON-ECMU-CLDMGD", "name": "Cisco Managed Hybrid Cloud Services", "listPrice": 210 }
-      ],
-      "optimization": [
-        { "sku": "APPDYN-ENT-K9", "name": "AppDynamics Enterprise APM Suite", "listPrice": 8400 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "CON-ECMU-CONSLT", "name": "Cisco CX Advisory Consulting", "listPrice": 275 }
-      ],
-      "specialists": [
-        { "sku": "CON-ECMU-ARCHCT", "name": "Cisco Solutions Architect Engagement", "listPrice": 325 }
-      ],
-      "program": [
-        { "sku": "CON-ECMU-PRGMGT", "name": "Cisco CX Program Management", "listPrice": 4800 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "CX-MNGD-NTWRK", "name": "CX Managed Network-as-a-Service", "listPrice": 4200 }
-      ],
-      "automation": [
-        { "sku": "CON-ECMU-AUTMTN", "name": "Network Automation & Day-2 Onboarding", "listPrice": 235 }
-      ],
-      "success": [
-        { "sku": "CX-SUCCESS-ENT", "name": "CX Success Track Enterprise QBR", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "CON-SNT-PROACTV", "name": "Proactive 24x7 NOC Monitoring", "listPrice": 3600 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "C9300-48UXM-A", "name": "Catalyst 9300 mGig + ISR 4461 SD-WAN Stack", "listPrice": 32500 }
-      ],
-      "software": [
-        { "sku": "DNA-P-T-48-A", "name": "Cisco DNA Premier + Umbrella + ThousandEyes", "listPrice": 12800 }
-      ],
-      "services": [
-        { "sku": "CON-ECMU-SDWDLV", "name": "SD-WAN Solution Delivery Squad", "listPrice": 265 }
-      ],
-      "governance": [
-        { "sku": "CX-GOVERN-ENT", "name": "CX Governance & Lifecycle Support", "listPrice": 3400 }
-      ]
-    }
+[
+  {
+    "partNumber": "C9200L-24P-4G",
+    "description": "Catalyst 9200L 24-Port PoE+ Switch, 4x1G Uplink",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 4295,
+    "typicalDiscount": 0.35
   },
-  "Palo Alto": {
-    "Hardware": {
-      "core": [
-        { "sku": "PA-460", "name": "PA-460 Next-Gen Firewall", "listPrice": 4495 },
-        { "sku": "PA-3260", "name": "PA-3260 Next-Gen Firewall", "listPrice": 42995 },
-        { "sku": "PA-5260", "name": "PA-5260 Next-Gen Firewall", "listPrice": 89995 }
-      ],
-      "services": [
-        { "sku": "PAN-SVC-IMPL", "name": "Palo Alto Deployment & Migration Services", "listPrice": 255 }
-      ],
-      "support": [
-        { "sku": "PAN-SVC-PREM", "name": "Premium Support (24x7, 12 mo)", "listPrice": 3200 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "PAN-PA-460-TP", "name": "Threat Prevention Subscription (PA-460, 3yr)", "listPrice": 3600 },
-        { "sku": "PRISMA-ACCESS-ENT", "name": "Prisma Access Enterprise Edition", "listPrice": 18000 }
-      ],
-      "onboarding": [
-        { "sku": "PAN-SVC-ONBRD", "name": "Prisma Onboarding & Policy Migration", "listPrice": 235 }
-      ],
-      "enablement": [
-        { "sku": "PAN-EDU-SEC", "name": "Palo Alto Security Essentials Workshop", "listPrice": 3800 }
-      ],
-      "support": [
-        { "sku": "PAN-SVC-FOCUS", "name": "Focused Services (Incident Response + TAM)", "listPrice": 2400 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "PRISMA-CLD-CMP", "name": "Prisma Cloud Compute Edition", "listPrice": 4800 }
-      ],
-      "managed": [
-        { "sku": "CORTEX-XSIAM", "name": "Cortex XSIAM Managed SOC Platform", "listPrice": 280 }
-      ],
-      "optimization": [
-        { "sku": "PRISMA-CLD-GOV", "name": "Prisma Cloud Governance & Compliance Module", "listPrice": 6200 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "PAN-SVC-CONSLT", "name": "Unit 42 Security Consulting", "listPrice": 295 }
-      ],
-      "specialists": [
-        { "sku": "PAN-SVC-ARCHT", "name": "Palo Alto Solutions Architect Engagement", "listPrice": 345 }
-      ],
-      "program": [
-        { "sku": "PAN-SVC-PRGM", "name": "Security Program Management & QA", "listPrice": 5200 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "CORTEX-MDR-ENT", "name": "Cortex MDR Enterprise Subscription", "listPrice": 5600 }
-      ],
-      "automation": [
-        { "sku": "XSOAR-ONBRD", "name": "XSOAR Automation & Playbook Onboarding", "listPrice": 245 }
-      ],
-      "success": [
-        { "sku": "PAN-SVC-QBR", "name": "Security Posture QBR Program", "listPrice": 3200 }
-      ],
-      "support": [
-        { "sku": "CORTEX-MDR-MON", "name": "24x7 MDR Threat Monitoring", "listPrice": 4200 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "PA-5260-BND", "name": "PA-5260 + Panorama Management Stack", "listPrice": 98000 }
-      ],
-      "software": [
-        { "sku": "PRISMA-SASE-PLT", "name": "Prisma SASE + Cortex XDR Platform", "listPrice": 24000 }
-      ],
-      "services": [
-        { "sku": "PAN-SVC-DLVR", "name": "Zero Trust Solution Delivery Squad", "listPrice": 285 }
-      ],
-      "governance": [
-        { "sku": "PAN-SVC-GOVNC", "name": "Security Governance & Lifecycle Management", "listPrice": 3800 }
-      ]
-    }
+  {
+    "partNumber": "C9200L-48P-4G",
+    "description": "Catalyst 9200L 48-Port PoE+ Switch, 4x1G Uplink",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 6995,
+    "typicalDiscount": 0.35
   },
-  "HPE": {
-    "Hardware": {
-      "core": [
-        { "sku": "P55245-B21", "name": "ProLiant DL380 Gen11 Server", "listPrice": 12499 },
-        { "sku": "R8S89A", "name": "ProLiant DL360 Gen11 Server", "listPrice": 9995 },
-        { "sku": "JL726A", "name": "Aruba CX 6300M 48-Port Switch", "listPrice": 7495 }
-      ],
-      "services": [
-        { "sku": "H36MNE", "name": "HPE Pointnext Implementation Services", "listPrice": 235 }
-      ],
-      "support": [
-        { "sku": "H36MGE", "name": "HPE Foundation Care 24x7 (12 mo)", "listPrice": 2800 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "R4Q18AAE", "name": "HPE GreenLake for Compute Ops Management", "listPrice": 3600 },
-        { "sku": "Q8H71AAE", "name": "HPE InfoSight for Servers License", "listPrice": 2400 }
-      ],
-      "onboarding": [
-        { "sku": "H36MQE", "name": "HPE GreenLake Onboarding & Migration", "listPrice": 220 }
-      ],
-      "enablement": [
-        { "sku": "HA124A1", "name": "HPE Technology Workshop (Server/Storage)", "listPrice": 3400 }
-      ],
-      "support": [
-        { "sku": "H36MSE", "name": "HPE Complete Care Enterprise Support", "listPrice": 2200 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "GRNLK-CMP-RSV", "name": "GreenLake Reserved Compute Capacity", "listPrice": 4200 }
-      ],
-      "managed": [
-        { "sku": "GRNLK-MGDSVC", "name": "GreenLake Managed Cloud Services", "listPrice": 225 }
-      ],
-      "optimization": [
-        { "sku": "GRNLK-OPT-TL", "name": "GreenLake Cost Optimization Tooling", "listPrice": 7200 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "HA110A1", "name": "HPE Pointnext Advisory Consulting", "listPrice": 265 }
-      ],
-      "specialists": [
-        { "sku": "HA115A1", "name": "HPE Technology Architect Engagement", "listPrice": 315 }
-      ],
-      "program": [
-        { "sku": "HA120A1", "name": "HPE Project & Program Management", "listPrice": 4600 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "GRNLK-MNGD-SUB", "name": "GreenLake Managed IT Subscription", "listPrice": 4800 }
-      ],
-      "automation": [
-        { "sku": "GRNLK-AUTO-ONB", "name": "GreenLake Automation & Onboarding", "listPrice": 220 }
-      ],
-      "success": [
-        { "sku": "GRNLK-QBR-ENT", "name": "GreenLake Customer Success QBR Program", "listPrice": 2600 }
-      ],
-      "support": [
-        { "sku": "GRNLK-MON-24X7", "name": "GreenLake Proactive Monitoring (24x7)", "listPrice": 3400 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "DL380-SIMPVTY", "name": "ProLiant DL380 + SimpliVity HCI Stack", "listPrice": 45000 }
-      ],
-      "software": [
-        { "sku": "GRNLK-ANLYTCS", "name": "GreenLake Analytics + InfoSight Platform", "listPrice": 9800 }
-      ],
-      "services": [
-        { "sku": "H36MTE", "name": "HPE Pointnext Solution Delivery Squad", "listPrice": 255 }
-      ],
-      "governance": [
-        { "sku": "GRNLK-GOVERN", "name": "GreenLake Program Governance & Support", "listPrice": 3200 }
-      ]
-    }
+  {
+    "partNumber": "C9300-24P-A",
+    "description": "Catalyst 9300 24-Port PoE+ Switch, Network Advantage",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.38
   },
-  "Dell": {
-    "Hardware": {
-      "core": [
-        { "sku": "PE-R760xs", "name": "PowerEdge R760xs Rack Server", "listPrice": 11995 },
-        { "sku": "PE-R660xs", "name": "PowerEdge R660xs Rack Server", "listPrice": 8995 },
-        { "sku": "S5248F-ON", "name": "PowerSwitch S5248F-ON 48-Port 25GbE", "listPrice": 16995 }
-      ],
-      "services": [
-        { "sku": "DELL-IMPL-SVC", "name": "Dell ProDeploy Plus Implementation", "listPrice": 230 }
-      ],
-      "support": [
-        { "sku": "DELL-PSP-5YR", "name": "ProSupport Plus 24x7 (12 mo)", "listPrice": 2600 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "APEX-CLD-SVC", "name": "APEX Cloud Services Subscription", "listPrice": 4800 },
-        { "sku": "PSTV-ONE-500T", "name": "PowerStore ONE Software Suite", "listPrice": 6200 }
-      ],
-      "onboarding": [
-        { "sku": "DELL-ONBRD-SVC", "name": "Dell Technologies Onboarding Services", "listPrice": 215 }
-      ],
-      "enablement": [
-        { "sku": "DELL-EDU-WRKSP", "name": "Dell Technology Workshop & Enablement", "listPrice": 3000 }
-      ],
-      "support": [
-        { "sku": "DELL-PSP-SW", "name": "Dell ProSupport for Software", "listPrice": 1900 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "APEX-FLEX-RSV", "name": "APEX Flex on Demand Capacity", "listPrice": 3800 }
-      ],
-      "managed": [
-        { "sku": "APEX-MGDSVC", "name": "APEX Managed Cloud Oversight", "listPrice": 215 }
-      ],
-      "optimization": [
-        { "sku": "APEX-CONSOLE", "name": "APEX Console Cloud Governance Suite", "listPrice": 6800 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "DELL-CTS-ADVSR", "name": "Dell Consulting & Advisory Services", "listPrice": 255 }
-      ],
-      "specialists": [
-        { "sku": "DELL-CTS-ARCHT", "name": "Dell Solutions Architect Engagement", "listPrice": 305 }
-      ],
-      "program": [
-        { "sku": "DELL-CTS-PRGM", "name": "Dell Program Management & QA", "listPrice": 4400 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "APEX-MNGDSUB", "name": "APEX Managed Infrastructure Subscription", "listPrice": 4400 }
-      ],
-      "automation": [
-        { "sku": "APEX-AUTO-ONB", "name": "APEX Automation & Day-2 Onboarding", "listPrice": 210 }
-      ],
-      "success": [
-        { "sku": "DELL-QBR-ENT", "name": "Dell Customer Success QBR Cadence", "listPrice": 2400 }
-      ],
-      "support": [
-        { "sku": "DELL-PROACTV", "name": "Dell Proactive Monitoring Service", "listPrice": 3200 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "PE-R760-VxRail", "name": "PowerEdge + VxRail HCI Platform Stack", "listPrice": 48000 }
-      ],
-      "software": [
-        { "sku": "APEX-ANLTCS", "name": "APEX Analytics + CloudIQ Software Layer", "listPrice": 8600 }
-      ],
-      "services": [
-        { "sku": "DELL-CTS-DLVR", "name": "Dell Solution Delivery Squad", "listPrice": 245 }
-      ],
-      "governance": [
-        { "sku": "DELL-GOV-SVC", "name": "Dell Program Governance & Lifecycle Support", "listPrice": 3000 }
-      ]
-    }
+  {
+    "partNumber": "C9300-48P-A",
+    "description": "Catalyst 9300 48-Port PoE+ Switch, Network Advantage",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 12495,
+    "typicalDiscount": 0.38
   },
-  "Fortinet": {
-    "Hardware": {
-      "core": [
-        { "sku": "FG-100F", "name": "FortiGate 100F Next-Gen Firewall", "listPrice": 3995 },
-        { "sku": "FG-600F", "name": "FortiGate 600F Next-Gen Firewall", "listPrice": 32995 },
-        { "sku": "FS-248E-POE", "name": "FortiSwitch 248E-POE Layer 2/3 Switch", "listPrice": 4495 }
-      ],
-      "services": [
-        { "sku": "FC-SVC-IMPL", "name": "Fortinet Deployment & Configuration Services", "listPrice": 225 }
-      ],
-      "support": [
-        { "sku": "FC-10-F100F-247", "name": "FortiCare Premium 24x7 (12 mo)", "listPrice": 1800 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "FC-10-F100F-UTP", "name": "FortiGuard UTM Protection Bundle (3yr)", "listPrice": 4200 },
-        { "sku": "FC-SASE-ENT", "name": "FortiSASE Enterprise Subscription", "listPrice": 12000 }
-      ],
-      "onboarding": [
-        { "sku": "FC-SVC-ONBRD", "name": "FortiGate Onboarding & Policy Migration", "listPrice": 215 }
-      ],
-      "enablement": [
-        { "sku": "FC-EDU-NSEWKSP", "name": "Fortinet NSE Workshop & Enablement", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "FC-SVC-FCTEMS", "name": "FortiClient EMS Enterprise Support", "listPrice": 1600 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "FC-FWEB-CLD", "name": "FortiWeb Cloud WAF-as-a-Service", "listPrice": 3400 }
-      ],
-      "managed": [
-        { "sku": "FC-SOC-MGDSVC", "name": "FortiSOC Managed Detection & Response", "listPrice": 240 }
-      ],
-      "optimization": [
-        { "sku": "FAZ-VM-BASE", "name": "FortiAnalyzer VM Cloud Analytics", "listPrice": 5800 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "FC-SVC-CONSLT", "name": "Fortinet Security Advisory Consulting", "listPrice": 245 }
-      ],
-      "specialists": [
-        { "sku": "FC-SVC-ARCHT", "name": "Fortinet Solutions Architect Engagement", "listPrice": 295 }
-      ],
-      "program": [
-        { "sku": "FC-SVC-PRGM", "name": "Fortinet Program Management & QA", "listPrice": 4200 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "FC-MDR-ENT", "name": "FortiGuard Managed SOC Subscription", "listPrice": 4600 }
-      ],
-      "automation": [
-        { "sku": "FC-SOAR-ONB", "name": "FortiSOAR Automation Onboarding", "listPrice": 225 }
-      ],
-      "success": [
-        { "sku": "FC-SVC-QBR", "name": "Fortinet Security Posture QBR Program", "listPrice": 2600 }
-      ],
-      "support": [
-        { "sku": "FC-SOC-MON", "name": "FortiSOC 24x7 Proactive Monitoring", "listPrice": 3600 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "FG-600F-FABRIC", "name": "FortiGate 600F + FortiSwitch Security Fabric", "listPrice": 42000 }
-      ],
-      "software": [
-        { "sku": "FC-FABRIC-SW", "name": "Fortinet Security Fabric Software Suite", "listPrice": 14000 }
-      ],
-      "services": [
-        { "sku": "FC-SVC-DLVR", "name": "Fortinet Fabric Deployment Squad", "listPrice": 255 }
-      ],
-      "governance": [
-        { "sku": "FC-SVC-GOVNC", "name": "Fortinet Security Governance & Lifecycle", "listPrice": 3200 }
-      ]
-    }
+  {
+    "partNumber": "C9300-48UXM-A",
+    "description": "Catalyst 9300 48-Port mGig UPOE Switch, Network Advantage",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 18995,
+    "typicalDiscount": 0.38
   },
-  "VMware": {
-    "Hardware": {
-      "core": [
-        { "sku": "VS8-ENT-PL-C", "name": "vSphere 8 Enterprise Plus (per CPU)", "listPrice": 7495 },
-        { "sku": "VCF-STD-C", "name": "VMware Cloud Foundation Standard", "listPrice": 13495 }
-      ],
-      "services": [
-        { "sku": "VMW-PS-IMPL", "name": "VMware Professional Services Implementation", "listPrice": 250 }
-      ],
-      "support": [
-        { "sku": "VS8-ENT-SNS", "name": "vSphere Enterprise Production Support (12 mo)", "listPrice": 2200 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "VCF-SUB-ENT", "name": "VMware Cloud Foundation Enterprise Subscription", "listPrice": 8400 },
-        { "sku": "HZ-ADV-STD-C", "name": "Horizon 8 Advanced (Named User)", "listPrice": 3200 }
-      ],
-      "onboarding": [
-        { "sku": "VMW-PS-ONBRD", "name": "VMware Onboarding & Migration Services", "listPrice": 240 }
-      ],
-      "enablement": [
-        { "sku": "VMW-EDU-WRKSP", "name": "VMware Technical Enablement Workshop", "listPrice": 3600 }
-      ],
-      "support": [
-        { "sku": "VCF-ENT-SNS", "name": "VCF Enterprise Production Support", "listPrice": 2400 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "VMC-AWS-HOST", "name": "VMware Cloud on AWS Host Reservation", "listPrice": 5200 }
-      ],
-      "managed": [
-        { "sku": "VMW-MGDSVC", "name": "VMware Managed Cloud Oversight", "listPrice": 235 }
-      ],
-      "optimization": [
-        { "sku": "ARIA-OPS-ENT", "name": "Aria Operations Enterprise (Cloud Cost Mgmt)", "listPrice": 7800 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "VMW-PS-ADVSR", "name": "VMware Advisory & Strategy Consulting", "listPrice": 270 }
-      ],
-      "specialists": [
-        { "sku": "VMW-PS-ARCHT", "name": "VMware Solutions Architect Engagement", "listPrice": 320 }
-      ],
-      "program": [
-        { "sku": "VMW-PS-PRGM", "name": "VMware Program Management & QA", "listPrice": 4800 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "VMW-MNGD-SUB", "name": "VMware Managed VDI/Cloud Subscription", "listPrice": 5000 }
-      ],
-      "automation": [
-        { "sku": "ARIA-AUTO-ONB", "name": "Aria Automation Onboarding & Runbooks", "listPrice": 230 }
-      ],
-      "success": [
-        { "sku": "VMW-QBR-ENT", "name": "VMware Customer Success QBR Program", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "VMW-MON-24X7", "name": "VMware Proactive Platform Monitoring", "listPrice": 3800 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "VCF-ENT-STACK", "name": "VCF Enterprise + vSAN + NSX Platform Stack", "listPrice": 52000 }
-      ],
-      "software": [
-        { "sku": "ARIA-SUITE-ENT", "name": "Aria Suite Enterprise (Ops + Auto + Logs)", "listPrice": 16000 }
-      ],
-      "services": [
-        { "sku": "VMW-PS-DLVR", "name": "VMware Solution Delivery Squad", "listPrice": 260 }
-      ],
-      "governance": [
-        { "sku": "VMW-GOV-SVC", "name": "VMware Platform Governance & Support", "listPrice": 3600 }
-      ]
-    }
+  {
+    "partNumber": "C9500-24Y4C-A",
+    "description": "Catalyst 9500 24x25G & 4x100G Switch, Network Advantage",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 28495,
+    "typicalDiscount": 0.40
   },
-  "Microsoft": {
-    "Hardware": {
-      "core": [
-        { "sku": "5P6-00003", "name": "Surface Laptop 6 for Business (i7/16GB)", "listPrice": 1899 },
-        { "sku": "AZS-HCI-2N", "name": "Azure Stack HCI 2-Node Cluster", "listPrice": 28000 }
-      ],
-      "services": [
-        { "sku": "MS-UNFY-IMPL", "name": "Microsoft Unified Implementation Services", "listPrice": 235 }
-      ],
-      "support": [
-        { "sku": "MS-UNFY-SUP", "name": "Microsoft Unified Support (12 mo)", "listPrice": 3200 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "AAA-22340", "name": "Microsoft 365 E5 (Annual, per user)", "listPrice": 684 },
-        { "sku": "CFQ7TTC0LCHC", "name": "Microsoft Defender for Endpoint P2", "listPrice": 684 }
-      ],
-      "onboarding": [
-        { "sku": "MS-FRP-ONBRD", "name": "FastTrack Migration & Onboarding", "listPrice": 210 }
-      ],
-      "enablement": [
-        { "sku": "MS-EDU-WRKSP", "name": "Microsoft Adoption & Enablement Workshop", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "MS-PRE-SUP", "name": "Microsoft Premier Support for Enterprise", "listPrice": 2000 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "AZR-RI-D4V5", "name": "Azure Reserved VM Instance (D4s v5, 1yr)", "listPrice": 3600 }
-      ],
-      "managed": [
-        { "sku": "AZR-ARC-MGDSVC", "name": "Azure Arc Managed Hybrid Cloud Services", "listPrice": 220 }
-      ],
-      "optimization": [
-        { "sku": "AZR-COST-MGT", "name": "Azure Cost Management + Advisor Suite", "listPrice": 6400 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "MS-CTS-ADVSR", "name": "Microsoft Consulting Advisory Services", "listPrice": 260 }
-      ],
-      "specialists": [
-        { "sku": "MS-CTS-ARCHT", "name": "Microsoft Cloud Solutions Architect", "listPrice": 310 }
-      ],
-      "program": [
-        { "sku": "MS-CTS-PRGM", "name": "Microsoft Program Management & QA", "listPrice": 4600 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "AZR-MNGD-SUB", "name": "Azure Managed Services Subscription", "listPrice": 4600 }
-      ],
-      "automation": [
-        { "sku": "AZR-AUTO-ONB", "name": "Azure Automation & Onboarding", "listPrice": 215 }
-      ],
-      "success": [
-        { "sku": "MS-QBR-ENT", "name": "Microsoft Customer Success QBR Program", "listPrice": 2600 }
-      ],
-      "support": [
-        { "sku": "AZR-MON-24X7", "name": "Azure Proactive Monitoring (24x7)", "listPrice": 3400 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "AZS-HCI-STACK", "name": "Azure Stack HCI + Arc + Defender Stack", "listPrice": 38000 }
-      ],
-      "software": [
-        { "sku": "MS-SEC-SUITE", "name": "Microsoft Security Suite (Defender + Sentinel + Entra)", "listPrice": 11000 }
-      ],
-      "services": [
-        { "sku": "MS-CTS-DLVR", "name": "Microsoft Solution Delivery Squad", "listPrice": 250 }
-      ],
-      "governance": [
-        { "sku": "MS-GOV-SVC", "name": "Microsoft Governance & Lifecycle Support", "listPrice": 3200 }
-      ]
-    }
+  {
+    "partNumber": "ISR1100-4G",
+    "description": "ISR 1100 4-Port Dual GE WAN Router",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2495,
+    "typicalDiscount": 0.30
   },
-  "Pure Storage": {
-    "Hardware": {
-      "core": [
-        { "sku": "FA-X20-R4", "name": "FlashArray//X20 R4 (All-Flash)", "listPrice": 89000 },
-        { "sku": "FA-C40-R4", "name": "FlashArray//C40 R4 (Capacity Tier)", "listPrice": 52000 },
-        { "sku": "FB-S200", "name": "FlashBlade//S200 (Unstructured Data)", "listPrice": 125000 }
-      ],
-      "services": [
-        { "sku": "PS-SVC-IMPL", "name": "Pure Professional Services Implementation", "listPrice": 240 }
-      ],
-      "support": [
-        { "sku": "PS-EVG-SUB", "name": "Pure Evergreen//One Subscription (12 mo)", "listPrice": 4800 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "PS-PURE1-ENT", "name": "Pure1 Enterprise (AIOps + Management)", "listPrice": 3600 },
-        { "sku": "PS-PORTWORX", "name": "Portworx Enterprise (Kubernetes Storage)", "listPrice": 6800 }
-      ],
-      "onboarding": [
-        { "sku": "PS-SVC-ONBRD", "name": "Pure Storage Onboarding & Data Migration", "listPrice": 225 }
-      ],
-      "enablement": [
-        { "sku": "PS-EDU-WRKSP", "name": "Pure Storage Technical Workshop", "listPrice": 3200 }
-      ],
-      "support": [
-        { "sku": "PS-PRE-SUP", "name": "Pure Premium Support (24x7)", "listPrice": 2200 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "PS-CAS-RSV", "name": "Pure Cloud Block Store Reserved Capacity", "listPrice": 4400 }
-      ],
-      "managed": [
-        { "sku": "PS-MGDSVC", "name": "Pure Managed Storage Services", "listPrice": 230 }
-      ],
-      "optimization": [
-        { "sku": "PS-PURE1-OPT", "name": "Pure1 Storage Optimization & Planning", "listPrice": 5400 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "PS-SVC-CONSLT", "name": "Pure Storage Advisory Consulting", "listPrice": 260 }
-      ],
-      "specialists": [
-        { "sku": "PS-SVC-ARCHT", "name": "Pure Storage Solutions Architect", "listPrice": 310 }
-      ],
-      "program": [
-        { "sku": "PS-SVC-PRGM", "name": "Pure Program Management & QA", "listPrice": 4400 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "PS-EVG-MNGD", "name": "Evergreen//One Managed Storage Subscription", "listPrice": 5200 }
-      ],
-      "automation": [
-        { "sku": "PS-AUTO-ONB", "name": "Pure Automation & Runbook Onboarding", "listPrice": 220 }
-      ],
-      "success": [
-        { "sku": "PS-QBR-ENT", "name": "Pure Customer Success QBR Program", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "PS-MON-24X7", "name": "Pure Proactive Array Monitoring (24x7)", "listPrice": 3800 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "FA-X20-FB-STACK", "name": "FlashArray//X20 + FlashBlade Unified Storage Stack", "listPrice": 165000 }
-      ],
-      "software": [
-        { "sku": "PS-FUSION-SW", "name": "Pure Fusion + Portworx Platform Layer", "listPrice": 12000 }
-      ],
-      "services": [
-        { "sku": "PS-SVC-DLVR", "name": "Pure Solution Delivery Squad", "listPrice": 250 }
-      ],
-      "governance": [
-        { "sku": "PS-GOV-SVC", "name": "Pure Governance & Lifecycle Management", "listPrice": 3400 }
-      ]
-    }
+  {
+    "partNumber": "ISR4431/K9",
+    "description": "ISR 4431 Integrated Services Router",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14800,
+    "typicalDiscount": 0.35
   },
-  "NetApp": {
-    "Hardware": {
-      "core": [
-        { "sku": "AFF-A250", "name": "AFF A250 All-Flash Storage System", "listPrice": 45000 },
-        { "sku": "AFF-A400", "name": "AFF A400 All-Flash Storage System", "listPrice": 78000 },
-        { "sku": "FAS-2820", "name": "FAS2820 Hybrid Storage System", "listPrice": 22000 }
-      ],
-      "services": [
-        { "sku": "NA-PS-IMPL", "name": "NetApp Professional Services Implementation", "listPrice": 235 }
-      ],
-      "support": [
-        { "sku": "NA-SUP-SB-PRE", "name": "NetApp SupportEdge Premium (12 mo)", "listPrice": 3200 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "SW-ONTAP-ENT", "name": "ONTAP Enterprise Data Management Suite", "listPrice": 5400 },
-        { "sku": "SW-BLUEXP-ENT", "name": "BlueXP Enterprise Cloud Management", "listPrice": 3800 }
-      ],
-      "onboarding": [
-        { "sku": "NA-PS-ONBRD", "name": "NetApp Onboarding & Data Migration", "listPrice": 220 }
-      ],
-      "enablement": [
-        { "sku": "NA-EDU-WRKSP", "name": "NetApp Technical Enablement Workshop", "listPrice": 3000 }
-      ],
-      "support": [
-        { "sku": "NA-SUP-SW-PRE", "name": "NetApp Software Support Premium", "listPrice": 2000 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "CVO-AWS-RSV", "name": "Cloud Volumes ONTAP Reserved Capacity", "listPrice": 4000 }
-      ],
-      "managed": [
-        { "sku": "NA-MGDSVC", "name": "NetApp Managed Cloud Volume Services", "listPrice": 220 }
-      ],
-      "optimization": [
-        { "sku": "BLUEXP-OPT", "name": "BlueXP Cloud Tiering & Optimization", "listPrice": 5600 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "NA-PS-CONSLT", "name": "NetApp Advisory Consulting Services", "listPrice": 255 }
-      ],
-      "specialists": [
-        { "sku": "NA-PS-ARCHT", "name": "NetApp Solutions Architect Engagement", "listPrice": 305 }
-      ],
-      "program": [
-        { "sku": "NA-PS-PRGM", "name": "NetApp Program Management & QA", "listPrice": 4200 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "KEYSTONE-STG", "name": "NetApp Keystone STaaS Subscription", "listPrice": 4800 }
-      ],
-      "automation": [
-        { "sku": "NA-AUTO-ONB", "name": "NetApp Automation & Ansible Onboarding", "listPrice": 215 }
-      ],
-      "success": [
-        { "sku": "NA-QBR-ENT", "name": "NetApp Customer Success QBR Program", "listPrice": 2600 }
-      ],
-      "support": [
-        { "sku": "NA-MON-24X7", "name": "NetApp AIQ Proactive Monitoring (24x7)", "listPrice": 3400 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "AFF-A400-STACK", "name": "AFF A400 + MetroCluster Data Fabric Stack", "listPrice": 120000 }
-      ],
-      "software": [
-        { "sku": "ONTAP-FABRIC-SW", "name": "ONTAP + BlueXP Data Fabric Software Layer", "listPrice": 10000 }
-      ],
-      "services": [
-        { "sku": "NA-PS-DLVR", "name": "NetApp Solution Delivery Squad", "listPrice": 245 }
-      ],
-      "governance": [
-        { "sku": "NA-GOV-SVC", "name": "NetApp Data Governance & Lifecycle Support", "listPrice": 3200 }
-      ]
-    }
+  {
+    "partNumber": "C8300-2N2S-4T2X",
+    "description": "Catalyst 8300 Series Edge Platform, SD-WAN",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 18700,
+    "typicalDiscount": 0.35
   },
-  "Arista": {
-    "Hardware": {
-      "core": [
-        { "sku": "DCS-7050X3-48YC12", "name": "7050X3 48-Port 25GbE Data Center Switch", "listPrice": 24995 },
-        { "sku": "DCS-7280R3-48C6", "name": "7280R3 48-Port 100GbE Spine Switch", "listPrice": 68000 },
-        { "sku": "CCS-720XP-48Y6", "name": "720XP 48-Port Campus Switch", "listPrice": 8995 }
-      ],
-      "services": [
-        { "sku": "AR-SVC-IMPL", "name": "Arista Deployment & Integration Services", "listPrice": 255 }
-      ],
-      "support": [
-        { "sku": "AR-SUP-A-LINE", "name": "Arista A-Line Support 24x7 (12 mo)", "listPrice": 3400 }
-      ]
-    },
-    "Software": {
-      "subscription": [
-        { "sku": "CVP-ENT-SUB", "name": "CloudVision Portal Enterprise Subscription", "listPrice": 6200 },
-        { "sku": "DMF-ENT-SUB", "name": "DANZ Monitoring Fabric Enterprise", "listPrice": 4800 }
-      ],
-      "onboarding": [
-        { "sku": "AR-SVC-ONBRD", "name": "Arista CloudVision Onboarding & Integration", "listPrice": 240 }
-      ],
-      "enablement": [
-        { "sku": "AR-EDU-WRKSP", "name": "Arista Network Enablement Workshop", "listPrice": 3400 }
-      ],
-      "support": [
-        { "sku": "AR-SUP-SW", "name": "Arista Software Support Premium", "listPrice": 2200 }
-      ]
-    },
-    "Cloud": {
-      "capacity": [
-        { "sku": "CVaaS-ENT", "name": "CloudVision as-a-Service Enterprise", "listPrice": 4800 }
-      ],
-      "managed": [
-        { "sku": "AR-MGDSVC", "name": "Arista Managed Network Services", "listPrice": 240 }
-      ],
-      "optimization": [
-        { "sku": "AR-NETOBS", "name": "Arista Network Observability & Analytics", "listPrice": 6800 }
-      ]
-    },
-    "ProfessionalServices": {
-      "consulting": [
-        { "sku": "AR-PS-CONSLT", "name": "Arista Network Advisory Consulting", "listPrice": 275 }
-      ],
-      "specialists": [
-        { "sku": "AR-PS-ARCHT", "name": "Arista Network Architect Engagement", "listPrice": 325 }
-      ],
-      "program": [
-        { "sku": "AR-PS-PRGM", "name": "Arista Program Management & QA", "listPrice": 4800 }
-      ]
-    },
-    "ManagedServices": {
-      "subscription": [
-        { "sku": "AR-MNGD-SUB", "name": "Arista Managed Network Subscription", "listPrice": 5200 }
-      ],
-      "automation": [
-        { "sku": "AR-AUTO-ONB", "name": "Arista Automation & Day-2 Onboarding", "listPrice": 235 }
-      ],
-      "success": [
-        { "sku": "AR-QBR-ENT", "name": "Arista Customer Success QBR Program", "listPrice": 2800 }
-      ],
-      "support": [
-        { "sku": "AR-MON-24X7", "name": "Arista Proactive Network Monitoring (24x7)", "listPrice": 4000 }
-      ]
-    },
-    "ComplexSolution": {
-      "platform": [
-        { "sku": "7280R3-SPINE-LF", "name": "7280R3 Spine + 7050X3 Leaf Data Center Fabric", "listPrice": 145000 }
-      ],
-      "software": [
-        { "sku": "CVP-DMF-SUITE", "name": "CloudVision + DANZ Full Observability Suite", "listPrice": 14000 }
-      ],
-      "services": [
-        { "sku": "AR-PS-DLVR", "name": "Arista Fabric Deployment Squad", "listPrice": 265 }
-      ],
-      "governance": [
-        { "sku": "AR-GOV-SVC", "name": "Arista Network Governance & Lifecycle Support", "listPrice": 3600 }
-      ]
-    }
+  {
+    "partNumber": "MR46-HW",
+    "description": "Meraki MR46 Wi-Fi 6 Cloud-Managed Indoor AP",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1495,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "MS390-48P-HW",
+    "description": "Meraki MS390 48-Port PoE Cloud-Managed Switch",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 12495,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "MX450-HW",
+    "description": "Meraki MX450 Cloud-Managed Security Appliance",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 18995,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "FPR2130-ASA-K9",
+    "description": "Firepower 2130 ASA Appliance, 1U",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 24995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "UCSC-C220-M7S",
+    "description": "UCS C220 M7 Rack Server, Short-Depth",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "UCSC-C240-M7SX",
+    "description": "UCS C240 M7 2U Rack Server, 24 SFF Drive Bays",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "DNA-E-T-48-3Y",
+    "description": "Cisco DNA Essentials License, 48-Port, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4500,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "DNA-P-T-48-3Y",
+    "description": "Cisco DNA Premier License, 48-Port, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 9200,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "LIC-MR-ENT-3Y",
+    "description": "Meraki MR Enterprise License, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 450,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "LIC-MS390-48P-3Y",
+    "description": "Meraki MS390 Enterprise License, 48-Port, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4495,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "LIC-MX450-ENT-3Y",
+    "description": "Meraki MX450 Advanced Security License, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 12995,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "UMB-INSIGHTS-K9",
+    "description": "Cisco Umbrella Secure Internet Gateway, SIG Essentials",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 14000,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "L-FPR2130T-TMC-3Y",
+    "description": "Firepower 2130 Threat, Malware, URL License, 3-Year",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 16800,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "A-FLEX-WEBEX-ENT",
+    "description": "Webex Enterprise Suite, Flex Plan, Per User/Month",
+    "manufacturer": "Cisco",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 360,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "CON-SNT-C930048",
+    "description": "SmartNet 8x5xNBD Support for Catalyst 9300, 12-Month",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 1495,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "CON-SSSNT-C950024",
+    "description": "SmartNet 24x7x4 Support for Catalyst 9500, 12-Month",
+    "manufacturer": "Cisco",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 4295,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "PE-R660xs",
+    "description": "PowerEdge R660xs 1U Rack Server, Intel Xeon 4th Gen",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "PE-R760xs",
+    "description": "PowerEdge R760xs 2U Rack Server, Intel Xeon 4th Gen",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 11995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "PE-R760",
+    "description": "PowerEdge R760 2U Rack Server, Dual Socket, GPU-Ready",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 16495,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "PE-R960",
+    "description": "PowerEdge R960 4U Rack Server, Quad Socket, AI/ML Workloads",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 38995,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "PE-T360",
+    "description": "PowerEdge T360 Tower Server, Single Socket",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 3295,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "PS-T1000",
+    "description": "PowerStore 1000T Unified Storage Array, Hybrid",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 42000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "PS-T5000",
+    "description": "PowerStore 5000T All-Flash Unified Storage, NVMe",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 125000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "PSCALE-F600",
+    "description": "PowerScale F600 All-Flash Scale-Out NAS Node",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 85000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "VXRAIL-E660F",
+    "description": "VxRail E660F HCI Appliance Node, All-Flash",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 48000,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "S5248F-ON",
+    "description": "PowerSwitch S5248F-ON 48-Port 25GbE ToR Switch",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 16995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "N3248TE-ON",
+    "description": "PowerSwitch N3248TE-ON 48-Port 1GbE Campus Switch",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 5495,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "OPTIPLEX-7420-AIO",
+    "description": "OptiPlex 7420 All-in-One Desktop, i7/16GB/512GB",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1899,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "LATITUDE-5550",
+    "description": "Latitude 5550 Business Laptop, i7/16GB/512GB, 15.6-inch",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1649,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "LATITUDE-7450",
+    "description": "Latitude 7450 Ultralight Business Laptop, i7/32GB/1TB",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2299,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "APEX-CLD-SVC-1Y",
+    "description": "APEX Cloud Services Subscription, 1-Year",
+    "manufacturer": "Dell",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 4800,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "APEX-FLEX-RSV",
+    "description": "APEX Flex on Demand Storage Capacity Block",
+    "manufacturer": "Dell",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 3800,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PSTV-ONE-SW",
+    "description": "PowerStore ONE Software Suite License",
+    "manufacturer": "Dell",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6200,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "DELL-PSP-5YR",
+    "description": "Dell ProSupport Plus 24x7 Mission Critical, 12-Month",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 2600,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "DELL-PSP-NBD",
+    "description": "Dell ProSupport Next Business Day, 12-Month",
+    "manufacturer": "Dell",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 1200,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "P55245-B21",
+    "description": "ProLiant DL380 Gen11 2U Rack Server, 2P, 32 SFF",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 12499,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "R8S89A",
+    "description": "ProLiant DL360 Gen11 1U Rack Server, 2P, 8 SFF",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 9995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "P58454-B21",
+    "description": "ProLiant DL320 Gen11 1U Rack Server, Single Socket",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 4995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "P54735-B21",
+    "description": "ProLiant ML350 Gen11 Tower Server, 2P",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8495,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "JL726A",
+    "description": "Aruba CX 6300M 48-Port 1GbE PoE+ Switch, 4SFP56",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 7495,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "JL663A",
+    "description": "Aruba CX 6300F 48-Port 1GbE Switch, 4SFP56",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 5995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "JL659A",
+    "description": "Aruba CX 6400 Management Module, Chassis-Based",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "R0P14A",
+    "description": "HPE Nimble Storage HF20 Adaptive Dual Controller, Hybrid",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 32000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "R3R32A",
+    "description": "HPE Nimble Storage AF40 All Flash Dual Controller",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 55000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "R6C09A",
+    "description": "HPE Alletra Storage MP B10000 Block Storage",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 89000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "SIMPLVTY-380",
+    "description": "HPE SimpliVity 380 Gen11 HCI Node, 2P",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 45000,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "R4Q18AAE",
+    "description": "HPE GreenLake for Compute Ops Management License",
+    "manufacturer": "HPE",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 3600,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "Q8H71AAE",
+    "description": "HPE InfoSight for Servers, Per-Server License",
+    "manufacturer": "HPE",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 2400,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "GRNLK-CMP-RSV-1Y",
+    "description": "GreenLake Reserved Compute Capacity, 1-Year",
+    "manufacturer": "HPE",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 4200,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "GRNLK-PRIV-CLD",
+    "description": "GreenLake Private Cloud Enterprise, Per Node/Month",
+    "manufacturer": "HPE",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 6800,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "H36MGE",
+    "description": "HPE Foundation Care 24x7 Hardware Support, 12-Month",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 2800,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "HA110A1-CCNSL",
+    "description": "HPE Pointnext Complete Care, Per-Device, 12-Month",
+    "manufacturer": "HPE",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 3600,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "PA-460",
+    "description": "PA-460 Next-Generation Firewall, Desktop",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 4495,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "PA-450",
+    "description": "PA-450 Next-Generation Firewall, Desktop",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2895,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "PA-850",
+    "description": "PA-850 Next-Generation Firewall, 1U",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "PA-3220",
+    "description": "PA-3220 Next-Generation Firewall, 1U",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 24995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "PA-3260",
+    "description": "PA-3260 Next-Generation Firewall, 1U, 60Gbps",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 42995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "PA-5260",
+    "description": "PA-5260 Next-Generation Firewall, 2U, 72Gbps",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 89995,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "PA-5280",
+    "description": "PA-5280 Next-Generation Firewall, 2U, 100Gbps",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 149995,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "PAN-PA-460-TP-3Y",
+    "description": "Threat Prevention Subscription for PA-460, 3-Year",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 3600,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PAN-PA-460-ADVTP-3Y",
+    "description": "Advanced Threat Prevention for PA-460, 3-Year",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4800,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PAN-PA-460-WF-3Y",
+    "description": "WildFire Subscription for PA-460, 3-Year",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 2400,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PAN-PA-3260-BND-3Y",
+    "description": "Threat Prevention + WildFire Bundle for PA-3260, 3-Year",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 24000,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "PRISMA-ACCESS-ENT",
+    "description": "Prisma Access Enterprise Edition, Per User/Year",
+    "manufacturer": "Palo Alto",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 18000,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "PRISMA-CLD-CMP",
+    "description": "Prisma Cloud Compute Edition, Per Workload/Year",
+    "manufacturer": "Palo Alto",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 4800,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "CORTEX-XDR-PRO",
+    "description": "Cortex XDR Pro Per Endpoint License, Annual",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 7200,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "CORTEX-XSIAM-ENT",
+    "description": "Cortex XSIAM Enterprise, Per GB Ingested/Day",
+    "manufacturer": "Palo Alto",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 42000,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "M-600",
+    "description": "Panorama M-600 Centralized Management Appliance",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "accessory",
+    "listPrice": 64995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "PAN-SVC-PREM-460-3Y",
+    "description": "Premium Support for PA-460, 24x7, 3-Year",
+    "manufacturer": "Palo Alto",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 3200,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "FG-60F",
+    "description": "FortiGate 60F Next-Gen Firewall, Desktop",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 895,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "FG-80F",
+    "description": "FortiGate 80F Next-Gen Firewall, Desktop",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1495,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "FG-100F",
+    "description": "FortiGate 100F Next-Gen Firewall, 1U",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 3995,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "FG-200F",
+    "description": "FortiGate 200F Next-Gen Firewall, 1U, 27Gbps",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "FG-400F",
+    "description": "FortiGate 400F Next-Gen Firewall, 1U, 70Gbps",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 18995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "FG-600F",
+    "description": "FortiGate 600F Next-Gen Firewall, 1U, 120Gbps",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 32995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "FG-1000F",
+    "description": "FortiGate 1000F Next-Gen Firewall, 2U, 198Gbps",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 58995,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "FG-3000F",
+    "description": "FortiGate 3000F Next-Gen Firewall, Chassis, 600Gbps",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 189995,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "FS-248E-POE",
+    "description": "FortiSwitch 248E-PoE 48-Port Managed PoE+ Switch",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 4495,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "FS-448E-POE",
+    "description": "FortiSwitch 448E-PoE 48-Port L3 Managed PoE+ Switch",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "FAP-231F",
+    "description": "FortiAP 231F Indoor Wi-Fi 6 Access Point",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 895,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "FAP-431F",
+    "description": "FortiAP 431F Outdoor Wi-Fi 6 Access Point",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1895,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "FMG-VM-BASE",
+    "description": "FortiManager VM Base License, Centralized Management",
+    "manufacturer": "Fortinet",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 14995,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "FAZ-VM-BASE",
+    "description": "FortiAnalyzer VM Base License, Log & Analytics",
+    "manufacturer": "Fortinet",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 12995,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "FC-10-F100F-UTP-3Y",
+    "description": "FortiGuard UTM Protection Bundle for FG-100F, 3-Year",
+    "manufacturer": "Fortinet",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4200,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "FC-10-F600F-UTP-3Y",
+    "description": "FortiGuard UTM Protection Bundle for FG-600F, 3-Year",
+    "manufacturer": "Fortinet",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 28000,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "FC-SASE-ENT-1Y",
+    "description": "FortiSASE Enterprise Subscription, Per User/Year",
+    "manufacturer": "Fortinet",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 12000,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "FC-10-F100F-247-3Y",
+    "description": "FortiCare Premium 24x7 for FG-100F, 3-Year",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 1800,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "FC-10-F600F-247-3Y",
+    "description": "FortiCare Premium 24x7 for FG-600F, 3-Year",
+    "manufacturer": "Fortinet",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 14400,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "AAA-22340",
+    "description": "Microsoft 365 E5, Annual Subscription, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 684,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "AAA-10840",
+    "description": "Microsoft 365 E3, Annual Subscription, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 432,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "AAA-35638",
+    "description": "Microsoft 365 Business Premium, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 264,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "CFQ7TTC0LCHC",
+    "description": "Microsoft Defender for Endpoint P2, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 684,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "DG7GMGF0D5SL",
+    "description": "Windows Server 2022 Standard, 16-Core License Pack",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 1069,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "DG7GMGF0FLR2",
+    "description": "Windows Server 2022 Datacenter, 16-Core License Pack",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6155,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "228-11477",
+    "description": "SQL Server 2022 Standard, Per Core (2-Pack)",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 3945,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "7JQ-00341",
+    "description": "SQL Server 2022 Enterprise, Per Core (2-Pack)",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 15123,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "CFQ7TTC0HD33",
+    "description": "Dynamics 365 Sales Enterprise, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 1140,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "CFQ7TTC0HD4M",
+    "description": "Dynamics 365 Customer Service Enterprise, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 1140,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "CFQ7TTC0MM8R",
+    "description": "Microsoft 365 Copilot, Annual Add-On, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 360,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "CFQ7TTC0LH05",
+    "description": "Microsoft Entra ID P2, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 108,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "CFQ7TTC0LHPN",
+    "description": "Microsoft Intune Plan 1, Annual, Per User",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 96,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "AZR-RI-D4SV5-1Y",
+    "description": "Azure Reserved VM Instance D4s v5, 1-Year",
+    "manufacturer": "Microsoft",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 3600,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "AZR-RI-D8SV5-1Y",
+    "description": "Azure Reserved VM Instance D8s v5, 1-Year",
+    "manufacturer": "Microsoft",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 7200,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "AZR-RI-E4SV5-3Y",
+    "description": "Azure Reserved VM Instance E4s v5, 3-Year",
+    "manufacturer": "Microsoft",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 8400,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "5P6-00003",
+    "description": "Surface Laptop 6 for Business, i7/16GB/512GB",
+    "manufacturer": "Microsoft",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1899,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "AZS-HCI-2N",
+    "description": "Azure Stack HCI 2-Node Starter Cluster",
+    "manufacturer": "Microsoft",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 28000,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "MS-UNFY-SUP-ENT",
+    "description": "Microsoft Unified Support for Enterprise, 12-Month",
+    "manufacturer": "Microsoft",
+    "category": "Software",
+    "role": "support",
+    "listPrice": 3200,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "VS8-ENT-PL-C",
+    "description": "vSphere 8 Enterprise Plus, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 7495,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "VS8-STD-C",
+    "description": "vSphere 8 Standard, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4895,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "VSAN8-ENT-C",
+    "description": "vSAN 8 Enterprise, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6495,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "NSX-ENT-PL-C",
+    "description": "NSX Enterprise Plus, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 8995,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "VCF-STD-C",
+    "description": "VMware Cloud Foundation Standard, Per CPU",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 13495,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "VCF-ENT-C",
+    "description": "VMware Cloud Foundation Enterprise, Per CPU",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 19995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "HZ-ADV-10-C",
+    "description": "Horizon 8 Advanced, 10-Pack Named User",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4200,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "HZ-ENT-10-C",
+    "description": "Horizon 8 Enterprise, 10-Pack Named User",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 5800,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "ARIA-OPS-ENT-C",
+    "description": "Aria Operations Enterprise, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 7800,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "ARIA-AUTO-ENT-C",
+    "description": "Aria Automation Enterprise, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6995,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "TANZU-STD-C",
+    "description": "Tanzu Standard, Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 5495,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "TANZU-ADV-C",
+    "description": "Tanzu Advanced (with Kubernetes), Per CPU License",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 8995,
+    "typicalDiscount": 0.25
+  },
+  {
+    "partNumber": "VMC-AWS-HOST-1Y",
+    "description": "VMware Cloud on AWS, Per Host, 1-Year Subscription",
+    "manufacturer": "VMware",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 48000,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "VS8-ENT-SNS-1Y",
+    "description": "vSphere Enterprise Plus Production Support, 12-Month",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "support",
+    "listPrice": 2200,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "VCF-ENT-SNS-1Y",
+    "description": "VCF Enterprise Production Support, 12-Month",
+    "manufacturer": "VMware",
+    "category": "Software",
+    "role": "support",
+    "listPrice": 4800,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "JL679A",
+    "description": "Aruba CX 6100 48G PoE+ 4SFP+ Switch",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 3995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "JL681A",
+    "description": "Aruba CX 6100 24G PoE+ 4SFP+ Switch",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2495,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "JL724A",
+    "description": "Aruba CX 6200F 48G PoE+ 4SFP+ Switch",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 5295,
+    "typicalDiscount": 0.34
+  },
+  {
+    "partNumber": "JL727A",
+    "description": "Aruba CX 6300M 24-Port mGig PoE+ Switch, 4SFP56",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 9995,
+    "typicalDiscount": 0.36
+  },
+  {
+    "partNumber": "JL728A",
+    "description": "Aruba CX 6300M 48-Port mGig PoE+ Switch, 4SFP56",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14495,
+    "typicalDiscount": 0.36
+  },
+  {
+    "partNumber": "JL660A",
+    "description": "Aruba CX 6400 48-Port 1GbE PoE Module",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "accessory",
+    "listPrice": 7995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "R7J36A",
+    "description": "Aruba AP-535 Wi-Fi 6 Indoor Access Point",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1395,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "R7J39A",
+    "description": "Aruba AP-565 Wi-Fi 6E Outdoor Access Point",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2195,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "R7J42A",
+    "description": "Aruba AP-635 Wi-Fi 6E Tri-Radio Indoor Access Point",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1995,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "R7J45A",
+    "description": "Aruba AP-655 Wi-Fi 6E Premium Indoor Access Point",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2695,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "JZ404A",
+    "description": "Aruba 7030 Mobility Controller, 64 AP License",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 8995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "R8L13AAE",
+    "description": "Aruba ClearPass Policy Manager VM License, 500 Endpoints",
+    "manufacturer": "Aruba",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 12495,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "R8L15AAE",
+    "description": "Aruba ClearPass OnGuard License, 500 Endpoints",
+    "manufacturer": "Aruba",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6495,
+    "typicalDiscount": 0.22
+  },
+  {
+    "partNumber": "Q9Y62AAE",
+    "description": "Aruba Central Foundation, Per AP, 1-Year",
+    "manufacturer": "Aruba",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 180,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "Q9Y64AAE",
+    "description": "Aruba Central Advanced, Per AP, 1-Year",
+    "manufacturer": "Aruba",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 300,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "Q9Y66AAE",
+    "description": "Aruba Central Gateway Foundation, Per Gateway, 1-Year",
+    "manufacturer": "Aruba",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 600,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "H36MNE-ARB",
+    "description": "Aruba Foundation Care 24x7 Hardware Support, 12-Month",
+    "manufacturer": "Aruba",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 1495,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "EX2300-48P",
+    "description": "EX2300 48-Port PoE+ Gigabit Ethernet Switch",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 4995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "EX2300-24P",
+    "description": "EX2300 24-Port PoE+ Gigabit Ethernet Switch",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 2995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "EX4400-48P",
+    "description": "EX4400 48-Port PoE+ Campus Switch, 4x25G Uplinks",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 11995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "EX4400-24P",
+    "description": "EX4400 24-Port PoE+ Campus Switch, 4x25G Uplinks",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 7995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "SRX345",
+    "description": "SRX345 Services Gateway Firewall, 16 GbE",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 6995,
+    "typicalDiscount": 0.30
+  },
+  {
+    "partNumber": "SRX1500",
+    "description": "SRX1500 Services Gateway Firewall, 1U",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 14995,
+    "typicalDiscount": 0.32
+  },
+  {
+    "partNumber": "SRX4200",
+    "description": "SRX4200 Services Gateway Firewall, 1U, 80Gbps",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 32995,
+    "typicalDiscount": 0.35
+  },
+  {
+    "partNumber": "QFX5120-48T",
+    "description": "QFX5120-48T Data Center Switch, 48x10G, 6x100G",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 24995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "QFX5120-32C",
+    "description": "QFX5120-32C Spine Switch, 32x100G QSFP28",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 38995,
+    "typicalDiscount": 0.38
+  },
+  {
+    "partNumber": "MIST-AP43",
+    "description": "Mist AP43 Wi-Fi 6E Access Point, AI-Driven",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 1695,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "MIST-AP34",
+    "description": "Mist AP34 Wi-Fi 6 Access Point, AI-Driven",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 995,
+    "typicalDiscount": 0.28
+  },
+  {
+    "partNumber": "S-MIST-CLD-SUB-1Y",
+    "description": "Mist AI Cloud Subscription, Per AP, 1-Year",
+    "manufacturer": "Juniper",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 200,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "S-MIST-WAN-SUB-1Y",
+    "description": "Mist WAN Assurance Subscription, Per Device, 1-Year",
+    "manufacturer": "Juniper",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 600,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "S-MIST-MARVIS-1Y",
+    "description": "Marvis VNA (Virtual Network Assistant), Per Device, 1-Year",
+    "manufacturer": "Juniper",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 150,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "S-SRX-CNTRL-H-1",
+    "description": "Juniper ATP Cloud License for SRX, 1-Year",
+    "manufacturer": "Juniper",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 4800,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "SVC-COR-EX4400",
+    "description": "Juniper Care Core Support for EX4400, 12-Month",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 1800,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-ND-SRX4200",
+    "description": "Juniper Care Next-Day Support for SRX4200, 12-Month",
+    "manufacturer": "Juniper",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 4200,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "FA-X20-R4",
+    "description": "FlashArray//X20 R4 All-Flash Array",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 89000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "FA-X50-R4",
+    "description": "FlashArray//X50 R4 All-Flash Array, Mid-Range",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 145000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "FA-X70-R4",
+    "description": "FlashArray//X70 R4 All-Flash Array, Enterprise",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 295000,
+    "typicalDiscount": 0.44
+  },
+  {
+    "partNumber": "FA-C40-R4",
+    "description": "FlashArray//C40 R4 QLC Capacity-Optimized Array",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 52000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "FA-C60-R4",
+    "description": "FlashArray//C60 R4 QLC Capacity-Optimized Array",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 85000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "FA-XL130",
+    "description": "FlashArray//XL130 Scale-Up Enterprise Array",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 495000,
+    "typicalDiscount": 0.45
+  },
+  {
+    "partNumber": "FA-XL170",
+    "description": "FlashArray//XL170 Scale-Up Enterprise Array, Top Tier",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 695000,
+    "typicalDiscount": 0.45
+  },
+  {
+    "partNumber": "FB-S200",
+    "description": "FlashBlade//S200 Unified Fast File & Object Storage",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 125000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "FB-S500",
+    "description": "FlashBlade//S500 Enterprise Unstructured Data Platform",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 225000,
+    "typicalDiscount": 0.42
+  },
+  {
+    "partNumber": "FB-E",
+    "description": "FlashBlade//E Cost-Effective Unstructured Data Storage",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "core",
+    "listPrice": 75000,
+    "typicalDiscount": 0.40
+  },
+  {
+    "partNumber": "PS-EVG-ONE-X-1Y",
+    "description": "Evergreen//One STaaS for FlashArray//X, Per TB/Year",
+    "manufacturer": "Pure Storage",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 4800,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "PS-EVG-ONE-FB-1Y",
+    "description": "Evergreen//One STaaS for FlashBlade, Per TB/Year",
+    "manufacturer": "Pure Storage",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 3600,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "PS-EVG-FLEX",
+    "description": "Evergreen//Flex Ownership Subscription, Per Controller",
+    "manufacturer": "Pure Storage",
+    "category": "Cloud",
+    "role": "license",
+    "listPrice": 24000,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PS-PURE1-ENT",
+    "description": "Pure1 Enterprise AIOps & Management Platform License",
+    "manufacturer": "Pure Storage",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 3600,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PS-PORTWORX-ENT",
+    "description": "Portworx Enterprise for Kubernetes, Per Node/Year",
+    "manufacturer": "Pure Storage",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 6800,
+    "typicalDiscount": 0.20
+  },
+  {
+    "partNumber": "PS-PORTWORX-BCK",
+    "description": "Portworx Backup for Kubernetes, Per Cluster/Year",
+    "manufacturer": "Pure Storage",
+    "category": "Software",
+    "role": "license",
+    "listPrice": 3200,
+    "typicalDiscount": 0.18
+  },
+  {
+    "partNumber": "PS-PRE-SUP-FA",
+    "description": "Pure Storage Premium Support for FlashArray, 12-Month",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 8500,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "PS-PRE-SUP-FB",
+    "description": "Pure Storage Premium Support for FlashBlade, 12-Month",
+    "manufacturer": "Pure Storage",
+    "category": "Hardware",
+    "role": "support",
+    "listPrice": 12000,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-IMPL-BASIC",
+    "description": "Basic Implementation — Single Product Install & Config",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 4500,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-IMPL-STD",
+    "description": "Standard Implementation — Multi-Product, Integration Testing",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 12000,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-IMPL-ADV",
+    "description": "Advanced Implementation — Full Solution, HA/DR, Cutover",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 28000,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "SVC-IMPL-COMPLEX",
+    "description": "Complex Implementation — Multi-Site, Custom Integration, 12+ Weeks",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 65000,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "SVC-PM-BASIC",
+    "description": "Project Management — Basic (Up to 4-Week Engagement)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 6000,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-PM-STD",
+    "description": "Project Management — Standard (4-12 Week Engagement)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 18000,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-PM-ENT",
+    "description": "Project Management — Enterprise (12+ Week Engagement)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 36000,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "SVC-MIG-EMAIL",
+    "description": "Email & Collaboration Migration (Exchange/G-Suite to M365)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 8000,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-MIG-DATA",
+    "description": "Data Center Migration — Server & Storage Workload Move",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 35000,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "SVC-MIG-CLD",
+    "description": "Cloud Migration — On-Prem to IaaS/PaaS Workload Migration",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 42000,
+    "typicalDiscount": 0.15
+  },
+  {
+    "partNumber": "SVC-MIG-NTWK",
+    "description": "Network Migration — Firewall/Switch Cutover & Policy Migration",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 18000,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-TRN-ENDUSER",
+    "description": "End-User Training — Half-Day Session (Up to 20 Users)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 2500,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-TRN-ADMIN",
+    "description": "Administrator Training — Full-Day Session (Up to 10 Admins)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 4500,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-TRN-BOOTCAMP",
+    "description": "Technical Bootcamp — 3-Day Deep-Dive Workshop",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 12000,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-ASSESS-SEC",
+    "description": "Security Assessment — Vulnerability Scan & Remediation Plan",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 15000,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-ASSESS-NTWK",
+    "description": "Network Assessment — Discovery, Diagramming & Recommendations",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 8000,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-CONSULT-ARCH",
+    "description": "Architecture Consulting — Solution Design & Roadmap (Per Day)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 2800,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-MS-NOC-24X7",
+    "description": "Managed NOC — 24x7 Network Monitoring & Incident Response (Monthly)",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 4500,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-MS-NOC-8X5",
+    "description": "Managed NOC — 8x5 Network Monitoring & Alerting (Monthly)",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 2200,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-MS-SOC-24X7",
+    "description": "Managed SOC — 24x7 Security Monitoring, SIEM & Response (Monthly)",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 8500,
+    "typicalDiscount": 0.12
+  },
+  {
+    "partNumber": "SVC-MS-SOC-8X5",
+    "description": "Managed SOC — 8x5 Security Monitoring & Alerting (Monthly)",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 4200,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-MS-HELPDESK-T1",
+    "description": "Managed Help Desk — Tier 1 Support, Per Seat/Month",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 85,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-MS-HELPDESK-T2",
+    "description": "Managed Help Desk — Tier 1 + Tier 2 Support, Per Seat/Month",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 145,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-MS-BACKUP",
+    "description": "Managed Backup & DR — Per Server/Month, Cloud-Replicated",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 350,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-MS-PATCH",
+    "description": "Managed Patching — OS & Firmware Updates, Per Device/Month",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 75,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-MS-CLOUD-OPS",
+    "description": "Managed Cloud Operations — Azure/AWS Management, Per Workload/Month",
+    "manufacturer": "Generic",
+    "category": "ManagedServices",
+    "role": "service",
+    "listPrice": 500,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-STAFF-JR",
+    "description": "Staff Augmentation — Junior Engineer (Per Week)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 3200,
+    "typicalDiscount": 0.08
+  },
+  {
+    "partNumber": "SVC-STAFF-SR",
+    "description": "Staff Augmentation — Senior Engineer (Per Week)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 5500,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-STAFF-ARCH",
+    "description": "Staff Augmentation — Solutions Architect (Per Week)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 7500,
+    "typicalDiscount": 0.10
+  },
+  {
+    "partNumber": "SVC-STAFF-PM",
+    "description": "Staff Augmentation — Project Manager (Per Week)",
+    "manufacturer": "Generic",
+    "category": "ProfessionalServices",
+    "role": "service",
+    "listPrice": 4800,
+    "typicalDiscount": 0.08
   }
-}
+]

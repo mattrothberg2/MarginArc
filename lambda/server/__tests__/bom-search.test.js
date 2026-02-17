@@ -145,8 +145,7 @@ describe('typicalMarginRange by category', () => {
     Software:            { low: 12, high: 25 },
     Cloud:               { low: 10, high: 20 },
     ProfessionalServices: { low: 25, high: 45 },
-    ManagedServices:     { low: 20, high: 35 },
-    ComplexSolution:     { low: 15, high: 30 }
+    ManagedServices:     { low: 20, high: 35 }
   }
 
   for (const [category, range] of Object.entries(expected)) {

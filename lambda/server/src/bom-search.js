@@ -37,27 +37,22 @@ function buildCatalog() {
   const items = []
   const seen = new Set()
 
-  // 1. Flatten vendor_skus.json — richer data with real SKUs
-  for (const [manufacturer, categories] of Object.entries(vendorSkus)) {
-    for (const [category, roles] of Object.entries(categories)) {
-      for (const [role, skus] of Object.entries(roles)) {
-        for (const sku of skus) {
-          const key = `${manufacturer}:${sku.sku}`
-          if (seen.has(key)) continue
-          seen.add(key)
-          items.push({
-            partNumber: sku.sku,
-            description: sku.name,
-            manufacturer,
-            category,
-            role,
-            listPrice: sku.listPrice,
-            suggestedDiscount: DEFAULT_DISCOUNTS[category] ?? 0.20,
-            typicalMarginRange: MARGIN_RANGES[category] ?? MARGIN_RANGES.Hardware
-          })
-        }
-      }
-    }
+  // 1. vendor_skus.json — flat array of real SKUs
+  for (const sku of vendorSkus) {
+    const key = `${sku.manufacturer}:${sku.partNumber}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    const category = sku.category || 'Hardware'
+    items.push({
+      partNumber: sku.partNumber,
+      description: sku.description,
+      manufacturer: sku.manufacturer,
+      category,
+      role: sku.role || 'core',
+      listPrice: sku.listPrice,
+      suggestedDiscount: sku.typicalDiscount ?? DEFAULT_DISCOUNTS[category] ?? 0.20,
+      typicalMarginRange: MARGIN_RANGES[category] ?? MARGIN_RANGES.Hardware
+    })
   }
 
   // 2. Merge bom_catalog.json — only add items not already covered
