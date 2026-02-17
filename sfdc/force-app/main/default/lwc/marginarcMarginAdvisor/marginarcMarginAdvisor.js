@@ -10,10 +10,6 @@ import logRecommendation from "@salesforce/apex/MarginArcController.logRecommend
 import saveBomLines from "@salesforce/apex/MarginArcController.saveBomLines";
 import getBomLines from "@salesforce/apex/MarginArcController.getBomLines";
 import getCompetitorRecords from "@salesforce/apex/MarginArcAdminController.getCompetitorList";
-// Widget version
-const WIDGET_VERSION = "4.1";
-const LAST_UPDATED = "2026-02-09";
-
 // Field imports for updateRecord
 import ID_FIELD from "@salesforce/schema/Opportunity.Id";
 import AMOUNT_FIELD from "@salesforce/schema/Opportunity.Amount";
@@ -333,14 +329,6 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   // Computed properties for UI states
-  get widgetVersion() {
-    return WIDGET_VERSION;
-  }
-
-  get lastUpdated() {
-    return LAST_UPDATED;
-  }
-
   get noOpportunity() {
     return !this.recordId && !this.isLoading && !this.error;
   }
@@ -396,9 +384,19 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return this.phaseInfo?.dealsUntilNextPhase || 0;
   }
 
+  get phaseScoredDeals() {
+    return this.phaseInfo?.scoredDeals || 0;
+  }
+
+  get phaseThreshold() {
+    return this.phaseInfo?.threshold || 50;
+  }
+
   get phaseCalloutMessage() {
-    const deals = this.dealsUntilNextPhase;
-    return `You\u2019re building your data foundation. ${deals} more scored deal${deals !== 1 ? "s" : ""} until margin recommendations unlock.`;
+    const scored = this.phaseScoredDeals;
+    const needed = this.dealsUntilNextPhase;
+    const threshold = this.phaseThreshold;
+    return `You\u2019ve scored ${scored} deal${scored !== 1 ? "s" : ""}. Score ${needed} more to unlock margin recommendations (${threshold} required).`;
   }
 
   // Data quality indicators from phaseInfo
@@ -1742,15 +1740,16 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     const alignmentScore = Math.max(0, 100 - gap * 15);
     if (gap <= 2) {
       factors.push({
-        name: "Margin aligned with recommendation",
-        impact: "+" + Math.round(alignmentScore * 0.35),
+        name: "Margin alignment",
+        score: Math.round(alignmentScore * 0.35),
+        max: 35,
         direction: "positive"
       });
     } else {
-      const dir = plannedMargin < recommendedMargin ? "below" : "above";
       factors.push({
-        name: `Margin ${gap.toFixed(1)}% ${dir} optimal`,
-        impact: "-" + Math.round((100 - alignmentScore) * 0.35),
+        name: "Margin alignment",
+        score: Math.round(alignmentScore * 0.35),
+        max: 35,
         direction: "negative"
       });
     }
@@ -1759,14 +1758,16 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     const winProbScore = this.plannedWinProbability;
     if (winProbScore >= 60) {
       factors.push({
-        name: "Strong win probability",
-        impact: "+" + Math.round(winProbScore * 0.25),
+        name: "Win probability",
+        score: Math.round(winProbScore * 0.25),
+        max: 25,
         direction: "positive"
       });
     } else {
       factors.push({
-        name: "Low win probability at current margin",
-        impact: "-" + Math.round((100 - winProbScore) * 0.25),
+        name: "Win probability",
+        score: Math.round(winProbScore * 0.25),
+        max: 25,
         direction: "negative"
       });
     }
@@ -1788,58 +1789,38 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
     if (dealReg !== "NotRegistered") {
       structureScore += 20;
-      factors.push({
-        name: "Deal registration",
-        impact: "+",
-        direction: "positive"
-      });
-    } else {
-      factors.push({
-        name: "No deal registration",
-        impact: "-",
-        direction: "negative"
-      });
     }
     if (dealReg === "PremiumHunting") structureScore += 15;
     if (relationship === "Strategic") {
       structureScore += 15;
-      factors.push({
-        name: "Strategic relationship",
-        impact: "+",
-        direction: "positive"
-      });
     } else if (relationship === "Good") {
       structureScore += 8;
     }
     if (valueAdd === "High") {
       structureScore += 10;
-      factors.push({
-        name: "High value-add",
-        impact: "+",
-        direction: "positive"
-      });
     } else if (valueAdd === "Medium") {
       structureScore += 5;
     }
     structureScore = Math.min(100, structureScore);
 
+    factors.push({
+      name: "Deal structure",
+      score: Math.round(structureScore * 0.1),
+      max: 10,
+      direction: structureScore >= 50 ? "positive" : "negative"
+    });
+
     // 5. Competitive Position (10% weight)
     const competitors = data.competitors || "1";
     const compMap = { 0: 100, 1: 75, 2: 45, "3+": 25 };
     const compScore = compMap[competitors] || 50;
-    if (competitors === "3+" || competitors === "2") {
-      factors.push({
-        name: `${competitors} competitors`,
-        impact: "-",
-        direction: "negative"
-      });
-    } else if (competitors === "0") {
-      factors.push({
-        name: "No competition",
-        impact: "+",
-        direction: "positive"
-      });
-    }
+
+    factors.push({
+      name: "Competitive position",
+      score: Math.round(compScore * 0.1),
+      max: 10,
+      direction: compScore >= 50 ? "positive" : "negative"
+    });
 
     // Weighted composite
     const score = Math.round(
@@ -1903,13 +1884,18 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get dealScoreFactors() {
-    return (this.dealScoreData?.factors || []).map((f) => ({
-      ...f,
-      pillClass:
-        f.direction === "positive"
-          ? "score-factor score-factor-positive"
-          : "score-factor score-factor-negative"
-    }));
+    return (this.dealScoreData?.factors || []).map((f) => {
+      const sign = f.direction === "positive" ? "+" : "";
+      const impactDisplay = sign + f.score + "/" + f.max;
+      return {
+        ...f,
+        impact: impactDisplay,
+        pillClass:
+          f.direction === "positive"
+            ? "score-factor score-factor-positive"
+            : "score-factor score-factor-negative"
+      };
+    });
   }
 
   get hasDealScore() {

@@ -1,9 +1,6 @@
 import { LightningElement, api, wire, track } from "lwc";
 import { getRecord } from "lightning/uiRecordApi";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
-// Widget version
-const WIDGET_VERSION = "4.0";
-const LAST_UPDATED = "2026-02-07";
 
 const OPPORTUNITY_FIELDS = [
   "Opportunity.Fulcrum_OEM_Cost__c",
@@ -107,15 +104,6 @@ export default class MarginarcWhatIf extends LightningElement {
       color: "orange"
     }
   ];
-
-  // Widget version
-  get widgetVersion() {
-    return WIDGET_VERSION;
-  }
-
-  get lastUpdated() {
-    return LAST_UPDATED;
-  }
 
   // Picklist options
   get competitorOptions() {
