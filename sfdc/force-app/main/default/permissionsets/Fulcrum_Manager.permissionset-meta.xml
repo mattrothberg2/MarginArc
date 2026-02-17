@@ -296,7 +296,8 @@
     </fieldPermissions>
     <fieldPermissions>
         <editable>true</editable>
-        <field>Fulcrum_Recommendation_History__c.Planned_Margin_At_Time__c</field>
+        <field
+    >Fulcrum_Recommendation_History__c.Planned_Margin_At_Time__c</field>
         <readable>true</readable>
     </fieldPermissions>
     <fieldPermissions>

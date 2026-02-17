@@ -968,8 +968,8 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get bomBlendedMargin() {
     const pct = this.activeBomData?.totals?.marginPct;
-    if (pct == null) return '—';
-    return (pct * 100).toFixed(1) + '%';
+    if (pct == null) return "—";
+    return (pct * 100).toFixed(1) + "%";
   }
 
   async loadSavedBom() {

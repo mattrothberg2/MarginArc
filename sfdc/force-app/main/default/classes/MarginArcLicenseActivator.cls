@@ -84,7 +84,8 @@ public with sharing class MarginArcLicenseActivator {
           String marginArcApiUrl = (String) config.get('fulcrum_api_url');
 
           if (
-            String.isNotBlank(geminiApiKey) || String.isNotBlank(marginArcApiUrl)
+            String.isNotBlank(geminiApiKey) ||
+            String.isNotBlank(marginArcApiUrl)
           ) {
             Fulcrum_Config__c configSetting = Fulcrum_Config__c.getOrgDefaults();
             if (configSetting == null) {

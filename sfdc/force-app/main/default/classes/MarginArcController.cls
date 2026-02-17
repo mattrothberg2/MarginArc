@@ -699,7 +699,11 @@ public with sharing class MarginArcController {
     if (response.getStatusCode() == 200) {
       return response.getBody();
     } else {
-      String errMsg = 'BOM API error ' + response.getStatusCode() + ': ' + response.getBody();
+      String errMsg =
+        'BOM API error ' +
+        response.getStatusCode() +
+        ': ' +
+        response.getBody();
       AuraHandledException ex = new AuraHandledException(errMsg);
       ex.setMessage(errMsg);
       throw ex;
@@ -710,12 +714,19 @@ public with sharing class MarginArcController {
    * Search the product catalog for BOM builder typeahead
    */
   @AuraEnabled
-  public static String searchBomCatalog(String query, String manufacturer, String category) {
+  public static String searchBomCatalog(
+    String query,
+    String manufacturer,
+    String category
+  ) {
     MarginArcLicenseGate.assertActive();
     Map<String, Object> body = new Map<String, Object>();
-    if (String.isNotBlank(query)) body.put('query', query);
-    if (String.isNotBlank(manufacturer)) body.put('manufacturer', manufacturer);
-    if (String.isNotBlank(category)) body.put('category', category);
+    if (String.isNotBlank(query))
+      body.put('query', query);
+    if (String.isNotBlank(manufacturer))
+      body.put('manufacturer', manufacturer);
+    if (String.isNotBlank(category))
+      body.put('category', category);
     body.put('limit', 20);
     return callBomApi('/search', JSON.serialize(body));
   }

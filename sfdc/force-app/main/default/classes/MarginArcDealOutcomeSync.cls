@@ -7,8 +7,7 @@
  *
  * This is fire-and-forget — no Opportunity fields are updated.
  */
-public without sharing class MarginArcDealOutcomeSync
-  implements Database.Batchable<SObject>, Database.AllowsCallouts, Database.Stateful, Schedulable {
+public without sharing class MarginArcDealOutcomeSync implements Database.Batchable<SObject>, Database.AllowsCallouts, Database.Stateful, Schedulable {
   // ── Configuration ──
   private static final String FALLBACK_API_URL = 'https://api.marginarc.com/api/deals';
   @TestVisible
@@ -185,7 +184,8 @@ public without sharing class MarginArcDealOutcomeSync
     // OEM Cost (required by Lambda, must be positive)
     Decimal oemCost = opp.Fulcrum_OEM_Cost__c;
     if (oemCost == null || oemCost <= 0) {
-      oemCost = (opp.Amount != null && opp.Amount > 0)
+      oemCost = (opp.Amount != null &&
+        opp.Amount > 0)
         ? opp.Amount * 0.85
         : 10000;
     }
@@ -233,7 +233,8 @@ public without sharing class MarginArcDealOutcomeSync
     input.put('valueAdd', safePicklist(opp.Fulcrum_Value_Add__c, 'Medium'));
 
     // Industry
-    String industry = (opp.Account != null && opp.Account.Industry != null)
+    String industry = (opp.Account != null &&
+      opp.Account.Industry != null)
       ? opp.Account.Industry
       : 'Technology';
     input.put('customerIndustry', mapIndustry(industry));
@@ -294,11 +295,7 @@ public without sharing class MarginArcDealOutcomeSync
     if (opp.Fulcrum_Planned_Margin__c != null) {
       return opp.Fulcrum_Planned_Margin__c;
     }
-    if (
-      opp.Fulcrum_Margin__c != null &&
-      opp.Amount != null &&
-      opp.Amount > 0
-    ) {
+    if (opp.Fulcrum_Margin__c != null && opp.Amount != null && opp.Amount > 0) {
       return (opp.Fulcrum_Margin__c / opp.Amount) * 100;
     }
     if (

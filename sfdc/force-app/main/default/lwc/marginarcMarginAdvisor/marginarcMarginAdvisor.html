@@ -366,8 +366,15 @@
           <div class="bom-summary-section">
             <div class="bom-summary-header">
               <span class="bom-summary-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                  <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                >
+                  <path
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
                 </svg>
               </span>
               <span class="bom-summary-title">Bill of Materials</span>
@@ -387,7 +394,10 @@
                 <span class="bom-stat-value">{bomBlendedMargin}</span>
               </div>
             </div>
-            <p class="bom-summary-hint">Use the BOM Builder widget on this page to edit line items and analyze margins.</p>
+            <p class="bom-summary-hint">
+              Use the BOM Builder widget on this page to edit line items and
+              analyze margins.
+            </p>
           </div>
         </template>
       </div>
@@ -415,7 +425,10 @@
           <p>This will update the following Opportunity fields:</p>
           <ul class="confirm-changes">
             <li><strong>Amount:</strong> {confirmNewAmount}</li>
-            <li><strong>Planned Margin:</strong> {confirmCurrentPlannedMargin}% → {confirmMarginPct}%</li>
+            <li>
+              <strong>Planned Margin:</strong> {confirmCurrentPlannedMargin}% →
+              {confirmMarginPct}%
+            </li>
             <li><strong>Recommended Margin:</strong> {confirmMarginPct}%</li>
             <li><strong>Win Probability:</strong> {confirmWinProb}%</li>
           </ul>

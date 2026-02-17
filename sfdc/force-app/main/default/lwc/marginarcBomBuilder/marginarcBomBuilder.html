@@ -4,15 +4,34 @@
     <header class="bom-header">
       <div class="header-left">
         <h2 class="title">BOM Builder</h2>
-        <span class="line-count" lwc:if={hasBomLines}>{lineCount} line items</span>
+        <span class="line-count" lwc:if={hasBomLines}
+          >{lineCount} line items</span
+        >
       </div>
       <div class="header-right">
-        <button class="btn btn-secondary" onclick={handleClearAll} lwc:if={hasBomLines} disabled={isSaving}>Clear All</button>
-        <button class="btn btn-primary" onclick={handleAnalyze} lwc:if={hasBomLines} disabled={isAnalyzing}>
+        <button
+          class="btn btn-secondary"
+          onclick={handleClearAll}
+          lwc:if={hasBomLines}
+          disabled={isSaving}
+        >
+          Clear All
+        </button>
+        <button
+          class="btn btn-primary"
+          onclick={handleAnalyze}
+          lwc:if={hasBomLines}
+          disabled={isAnalyzing}
+        >
           <template lwc:if={isAnalyzing}>Analyzing...</template>
           <template lwc:else>Analyze Margins</template>
         </button>
-        <button class="btn btn-save" onclick={handleSave} lwc:if={hasBomLines} disabled={isSaving}>
+        <button
+          class="btn btn-save"
+          onclick={handleSave}
+          lwc:if={hasBomLines}
+          disabled={isSaving}
+        >
           <template lwc:if={isSaving}>Saving...</template>
           <template lwc:else>Save BOM</template>
         </button>
@@ -49,10 +68,30 @@
           variant="label-hidden"
           class="filter-combo"
         ></lightning-combobox>
-        <button class="btn btn-secondary btn-add" onclick={handleAddBlankLine}>+ Add Line</button>
-        <input type="file" accept=".csv" class="csv-input-hidden" onchange={handleCsvFile} />
+        <button class="btn btn-secondary btn-add" onclick={handleAddBlankLine}>
+          + Add Line
+        </button>
+        <input
+          type="file"
+          accept=".csv"
+          class="csv-input-hidden"
+          onchange={handleCsvFile}
+        />
         <button class="bom-action-btn" onclick={handleCsvImport}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
           Import CSV
         </button>
       </div>
@@ -60,7 +99,12 @@
       <!-- Search Results Dropdown -->
       <div class="search-dropdown" lwc:if={showSearchResults}>
         <template for:each={searchResults} for:item="result">
-          <div class="search-result" key={result.partNumber} data-part={result.partNumber} onclick={handleSelectProduct}>
+          <div
+            class="search-result"
+            key={result.partNumber}
+            data-part={result.partNumber}
+            onclick={handleSelectProduct}
+          >
             <div class="result-main">
               <span class="result-part">{result.partNumber}</span>
               <span class="result-mfg">{result.manufacturer}</span>
@@ -81,13 +125,44 @@
       <template lwc:if={hasBomLines}>
         <div class="batch-margin-toolbar">
           <span class="batch-label">Set All Margins:</span>
-          <button class="margin-chip" data-margin="15" onclick={handleSetAllMargins}>15%</button>
-          <button class="margin-chip" data-margin="18" onclick={handleSetAllMargins}>18%</button>
-          <button class="margin-chip" data-margin="20" onclick={handleSetAllMargins}>20%</button>
-          <button class="margin-chip" data-margin="22" onclick={handleSetAllMargins}>22%</button>
+          <button
+            class="margin-chip"
+            data-margin="15"
+            onclick={handleSetAllMargins}
+          >
+            15%
+          </button>
+          <button
+            class="margin-chip"
+            data-margin="18"
+            onclick={handleSetAllMargins}
+          >
+            18%
+          </button>
+          <button
+            class="margin-chip"
+            data-margin="20"
+            onclick={handleSetAllMargins}
+          >
+            20%
+          </button>
+          <button
+            class="margin-chip"
+            data-margin="22"
+            onclick={handleSetAllMargins}
+          >
+            22%
+          </button>
           <div class="custom-margin-input">
-            <input type="number" min="0" max="50" step="0.5" placeholder="Custom"
-                   class="batch-custom-input" onchange={handleCustomBatchMargin} />
+            <input
+              type="number"
+              min="0"
+              max="50"
+              step="0.5"
+              placeholder="Custom"
+              class="batch-custom-input"
+              onchange={handleCustomBatchMargin}
+            />
             <span>%</span>
           </div>
         </div>
@@ -112,10 +187,26 @@
           <template for:each={tableRows} for:item="row">
             <div class={row.marginHealthClass} role="row" key={row.id}>
               <span class="td" role="gridcell">
-                <input type="text" class="cell-input" value={row.partNumber} data-id={row.id} data-field="partNumber" onchange={handleFieldChange} placeholder="Part #" />
+                <input
+                  type="text"
+                  class="cell-input"
+                  value={row.partNumber}
+                  data-id={row.id}
+                  data-field="partNumber"
+                  onchange={handleFieldChange}
+                  placeholder="Part #"
+                />
               </span>
               <span class="td" role="gridcell">
-                <input type="text" class="cell-input cell-desc" value={row.description} data-id={row.id} data-field="description" onchange={handleFieldChange} placeholder="Description" />
+                <input
+                  type="text"
+                  class="cell-input cell-desc"
+                  value={row.description}
+                  data-id={row.id}
+                  data-field="description"
+                  onchange={handleFieldChange}
+                  placeholder="Description"
+                />
               </span>
               <span class="td" role="gridcell">
                 <template lwc:if={row.isBlank}>
@@ -134,13 +225,41 @@
                 </template>
               </span>
               <span class="td td-num" role="gridcell">
-                <input type="number" class="cell-input cell-num" value={row.quantity} min="1" step="1" data-id={row.id} data-field="quantity" onchange={handleFieldChange} />
+                <input
+                  type="number"
+                  class="cell-input cell-num"
+                  value={row.quantity}
+                  min="1"
+                  step="1"
+                  data-id={row.id}
+                  data-field="quantity"
+                  onchange={handleFieldChange}
+                />
               </span>
               <span class="td td-num" role="gridcell">
-                <input type="number" class="cell-input cell-num" value={row.unitCost} min="0" step="0.01" data-id={row.id} data-field="unitCost" onchange={handleFieldChange} />
+                <input
+                  type="number"
+                  class="cell-input cell-num"
+                  value={row.unitCost}
+                  min="0"
+                  step="0.01"
+                  data-id={row.id}
+                  data-field="unitCost"
+                  onchange={handleFieldChange}
+                />
               </span>
               <span class="td td-num" role="gridcell">
-                <input type="number" class="cell-input cell-num cell-margin" value={row.marginPct} min="0" max="70" step="0.5" data-id={row.id} data-field="marginPct" onchange={handleFieldChange} />
+                <input
+                  type="number"
+                  class="cell-input cell-num cell-margin"
+                  value={row.marginPct}
+                  min="0"
+                  max="70"
+                  step="0.5"
+                  data-id={row.id}
+                  data-field="marginPct"
+                  onchange={handleFieldChange}
+                />
               </span>
               <span class="td td-num rec-margin" role="gridcell">
                 {row.recMarginDisplay}
@@ -148,9 +267,18 @@
                   <span class={row.recDeltaClass}>{row.recDeltaDisplay}</span>
                 </template>
               </span>
-              <span class="td td-num" role="gridcell">{row.extPriceDisplay}</span>
+              <span class="td td-num" role="gridcell"
+                >{row.extPriceDisplay}</span
+              >
               <span class="td td-act" role="gridcell">
-                <button class="btn-delete" data-id={row.id} onclick={handleDeleteLine} title="Remove line">&#10005;</button>
+                <button
+                  class="btn-delete"
+                  data-id={row.id}
+                  onclick={handleDeleteLine}
+                  title="Remove line"
+                >
+                  &#10005;
+                </button>
               </span>
             </div>
           </template>
@@ -161,10 +289,16 @@
             <span class="td" role="gridcell"></span>
             <span class="td" role="gridcell"></span>
             <span class="td" role="gridcell"></span>
-            <span class="td td-num total-val" role="gridcell">{totalCostDisplay}</span>
-            <span class="td td-num total-val" role="gridcell">{blendedMarginDisplay}</span>
+            <span class="td td-num total-val" role="gridcell"
+              >{totalCostDisplay}</span
+            >
+            <span class="td td-num total-val" role="gridcell"
+              >{blendedMarginDisplay}</span
+            >
             <span class="td" role="gridcell"></span>
-            <span class="td td-num total-val total-gp" role="gridcell">{totalPriceDisplay}</span>
+            <span class="td td-num total-val total-gp" role="gridcell"
+              >{totalPriceDisplay}</span
+            >
             <span class="td" role="gridcell"></span>
           </div>
         </div>
@@ -175,23 +309,58 @@
     <template lwc:if={showEmptyState}>
       <section class="bom-empty-state">
         <div class="empty-icon">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <path
+              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+            />
           </svg>
         </div>
         <h3 class="empty-title">Build Your Bill of Materials</h3>
-        <p class="empty-subtitle">Add line items to analyze margins and get per-line recommendations</p>
+        <p class="empty-subtitle">
+          Add line items to analyze margins and get per-line recommendations
+        </p>
         <div class="empty-actions">
-          <button class="empty-action-btn empty-action-primary" onclick={handleFocusSearch}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+          <button
+            class="empty-action-btn empty-action-primary"
+            onclick={handleFocusSearch}
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
             Search Products
           </button>
           <button class="empty-action-btn" onclick={handleAddBlankLine}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4" /></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path d="M12 4v16m8-8H4" />
+            </svg>
             Add Blank Line
           </button>
           <button class="empty-action-btn" onclick={handleCsvImport}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" /></svg>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+              />
+            </svg>
             Import CSV
           </button>
         </div>
@@ -204,13 +373,21 @@
         <h3 class="analysis-title">Margin Intelligence</h3>
         <div class="health-score-wrap">
           <div class={healthScoreClass}>
-            <span class="score-value">{analysis.recommendations.healthScore}</span>
+            <span class="score-value"
+              >{analysis.recommendations.healthScore}</span
+            >
             <span class="score-label">{healthScoreLabel}</span>
           </div>
           <div class="health-legend">
-            <span class="health-legend-item health-legend-good">80-100 Healthy</span>
-            <span class="health-legend-item health-legend-warn">50-79 Needs Attention</span>
-            <span class="health-legend-item health-legend-crit">0-49 Critical</span>
+            <span class="health-legend-item health-legend-good"
+              >80-100 Healthy</span
+            >
+            <span class="health-legend-item health-legend-warn"
+              >50-79 Needs Attention</span
+            >
+            <span class="health-legend-item health-legend-crit"
+              >0-49 Critical</span
+            >
           </div>
         </div>
       </div>
@@ -223,7 +400,9 @@
           </div>
           <div class="stat">
             <span class="stat-label">Recommended</span>
-            <span class="stat-value">{analysis.recommendations.suggestedBlendedMargin}%</span>
+            <span class="stat-value"
+              >{analysis.recommendations.suggestedBlendedMargin}%</span
+            >
           </div>
           <div class="stat">
             <span class="stat-label">Gap</span>
@@ -245,18 +424,40 @@
               <template for:each={formattedInsights} for:item="insight">
                 <div key={insight.id} class={insight.containerClass}>
                   <template lwc:if={insight.isWarning}>
-                    <svg class="insight-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                    <svg
+                      class="insight-type-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                      />
                     </svg>
                   </template>
                   <template lwc:if={insight.isOpportunity}>
-                    <svg class="insight-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg
+                      class="insight-type-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
                       <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                     </svg>
                   </template>
                   <template lwc:if={insight.isInfo}>
-                    <svg class="insight-type-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <svg
+                      class="insight-type-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
                     </svg>
                   </template>
                   <span class="insight-text">{insight.text}</span>
@@ -268,7 +469,12 @@
 
         <template lwc:if={hasAnalysisWithRecs}>
           <button class="btn-apply-recs" onclick={handleApplyRecommended}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+            >
               <path d="M5 13l4 4L19 7" />
             </svg>
             Apply Recommended Margins

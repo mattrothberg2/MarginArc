@@ -50,7 +50,10 @@ private class MarginArcLicenseValidatorTest {
 
   @isTest
   static void testValidateLicenseSuccess() {
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successValidation());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successValidation()
+    );
 
     Test.startTest();
     MarginArcLicenseValidator.validateLicense();
@@ -80,7 +83,10 @@ private class MarginArcLicenseValidatorTest {
     license.Status__c = 'revoked';
     update license;
 
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successValidation());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successValidation()
+    );
 
     Test.startTest();
     MarginArcLicenseValidator.validateLicense();
@@ -152,7 +158,10 @@ private class MarginArcLicenseValidatorTest {
 
   @isTest
   static void testSendTelemetry() {
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successTelemetry());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successTelemetry()
+    );
 
     Test.startTest();
     MarginArcLicenseValidator.sendTelemetry();
@@ -177,7 +186,10 @@ private class MarginArcLicenseValidatorTest {
 
   @isTest
   static void testScheduledValidation() {
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successValidation());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successValidation()
+    );
 
     Test.startTest();
     MarginArcLicenseValidator validator = new MarginArcLicenseValidator();
@@ -201,7 +213,10 @@ private class MarginArcLicenseValidatorTest {
 
   @isTest
   static void testValidateLicenseNow() {
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successValidation());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successValidation()
+    );
 
     Test.startTest();
     Map<String, Object> result = MarginArcLicenseValidator.validateLicenseNow();
