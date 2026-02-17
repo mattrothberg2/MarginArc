@@ -182,6 +182,78 @@ app.use('/admin/api', adminRoutes)
 // Salesforce OAuth routes (JWT-authed, no API key required)
 app.use('/oauth', oauthRoutes)
 
+// Scenario data endpoint for SFDC Apex callouts (API-key authed)
+// Must be defined BEFORE the JWT-authed demo-data router so GET /api/demo-data?scenario=... is caught here
+app.get('/api/demo-data', (req, res) => {
+  const { scenario, count } = req.query
+  if (!scenario) {
+    return res.status(400).json({ error: 'scenario query parameter is required' })
+  }
+
+  // Inline API key check (this route is before the general API key middleware)
+  const apiKey = process.env.MARGINARC_API_KEY || ''
+  if (apiKey) {
+    const provided = req.headers['x-api-key'] || ''
+    if (provided !== apiKey) {
+      return res.status(401).json({ error: 'Invalid or missing API key' })
+    }
+  }
+
+  const validScenarios = ['networking-var', 'security-var', 'cloud-var', 'full-stack-var', 'services-heavy-var']
+  if (!validScenarios.includes(scenario)) {
+    return res.status(400).json({ error: `Invalid scenario. Must be one of: ${validScenarios.join(', ')}` })
+  }
+
+  const dealCount = parseInt(count) || 250
+  if (![100, 250, 500].includes(dealCount)) {
+    return res.status(400).json({ error: 'count must be 100, 250, or 500' })
+  }
+
+  try {
+    const __filename = fileURLToPath(import.meta.url)
+    const __dirname = path.dirname(__filename)
+    const filePath = path.join(__dirname, 'src', 'data', 'scenarios', `${scenario}-sfdc.json`)
+    const rawData = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+    const sliced = rawData.slice(0, dealCount)
+
+    // Transform to camelCase format expected by the MarginArcDemoDataQueueable
+    const deals = sliced.map(d => ({
+      name: d.Name,
+      accountName: d.AccountName,
+      accountIndustry: d.AccountIndustry || 'Technology',
+      stageName: d.StageName,
+      amount: d.Amount,
+      closeDate: d.CloseDate,
+      oem: d.Fulcrum_OEM__c,
+      oemCost: d.Fulcrum_OEM_Cost__c,
+      customerSegment: d.Fulcrum_Customer_Segment__c,
+      dealRegType: d.Fulcrum_Deal_Reg_Type__c,
+      competitorNames: d.Fulcrum_Competitor_Names__c,
+      solutionComplexity: d.Fulcrum_Solution_Complexity__c,
+      relationshipStrength: d.Fulcrum_Relationship_Strength__c,
+      servicesAttached: d.Fulcrum_Services_Attached__c,
+      productCategory: d.Fulcrum_Product_Category__c,
+      plannedMargin: d.Fulcrum_Planned_Margin__c,
+      gpPercent: d.Fulcrum_GP_Percent__c,
+      lossReason: d.Fulcrum_Loss_Reason__c,
+      dealType: d.Fulcrum_Deal_Type__c
+    }))
+
+    const uniqueAccounts = new Set(deals.map(d => d.accountName)).size
+
+    res.json({
+      success: true,
+      scenario,
+      count: deals.length,
+      uniqueAccounts,
+      deals
+    })
+  } catch (err) {
+    console.error('Error loading scenario data:', err)
+    res.status(500).json({ error: 'Failed to load scenario data' })
+  }
+})
+
 // Demo data routes (JWT-authed, no API key required)
 app.use('/api/demo-data', demoDataRoutes)
 

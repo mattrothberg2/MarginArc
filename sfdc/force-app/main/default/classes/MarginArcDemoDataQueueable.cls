@@ -35,22 +35,34 @@ public with sharing class MarginArcDemoDataQueueable implements Queueable {
       batch.add(allDeals[i]);
     }
 
-    // Collect unique account names and create accounts that don't exist yet
+    // Collect unique account names and industries from deal data
     Set<String> accountNames = new Set<String>();
+    Set<String> accountNamesWithSuffix = new Set<String>();
+    Map<String, String> accountIndustries = new Map<String, String>();
     for (Object dealObj : batch) {
       Map<String, Object> deal = (Map<String, Object>) dealObj;
       String acctName = (String) deal.get('accountName');
       if (String.isNotBlank(acctName)) {
         accountNames.add(acctName);
+        String withSuffix = acctName.contains('(Demo)')
+          ? acctName
+          : acctName + ' (Demo)';
+        accountNamesWithSuffix.add(withSuffix);
+        if (deal.containsKey('accountIndustry')) {
+          accountIndustries.put(acctName, (String) deal.get('accountIndustry'));
+        }
       }
     }
 
-    // Query existing accounts
+    // Query existing accounts (check both raw name and (Demo) suffixed name)
+    Set<String> allNameVariants = new Set<String>();
+    allNameVariants.addAll(accountNames);
+    allNameVariants.addAll(accountNamesWithSuffix);
     Map<String, Id> accountMap = new Map<String, Id>();
     for (Account a : [
       SELECT Id, Name
       FROM Account
-      WHERE Name IN :accountNames
+      WHERE Name IN :allNameVariants
     ]) {
       accountMap.put(a.Name, a.Id);
     }
@@ -58,9 +70,15 @@ public with sharing class MarginArcDemoDataQueueable implements Queueable {
     // Create missing accounts
     List<Account> newAccounts = new List<Account>();
     for (String name : accountNames) {
-      if (!accountMap.containsKey(name)) {
-        String suffix = name.contains('(Demo)') ? '' : ' (Demo)';
-        Account a = new Account(Name = name + suffix);
+      String withSuffix = name.contains('(Demo)') ? name : name + ' (Demo)';
+      if (
+        !accountMap.containsKey(name) &&
+        !accountMap.containsKey(withSuffix)
+      ) {
+        Account a = new Account(Name = withSuffix);
+        if (accountIndustries.containsKey(name)) {
+          a.Industry = accountIndustries.get(name);
+        }
         newAccounts.add(a);
       }
     }
@@ -182,6 +200,12 @@ public with sharing class MarginArcDemoDataQueueable implements Queueable {
     }
     if (deal.containsKey('lossReason')) {
       opp.Fulcrum_Loss_Reason__c = (String) deal.get('lossReason');
+    }
+    if (deal.containsKey('gpPercent') && deal.get('gpPercent') != null) {
+      opp.Fulcrum_GP_Percent__c = toDecimal(deal.get('gpPercent'));
+    }
+    if (deal.containsKey('dealType')) {
+      opp.Fulcrum_Deal_Type__c = (String) deal.get('dealType');
     }
 
     return opp;

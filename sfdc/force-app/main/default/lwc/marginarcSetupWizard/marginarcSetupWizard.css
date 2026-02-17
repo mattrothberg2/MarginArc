@@ -1319,6 +1319,148 @@
   color: #ef4444;
 }
 
+.demo-data-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.btn-clear-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 6px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-demo:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.6);
+}
+
+.btn-clear-demo:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Scenario Picker ── */
+.scenario-picker {
+  margin-bottom: 16px;
+}
+
+.scenario-picker-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8899aa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.scenario-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.scenario-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scenario-card:hover {
+  background: rgba(2, 177, 181, 0.06);
+  border-color: rgba(2, 177, 181, 0.25);
+}
+
+.scenario-card-selected {
+  background: rgba(2, 177, 181, 0.08);
+  border-color: rgba(2, 177, 181, 0.5);
+  box-shadow: 0 0 0 1px rgba(2, 177, 181, 0.2);
+}
+
+.scenario-icon {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(2, 177, 181, 0.12);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #02b1b5;
+  flex-shrink: 0;
+}
+
+.scenario-card-selected .scenario-icon {
+  background: rgba(2, 177, 181, 0.2);
+}
+
+.scenario-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.scenario-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8ecf1;
+}
+
+.scenario-desc {
+  font-size: 11px;
+  color: #8899aa;
+  line-height: 1.4;
+}
+
+/* ── Deal Count Selector (dark theme override) ── */
+.deal-count-selector {
+  margin-bottom: 16px;
+}
+
+.deal-count-selector .selector-label {
+  color: #8899aa;
+}
+
+.deal-count-selector .segmented-control {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+.deal-count-selector .segmented-control button {
+  background: rgba(255, 255, 255, 0.04);
+  color: #8899aa;
+  border-right-color: rgba(255, 255, 255, 0.12);
+}
+
+.deal-count-selector .segmented-control button:hover {
+  background: rgba(2, 177, 181, 0.08);
+  color: #e8ecf1;
+}
+
+.deal-count-selector .segment-active {
+  background: rgba(2, 177, 181, 0.15) !important;
+  color: #02b1b5 !important;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);

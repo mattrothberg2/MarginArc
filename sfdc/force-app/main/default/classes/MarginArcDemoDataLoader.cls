@@ -82,6 +82,252 @@ public with sharing class MarginArcDemoDataLoader {
   }
 
   // ────────────────────────────────────────────────
+  // Scenario-Based Demo Data (calls Lambda)
+  // ────────────────────────────────────────────────
+
+  @AuraEnabled
+  public static Map<String, Object> loadScenarioData(
+    String scenario,
+    Integer dealCount
+  ) {
+    Map<String, Object> result = new Map<String, Object>();
+
+    // Idempotency check — look for any demo accounts
+    List<Account> existing = [
+      SELECT Id
+      FROM Account
+      WHERE Name LIKE '%(Demo)%'
+      LIMIT 1
+    ];
+    if (!existing.isEmpty()) {
+      result.put('success', true);
+      result.put('alreadyLoaded', true);
+      result.put('message', 'Demo data has already been loaded. Clear it first before loading a new scenario.');
+      return result;
+    }
+
+    // Validate inputs
+    Set<String> validScenarios = new Set<String>{
+      'networking-var',
+      'security-var',
+      'cloud-var',
+      'full-stack-var',
+      'services-heavy-var'
+    };
+    if (String.isBlank(scenario) || !validScenarios.contains(scenario)) {
+      result.put('success', false);
+      result.put('message', 'Invalid scenario: ' + scenario);
+      return result;
+    }
+    if (dealCount == null || (dealCount != 100 && dealCount != 250 && dealCount != 500)) {
+      dealCount = 250;
+    }
+
+    try {
+      // Read API config from custom setting
+      Fulcrum_Config__c config = Fulcrum_Config__c.getOrgDefaults();
+      String apiUrl = config.API_URL__c;
+      String apiKey = config.API_Key__c;
+
+      if (String.isBlank(apiUrl)) {
+        result.put('success', false);
+        result.put('message', 'API URL not configured. Set it in MarginArc Config custom setting.');
+        return result;
+      }
+
+      // Call Lambda to get scenario data
+      String endpoint =
+        apiUrl +
+        '/api/demo-data?scenario=' +
+        EncodingUtil.urlEncode(scenario, 'UTF-8') +
+        '&count=' +
+        dealCount;
+
+      HttpRequest req = new HttpRequest();
+      req.setEndpoint(endpoint);
+      req.setMethod('GET');
+      req.setTimeout(60000);
+      if (String.isNotBlank(apiKey)) {
+        req.setHeader('x-api-key', apiKey);
+      }
+      req.setHeader('Accept', 'application/json');
+
+      Http http = new Http();
+      HttpResponse resp = http.send(req);
+
+      if (resp.getStatusCode() != 200) {
+        result.put('success', false);
+        result.put(
+          'message',
+          'Lambda returned status ' +
+            resp.getStatusCode() +
+            ': ' +
+            resp.getBody().left(200)
+        );
+        return result;
+      }
+
+      Map<String, Object> payload = (Map<String, Object>) JSON.deserializeUntyped(
+        resp.getBody()
+      );
+
+      if (payload.get('success') != true) {
+        result.put('success', false);
+        result.put(
+          'message',
+          'Lambda error: ' + String.valueOf(payload.get('error'))
+        );
+        return result;
+      }
+
+      List<Object> deals = (List<Object>) payload.get('deals');
+      Integer uniqueAccounts = payload.containsKey('uniqueAccounts')
+        ? ((Integer) payload.get('uniqueAccounts'))
+        : 0;
+
+      // Insert OEM Vendors
+      List<Fulcrum_OEM__c> oems = createOemRecords();
+      SObjectAccessDecision oemDecision = Security.stripInaccessible(
+        AccessType.CREATABLE,
+        oems
+      );
+      insert oemDecision.getRecords();
+
+      // Insert Competitor Profiles
+      List<Fulcrum_Competitor__c> competitors = createCompetitorRecords();
+      SObjectAccessDecision compDecision = Security.stripInaccessible(
+        AccessType.CREATABLE,
+        competitors
+      );
+      insert compDecision.getRecords();
+
+      // Enqueue the queueable chain for bulk deal + BOM line insertion
+      String dealsJson = JSON.serialize(deals);
+      Id jobId = System.enqueueJob(
+        new MarginArcDemoDataQueueable(dealsJson, 0)
+      );
+
+      result.put('success', true);
+      result.put('alreadyLoaded', false);
+      result.put('scenario', scenario);
+      result.put('opportunities', deals.size());
+      result.put('accounts', uniqueAccounts);
+      result.put('oems', oemDecision.getRecords().size());
+      result.put('competitors', compDecision.getRecords().size());
+      result.put('jobId', jobId);
+      result.put(
+        'message',
+        'Loaded ' +
+          deals.size() +
+          ' opportunities across ' +
+          uniqueAccounts +
+          ' accounts. BOM lines are being generated in the background.'
+      );
+    } catch (Exception e) {
+      result.put('success', false);
+      result.put('message', 'Error loading scenario data: ' + e.getMessage());
+    }
+
+    return result;
+  }
+
+  // ────────────────────────────────────────────────
+  // Clear Demo Data
+  // ────────────────────────────────────────────────
+
+  @AuraEnabled
+  public static Map<String, Object> clearDemoData() {
+    Map<String, Object> result = new Map<String, Object>();
+
+    try {
+      // 1. Find demo opportunities (via account naming convention)
+      List<Opportunity> demoOpps = [
+        SELECT Id
+        FROM Opportunity
+        WHERE Account.Name LIKE '%(Demo)%'
+      ];
+      Set<Id> oppIds = new Set<Id>();
+      for (Opportunity o : demoOpps) {
+        oppIds.add(o.Id);
+      }
+
+      // 2. Delete BOM lines linked to demo opportunities
+      Integer bomCount = 0;
+      if (!oppIds.isEmpty()) {
+        List<Fulcrum_BOM_Line__c> bomLines = [
+          SELECT Id
+          FROM Fulcrum_BOM_Line__c
+          WHERE Opportunity__c IN :oppIds
+        ];
+        bomCount = bomLines.size();
+        if (!bomLines.isEmpty()) {
+          delete bomLines;
+        }
+      }
+
+      // 3. Delete demo opportunities
+      Integer oppCount = demoOpps.size();
+      if (!demoOpps.isEmpty()) {
+        delete demoOpps;
+      }
+
+      // 4. Delete demo accounts
+      List<Account> demoAccounts = [
+        SELECT Id
+        FROM Account
+        WHERE Name LIKE '%(Demo)%'
+      ];
+      Integer acctCount = demoAccounts.size();
+      if (!demoAccounts.isEmpty()) {
+        delete demoAccounts;
+      }
+
+      // 5. Delete all OEM vendors
+      List<Fulcrum_OEM__c> oems = [SELECT Id FROM Fulcrum_OEM__c];
+      Integer oemCount = oems.size();
+      if (!oems.isEmpty()) {
+        delete oems;
+      }
+
+      // 6. Delete all competitor profiles
+      List<Fulcrum_Competitor__c> comps = [
+        SELECT Id
+        FROM Fulcrum_Competitor__c
+      ];
+      Integer compCount = comps.size();
+      if (!comps.isEmpty()) {
+        delete comps;
+      }
+
+      result.put('success', true);
+      result.put('accounts', acctCount);
+      result.put('opportunities', oppCount);
+      result.put('bomLines', bomCount);
+      result.put('oems', oemCount);
+      result.put('competitors', compCount);
+      result.put(
+        'message',
+        'Cleared ' +
+          oppCount +
+          ' opportunities, ' +
+          acctCount +
+          ' accounts, ' +
+          bomCount +
+          ' BOM lines, ' +
+          oemCount +
+          ' OEM vendors, and ' +
+          compCount +
+          ' competitor profiles.'
+      );
+    } catch (Exception e) {
+      result.put('success', false);
+      result.put('message', 'Error clearing demo data: ' + e.getMessage());
+    }
+
+    return result;
+  }
+
+  // ────────────────────────────────────────────────
   // OEM Records (10)
   // ────────────────────────────────────────────────
 

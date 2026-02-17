@@ -10,6 +10,8 @@ import getMaturityAssessment from "@salesforce/apex/MarginArcSetupController.get
 import getAlgorithmPhaseStatus from "@salesforce/apex/MarginArcSetupController.getAlgorithmPhaseStatus";
 import enableAlgorithmPhase from "@salesforce/apex/MarginArcSetupController.enableAlgorithmPhase";
 import loadDemoData from "@salesforce/apex/MarginArcDemoDataLoader.loadDemoData";
+import loadScenarioData from "@salesforce/apex/MarginArcDemoDataLoader.loadScenarioData";
+import clearDemoData from "@salesforce/apex/MarginArcDemoDataLoader.clearDemoData";
 
 function n(val) {
   return val == null ? 0 : Number(val);
@@ -54,6 +56,41 @@ const PHASE_DEFINITIONS = [
   }
 ];
 
+const DEMO_SCENARIOS = [
+  {
+    id: "networking-var",
+    name: "Networking VAR",
+    icon: "N",
+    description: "Cisco/Aruba heavy, mid-market focus, avg $75K deals"
+  },
+  {
+    id: "security-var",
+    name: "Security VAR",
+    icon: "S",
+    description: "Palo Alto/Fortinet focused, enterprise, avg $120K deals"
+  },
+  {
+    id: "cloud-var",
+    name: "Cloud VAR",
+    icon: "C",
+    description: "VMware/Azure/AWS heavy, mid-market, avg $90K deals"
+  },
+  {
+    id: "full-stack-var",
+    name: "Full Stack VAR",
+    icon: "F",
+    description: "Balanced OEM mix across all segments, avg $95K deals"
+  },
+  {
+    id: "services-heavy-var",
+    name: "Services Heavy VAR",
+    icon: "V",
+    description: "High services attach, consulting-led, avg $110K deals"
+  }
+];
+
+const DEAL_COUNT_OPTIONS = [100, 250, 500];
+
 const BACKFILL_POLL_INTERVAL_MS = 3000;
 
 export default class MarginarcSetupWizard extends NavigationMixin(
@@ -72,6 +109,9 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   @track demoDataLoaded = false;
   @track demoDataMessage = "";
   @track demoDataCounts = null;
+  @track selectedScenario = null;
+  @track selectedDealCount = 250;
+  @track isClearingDemo = false;
 
   // ── Backfill State ──
   @track selectedMonths = 12;
@@ -1030,7 +1070,55 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   // DEMO DATA
   // ═══════════════════════════════════════════
 
+  get scenarioCards() {
+    return DEMO_SCENARIOS.map((s) => ({
+      ...s,
+      isSelected: this.selectedScenario === s.id,
+      cardClass:
+        "scenario-card" +
+        (this.selectedScenario === s.id ? " scenario-card-selected" : "")
+    }));
+  }
+
+  get dealCountButtons() {
+    return DEAL_COUNT_OPTIONS.map((count) => ({
+      count,
+      label: count + " deals",
+      isSelected: this.selectedDealCount === count,
+      btnClass:
+        this.selectedDealCount === count ? "segment-active" : ""
+    }));
+  }
+
+  handleSelectScenario(event) {
+    this.selectedScenario = event.currentTarget.dataset.scenario;
+  }
+
+  handleDealCountChange(event) {
+    this.selectedDealCount = parseInt(event.currentTarget.dataset.count, 10);
+  }
+
+  get isScenarioSelected() {
+    return this.selectedScenario != null;
+  }
+
+  get isDemoLoadDisabled() {
+    return (
+      this.isLoadingDemo ||
+      this.demoDataLoaded ||
+      this.selectedScenario == null
+    );
+  }
+
   handleLoadDemoData() {
+    if (this.selectedScenario) {
+      this.handleLoadScenarioData();
+    } else {
+      this.handleLoadBasicDemoData();
+    }
+  }
+
+  handleLoadBasicDemoData() {
     this.isLoadingDemo = true;
     this.demoDataMessage = "";
     loadDemoData()
@@ -1042,26 +1130,22 @@ export default class MarginarcSetupWizard extends NavigationMixin(
             this.demoDataMessage = "Demo data was previously loaded.";
           } else {
             this.demoDataCounts = result;
-            this.demoDataMessage = `Loaded ${result.accounts} accounts, ${result.opportunities} opportunities, ${result.oems} OEM vendors, and ${result.competitors} competitor profiles.`;
-            // Refresh setup status to reflect new data
+            this.demoDataMessage =
+              "Loaded " +
+              result.accounts +
+              " accounts, " +
+              result.opportunities +
+              " opportunities, " +
+              result.oems +
+              " OEM vendors, and " +
+              result.competitors +
+              " competitor profiles.";
             this.loadSetupStatus();
           }
-          this.dispatchEvent(
-            new ShowToastEvent({
-              title: "Demo Data Loaded",
-              message: this.demoDataMessage,
-              variant: "success"
-            })
-          );
+          this.showSuccess(this.demoDataMessage);
         } else {
           this.demoDataMessage = result.message || "Failed to load demo data.";
-          this.dispatchEvent(
-            new ShowToastEvent({
-              title: "Error",
-              message: this.demoDataMessage,
-              variant: "error"
-            })
-          );
+          this.showError("Demo Data Error", { message: this.demoDataMessage });
         }
       })
       .catch((error) => {
@@ -1069,18 +1153,74 @@ export default class MarginarcSetupWizard extends NavigationMixin(
         this.demoDataMessage = error.body
           ? error.body.message
           : "An unexpected error occurred.";
-        this.dispatchEvent(
-          new ShowToastEvent({
-            title: "Error",
-            message: this.demoDataMessage,
-            variant: "error"
-          })
-        );
+        this.showError("Error", { message: this.demoDataMessage });
       });
   }
 
-  get isDemoButtonDisabled() {
-    return this.isLoadingDemo || this.demoDataLoaded;
+  handleLoadScenarioData() {
+    this.isLoadingDemo = true;
+    this.demoDataMessage = "";
+    loadScenarioData({
+      scenario: this.selectedScenario,
+      dealCount: this.selectedDealCount
+    })
+      .then((result) => {
+        this.isLoadingDemo = false;
+        if (result.success) {
+          this.demoDataLoaded = true;
+          if (result.alreadyLoaded) {
+            this.demoDataMessage = result.message;
+          } else {
+            this.demoDataCounts = result;
+            this.demoDataMessage = result.message;
+            this.loadSetupStatus();
+          }
+          this.showSuccess(this.demoDataMessage);
+        } else {
+          this.demoDataMessage =
+            result.message || "Failed to load scenario data.";
+          this.showError("Demo Data Error", { message: this.demoDataMessage });
+        }
+      })
+      .catch((error) => {
+        this.isLoadingDemo = false;
+        this.demoDataMessage = error.body
+          ? error.body.message
+          : "An unexpected error occurred.";
+        this.showError("Error", { message: this.demoDataMessage });
+      });
+  }
+
+  handleClearDemoData() {
+    this.isClearingDemo = true;
+    this.demoDataMessage = "";
+    clearDemoData()
+      .then((result) => {
+        this.isClearingDemo = false;
+        if (result.success) {
+          this.demoDataLoaded = false;
+          this.demoDataCounts = null;
+          this.demoDataMessage = "";
+          this.selectedScenario = null;
+          this.loadSetupStatus();
+          this.showSuccess(result.message);
+        } else {
+          this.demoDataMessage =
+            result.message || "Failed to clear demo data.";
+          this.showError("Clear Error", { message: this.demoDataMessage });
+        }
+      })
+      .catch((error) => {
+        this.isClearingDemo = false;
+        this.demoDataMessage = error.body
+          ? error.body.message
+          : "An unexpected error occurred.";
+        this.showError("Error", { message: this.demoDataMessage });
+      });
+  }
+
+  get isClearDisabled() {
+    return this.isClearingDemo || this.isLoadingDemo;
   }
 
   // ═══════════════════════════════════════════

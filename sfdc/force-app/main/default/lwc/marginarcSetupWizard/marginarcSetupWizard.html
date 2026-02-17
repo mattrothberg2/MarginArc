@@ -173,30 +173,100 @@
                   <div>
                     <h4 class="demo-data-title">Demo Data</h4>
                     <p class="demo-data-desc">
-                      Optionally load sample OEM vendors, competitor profiles,
-                      accounts, and opportunities to explore MarginArc
-                      immediately.
+                      Load scenario-specific demo data to explore MarginArc
+                      with realistic OEM vendors, competitors, accounts,
+                      opportunities, and BOM lines.
                     </p>
                   </div>
                 </div>
+
                 <template lwc:if={demoDataLoaded}>
                   <div class="demo-data-success">
                     <span class="demo-check">&#10003;</span>
                     <span>{demoDataMessage}</span>
                   </div>
+                  <div class="demo-data-actions">
+                    <button
+                      class="btn-clear-demo"
+                      onclick={handleClearDemoData}
+                      disabled={isClearDisabled}
+                    >
+                      <template lwc:if={isClearingDemo}>
+                        <span class="spinner-small"></span>
+                        Clearing...
+                      </template>
+                      <template lwc:else>Clear Demo Data</template>
+                    </button>
+                  </div>
                 </template>
+
                 <template lwc:else>
-                  <button
-                    class="btn-demo"
-                    onclick={handleLoadDemoData}
-                    disabled={isDemoButtonDisabled}
-                  >
-                    <template lwc:if={isLoadingDemo}>
-                      <span class="spinner-small"></span>
-                      Loading demo data...
-                    </template>
-                    <template lwc:else> Load Demo Data </template>
-                  </button>
+                  <!-- Scenario Picker -->
+                  <div class="scenario-picker">
+                    <span class="scenario-picker-label">Choose a scenario</span>
+                    <div class="scenario-grid">
+                      <template for:each={scenarioCards} for:item="sc">
+                        <div
+                          key={sc.id}
+                          class={sc.cardClass}
+                          data-scenario={sc.id}
+                          onclick={handleSelectScenario}
+                        >
+                          <div class="scenario-icon">{sc.icon}</div>
+                          <div class="scenario-info">
+                            <span class="scenario-name">{sc.name}</span>
+                            <span class="scenario-desc">{sc.description}</span>
+                          </div>
+                        </div>
+                      </template>
+                    </div>
+                  </div>
+
+                  <!-- Deal Count Selector -->
+                  <template lwc:if={isScenarioSelected}>
+                    <div class="deal-count-selector">
+                      <span class="selector-label">Number of deals</span>
+                      <div class="segmented-control">
+                        <template for:each={dealCountButtons} for:item="dc">
+                          <button
+                            key={dc.count}
+                            class={dc.btnClass}
+                            data-count={dc.count}
+                            onclick={handleDealCountChange}
+                          >
+                            {dc.label}
+                          </button>
+                        </template>
+                      </div>
+                    </div>
+                  </template>
+
+                  <!-- Load Button -->
+                  <div class="demo-data-actions">
+                    <button
+                      class="btn-demo"
+                      onclick={handleLoadDemoData}
+                      disabled={isDemoLoadDisabled}
+                    >
+                      <template lwc:if={isLoadingDemo}>
+                        <span class="spinner-small"></span>
+                        Loading scenario data...
+                      </template>
+                      <template lwc:else>Load Demo Data</template>
+                    </button>
+                    <button
+                      class="btn-clear-demo"
+                      onclick={handleClearDemoData}
+                      disabled={isClearDisabled}
+                    >
+                      <template lwc:if={isClearingDemo}>
+                        <span class="spinner-small"></span>
+                        Clearing...
+                      </template>
+                      <template lwc:else>Clear Demo Data</template>
+                    </button>
+                  </div>
+
                   <template lwc:if={demoDataMessage}>
                     <p class="demo-data-error">{demoDataMessage}</p>
                   </template>
