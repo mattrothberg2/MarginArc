@@ -135,7 +135,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 2: Multi-Phase Algorithm
 
-### 2A — Design Algorithm Phase System (depends on 1B)
+### 2A — Design Algorithm Phase System (depends on 1B) [COMPLETE]
 
 ```
 Read these files to understand the current system:
@@ -199,7 +199,7 @@ Implementation:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 2B — Add Phase-Aware UX to SFDC Margin Advisor (depends on 2A)
+### 2B — Add Phase-Aware UX to SFDC Margin Advisor (depends on 2A) [COMPLETE]
 
 ```
 Read these files:
@@ -235,7 +235,7 @@ Important LWC notes from CLAUDE.md:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 2C — Add Phase Guidance to Setup Wizard (depends on 2A)
+### 2C — Add Phase Guidance to Setup Wizard (depends on 2A) [COMPLETE]
 
 ```
 Read these files:
@@ -272,7 +272,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 3: BOM Line-Item Engine
 
-### 3A — Implement BOM Catalog Search API (no dependencies)
+### 3A — Implement BOM Catalog Search API (no dependencies) [COMPLETE]
 
 ```
 Read these files:
@@ -333,7 +333,7 @@ Implement the POST /api/bom/search endpoint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 3B — Implement BOM Per-Line Margin Optimizer (depends on 3A)
+### 3B — Implement BOM Per-Line Margin Optimizer (depends on 3A) [COMPLETE]
 
 ```
 Read these files:
@@ -489,7 +489,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 4: Synthetic Data Generator v2
 
-### 4A — Configurable POC Scenarios (depends on 1A)
+### 4A — Configurable POC Scenarios (depends on 1A) [COMPLETE]
 
 ```
 Read lambda/server/src/data/generateSyntheticDeals.js to understand the current synthetic data generator. It creates 7,000 deals with realistic distributions.
