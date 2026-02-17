@@ -142,7 +142,7 @@ export async function generateToken(username, role = 'super_admin') {
     { username, role },
     secret,
     {
-      expiresIn: '4h',
+      expiresIn: '1h',
       header: { kid }
     }
   );
