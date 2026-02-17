@@ -128,6 +128,39 @@
           </template>
         </div>
 
+        <!-- Data Quality Indicators -->
+        <template lwc:if={hasDataQuality}>
+          <div class="marginarc-data-quality">
+            <div class="marginarc-dq-header">
+              <span class="marginarc-dq-title">Data Quality</span>
+              <span class={dataQualityBadgeClass}>{dataQualityTier}</span>
+            </div>
+            <div class="marginarc-dq-bar-track">
+              <div class="marginarc-dq-bar-fill" style={dataQualityBarStyle}></div>
+            </div>
+            <div class="marginarc-dq-factors">
+              <template for:each={dataQualityFactors} for:item="factor">
+                <span key={factor.name} class={factor.cssClass}>
+                  <span class="marginarc-dq-icon">{factor.icon}</span>
+                  {factor.name}
+                </span>
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Phase 1 Callout — data foundation message -->
+        <template lwc:if={isPhaseOne}>
+          <div class="marginarc-phase-callout">
+            <div class="marginarc-phase-callout-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+              </svg>
+            </div>
+            <p class="marginarc-phase-callout-text">{phaseCalloutMessage}</p>
+          </div>
+        </template>
+
         <!-- Degradation Badge -->
         <template lwc:if={showDegradationBadge}>
           <div class="degradation-badge">
@@ -140,17 +173,19 @@
           </div>
         </template>
 
-        <!-- Recommended Margin Callout -->
-        <div class="rec-margin-callout">
-          <div class="rec-margin-main">
-            <span class="rec-margin-label">Recommended Margin</span>
-            <span class="rec-margin-value">{recommendedMargin}%</span>
+        <!-- Recommended Margin Callout (Phase 2+) -->
+        <template lwc:if={showMarginRecommendation}>
+          <div class="rec-margin-callout">
+            <div class="rec-margin-main">
+              <span class="rec-margin-label">Recommended Margin</span>
+              <span class="rec-margin-value">{recommendedMargin}%</span>
+            </div>
+            <div class="rec-margin-delta">
+              <span class="rec-margin-current">Your plan: {currentMargin}%</span>
+              <span class={marginDeltaClass}>{marginDeltaDisplay}</span>
+            </div>
           </div>
-          <div class="rec-margin-delta">
-            <span class="rec-margin-current">Your plan: {currentMargin}%</span>
-            <span class={marginDeltaClass}>{marginDeltaDisplay}</span>
-          </div>
-        </div>
+        </template>
 
         <!-- Action Bar (above the fold) -->
         <div class="action-bar">
@@ -171,77 +206,82 @@
             </svg>
             Refresh
           </button>
-          <button
-            class="btn-primary"
-            onclick={handleApply}
-            aria-label="Apply recommended margin to opportunity"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
+          <template lwc:if={showApplyButton}>
+            <button
+              class="btn-primary"
+              onclick={handleApply}
+              aria-label="Apply recommended margin to opportunity"
             >
-              <path d="M5 13l4 4L19 7" />
-            </svg>
-            Apply Recommendation
-          </button>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path d="M5 13l4 4L19 7" />
+              </svg>
+              Apply Recommendation
+            </button>
+          </template>
         </div>
 
-        <!-- Plan vs Recommendation Comparison -->
-        <div class="comparison-section">
-          <div class="comparison-header">
-            <div class="comparison-col-header"></div>
-            <div class="comparison-col-header comparison-col-planned">
-              Your Plan
+        <!-- Plan vs Recommendation Comparison (Phase 2+) -->
+        <template lwc:if={showMarginRecommendation}>
+          <div class="comparison-section">
+            <div class="comparison-header">
+              <div class="comparison-col-header"></div>
+              <div class="comparison-col-header comparison-col-planned">
+                Your Plan
+              </div>
+              <div class="comparison-col-header comparison-col-recommended">
+                Recommended
+              </div>
             </div>
-            <div class="comparison-col-header comparison-col-recommended">
-              Recommended
+
+            <div class="comparison-row">
+              <div class="comparison-label">Margin</div>
+              <div class="comparison-value">{currentMargin}%</div>
+              <div class="comparison-value comparison-value-highlight">
+                {recommendedMargin}%
+              </div>
+            </div>
+
+            <div class="comparison-row">
+              <div class="comparison-label">Sell Price</div>
+              <div class="comparison-value">{dealContextSellPrice}</div>
+              <div class="comparison-value comparison-value-highlight">
+                {recommendedSellPrice}
+              </div>
+            </div>
+
+            <div class="comparison-row">
+              <div class="comparison-label">Gross Profit</div>
+              <div class="comparison-value">{dealContextGrossProfit}</div>
+              <div class="comparison-value comparison-value-highlight">
+                {recommendedGrossProfit}
+              </div>
+            </div>
+
+            <div class="comparison-row comparison-row-highlight">
+              <div class="comparison-label">Win Probability</div>
+              <div class="comparison-value">{plannedWinProbability}%</div>
+              <div class="comparison-value comparison-value-highlight">
+                {winProbability}%
+              </div>
+            </div>
+
+            <div class="comparison-row comparison-row-total">
+              <div class="comparison-label">Risk-Adj GP</div>
+              <div class="comparison-value">${plannedProfit}</div>
+              <div class="comparison-value comparison-value-highlight">
+                ${recommendedProfit}
+              </div>
             </div>
           </div>
+        </template>
 
-          <div class="comparison-row">
-            <div class="comparison-label">Margin</div>
-            <div class="comparison-value">{currentMargin}%</div>
-            <div class="comparison-value comparison-value-highlight">
-              {recommendedMargin}%
-            </div>
-          </div>
-
-          <div class="comparison-row">
-            <div class="comparison-label">Sell Price</div>
-            <div class="comparison-value">{dealContextSellPrice}</div>
-            <div class="comparison-value comparison-value-highlight">
-              {recommendedSellPrice}
-            </div>
-          </div>
-
-          <div class="comparison-row">
-            <div class="comparison-label">Gross Profit</div>
-            <div class="comparison-value">{dealContextGrossProfit}</div>
-            <div class="comparison-value comparison-value-highlight">
-              {recommendedGrossProfit}
-            </div>
-          </div>
-
-          <div class="comparison-row comparison-row-highlight">
-            <div class="comparison-label">Win Probability</div>
-            <div class="comparison-value">{plannedWinProbability}%</div>
-            <div class="comparison-value comparison-value-highlight">
-              {winProbability}%
-            </div>
-          </div>
-
-          <div class="comparison-row comparison-row-total">
-            <div class="comparison-label">Risk-Adj GP</div>
-            <div class="comparison-value">${plannedProfit}</div>
-            <div class="comparison-value comparison-value-highlight">
-              ${recommendedProfit}
-            </div>
-          </div>
-        </div>
-
-        <!-- Key Drivers -->
+        <!-- Key Drivers (Phase 2+ — margin-specific) -->
+        <template lwc:if={showMarginRecommendation}>
         <template lwc:if={hasDrivers}>
           <div class="drivers-section">
             <div class="drivers-header">
@@ -271,6 +311,7 @@
               </template>
             </div>
           </div>
+        </template>
         </template>
 
         <!-- AI Summary -->
@@ -394,6 +435,50 @@
                 <span class="bom-stat-value">{bomBlendedMargin}</span>
               </div>
             </div>
+            <!-- Phase 3: Per-line BOM margin recommendations -->
+            <template lwc:if={hasBomLineRecommendations}>
+              <div class="marginarc-bom-lines">
+                <div class="marginarc-bom-lines-header">
+                  <span class="marginarc-bom-lines-col">Line Item</span>
+                  <span class="marginarc-bom-lines-col">Current</span>
+                  <span class="marginarc-bom-lines-col">Recommended</span>
+                  <span class="marginarc-bom-lines-col">Gap</span>
+                </div>
+                <template for:each={bomLineItems} for:item="line">
+                  <div class="marginarc-bom-line-row" key={line.key}>
+                    <span class="marginarc-bom-line-label" title={line.label}>
+                      <span class="marginarc-bom-line-cat">{line.category}</span>
+                      {line.label}
+                    </span>
+                    <span class="marginarc-bom-line-value">{line.currentMarginDisplay}</span>
+                    <span class="marginarc-bom-line-value marginarc-bom-line-rec">{line.recommendedMarginDisplay}</span>
+                    <span class={line.gapClass}>{line.gapDisplay}</span>
+                  </div>
+                </template>
+              </div>
+            </template>
+
+            <!-- Phase 3: Optimize BOM Margins button -->
+            <template lwc:if={showBomOptimizeButton}>
+              <button
+                class="btn-bom-optimize"
+                onclick={handleOptimizeBom}
+                disabled={isBomOptimizing}
+                aria-label="Optimize BOM margins with AI"
+              >
+                <template lwc:if={isBomOptimizing}>
+                  <lightning-spinner alternative-text="Optimizing" size="xx-small"></lightning-spinner>
+                  Optimizing...
+                </template>
+                <template lwc:else>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  Optimize BOM Margins
+                </template>
+              </button>
+            </template>
+
             <p class="bom-summary-hint">
               Use the BOM Builder widget on this page to edit line items and
               analyze margins.
