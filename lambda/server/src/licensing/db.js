@@ -56,6 +56,11 @@ async function loadDBConfig() {
     max: 20,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 2000,
+    // Enforce SSL for all DB connections. RDS uses Amazon root CA which is
+    // included in the Node.js trust store, so rejectUnauthorized: true works.
+    // If connecting to a dev instance with a self-signed cert, override via
+    // the PGSSLMODE=no-verify env var instead of weakening this setting.
+    ssl: { rejectUnauthorized: true },
   };
 
   console.log(`Database config loaded: ${user}@${host}/${database}`);

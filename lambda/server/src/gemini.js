@@ -1,6 +1,24 @@
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || ''
+import { getSSMParameter } from './licensing/db.js'
+
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite'
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models'
+
+// Lazy-loaded, cached Gemini API key (SSM with env fallback for local dev)
+let _geminiApiKey = null
+async function getGeminiApiKey() {
+  if (_geminiApiKey !== null) return _geminiApiKey
+  if (process.env.GEMINI_API_KEY) {
+    _geminiApiKey = process.env.GEMINI_API_KEY
+    return _geminiApiKey
+  }
+  try {
+    _geminiApiKey = await getSSMParameter('/marginarc/gemini/api-key')
+  } catch (e) {
+    console.error('Failed to load Gemini API key from SSM, Gemini calls disabled:', e.message)
+    _geminiApiKey = ''
+  }
+  return _geminiApiKey
+}
 
 // Simple in-memory cache (key → { text, ts })
 const cache = new Map()
@@ -12,7 +30,8 @@ function cacheKey(prompt) {
 }
 
 async function callGemini(prompt, { retries = 1, timeoutMs = 8000 } = {}){
-  if(!GEMINI_API_KEY) return ''
+  const apiKey = await getGeminiApiKey()
+  if(!apiKey) return ''
 
   const key = cacheKey(prompt)
   const cached = cache.get(key)
@@ -26,7 +45,7 @@ async function callGemini(prompt, { retries = 1, timeoutMs = 8000 } = {}){
       const timer = setTimeout(() => controller.abort(), timeoutMs)
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': GEMINI_API_KEY },
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
         body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }] }),
         signal: controller.signal
       })
