@@ -2,100 +2,43 @@
 
 Each prompt below is self-contained and can be pasted directly into Claude Code web (claude.ai/code) connected to the `mattrothberg2/MarginArc` repo. They are ordered by dependency — complete earlier ones before later ones where noted.
 
+## Critical Gotchas (read before running any prompt)
+
+These are hard-won lessons from running prompts 1A-1C. Every prompt should respect these:
+
+1. **File paths**: The data directory is `lambda/server/src/data/` (NOT `lambda/server/data/`). Generator is at `lambda/server/src/data/generateSyntheticDeals.js`, sample deals at `lambda/server/src/data/sample_deals.json`.
+
+2. **Lambda async gotcha**: On AWS Lambda, the execution context FREEZES after the HTTP response is sent. Any fire-and-forget promises (`doSomething().then(...)` after `res.json()`) will be KILLED before they complete. Always `await` async operations BEFORE calling `res.json()`. Make handlers `async` when needed.
+
+3. **DB migrations — CREATE TABLE IF NOT EXISTS is dangerous**: If a table already exists with a different schema, this silently succeeds but subsequent INSERTs fail with "column X does not exist". Use `DROP TABLE IF EXISTS` + `CREATE TABLE` for clean migrations, or use proper `ALTER TABLE ADD COLUMN IF NOT EXISTS` for additive changes.
+
+4. **Keep sample data in sync with algorithm**: If you add a new field to the algorithm (knn.js, rules.js, winprob.js, quality.js), you MUST also add it to the `lambdaDeal` object in `generateSyntheticDeals.js` and regenerate `sample_deals.json`. Otherwise all 7,000 deals get the fallback/default value and the feature has zero effect.
+
+5. **API validation is strict**: The `/api/recommend` and `/api/deals` endpoints use Zod schemas with strict enums. Industry must be one of: "Consumer Goods & Food", "Diversified Conglomerates", "Energy", "Financial Services", "Life Sciences & Healthcare", "Manufacturing & Automotive", "Media & Telecommunications", "Retail", "Technology", "Transportation & Logistics". Check the Zod schemas in `index.js` before testing.
+
+6. **The deal recording endpoint is `POST /api/deals`** (NOT `/api/deals/ingest`). It expects `achievedMarginPct` (percentage like 28), not `achievedMargin` (decimal like 0.28).
+
+7. **CI/CD auto-deploys on merge to main**: Lambda deploys automatically via GitHub Actions when `lambda/server/**` changes are merged to `main`. SFDC deploys when `sfdc/force-app/**` changes. After merging, verify the deploy succeeded via `gh run list` or the GitHub Actions tab.
+
+8. **Testing and verification**: Always run `cd lambda/server && npm test` before committing. After CI/CD deploys, verify the live API at `api.marginarc.com` with curl. For SFDC changes, verify with the SF CLI.
+
+9. **PR creation**: Create a feature branch, commit, and push. Then open a PR from the GitHub UI at `https://github.com/mattrothberg2/MarginArc/pull/new/<branch-name>`.
+
 ---
 
 ## Epic 1: Fix the Foundation
 
-### 1A — Fix Synthetic Data Field Gaps
+### 1A — Fix Synthetic Data Field Gaps [COMPLETE]
 
-```
-Read lambda/server/data/generateSyntheticDeals.js and understand how synthetic deals are generated.
+*Completed in PR #4. Added oem, servicesAttached, quarterEnd, displacementDeal to Lambda deal objects. Regenerated sample_deals.json and sfdc_seed_data.json.*
 
-There are field gaps between what the generator creates and what the algorithm needs. The kNN similarity function in lambda/server/src/knn.js references fields that are missing from the generated Lambda deal objects.
+### 1B — Persist Deal Outcomes to PostgreSQL [COMPLETE]
 
-Fix these specific issues:
+*Completed in PR #7 + #8. Created analytics.js with PostgreSQL persistence, 5-min cached reads, graceful fallback. Fixed Lambda fire-and-forget issue (PR #8 — must await insert before responding).*
 
-1. In the `lambdaDeal` object construction (~line 568-591), ensure these fields are included:
-   - `oem` (the OEM vendor name — it's already computed as `oem` earlier in the deal generation)
-   - `servicesAttached` (boolean — already computed)
-   - `quarterEnd` (boolean — already computed)
-   - `displacementDeal` (boolean — NOT currently generated. Add it: ~5% of competitive deals where competitors >= 2 should be displacement deals)
+### 1C — Add Time Decay to kNN Similarity [COMPLETE]
 
-2. Verify the `sfdcDeal` object also includes these fields with the correct Fulcrum_*__c API names.
-
-3. After fixing the generator, regenerate the sample data by running:
-   cd lambda/server/data && node generateSyntheticDeals.js
-   This will overwrite sample_deals.json with corrected data.
-
-4. Verify the output: spot-check 10 deals in sample_deals.json to confirm oem, servicesAttached, quarterEnd, and displacementDeal fields are present.
-
-Important: The RNG seed 'fulcrum-var-v2' must NOT be changed — it ensures reproducible output. Only add new fields; don't change existing deal generation logic.
-
-Create a feature branch, commit, and open a PR.
-```
-
-### 1B — Persist Deal Outcomes to PostgreSQL
-
-```
-The recommendation engine in lambda/server/src/knn.js uses historical deals for k-nearest-neighbor matching. Currently, real deal outcomes are stored in an in-memory array (see `recordedDeals` in lambda/server/index.js around the /api/deals/ingest route). This means all real customer data is lost on Lambda cold start — the system always falls back to the 7,000 static synthetic deals in lambda/server/data/sample_deals.json.
-
-Fix this by persisting deal outcomes to the PostgreSQL database.
-
-1. Read lambda/server/src/licensing/db.js to understand the existing database connection pattern (uses `pg` Pool, loads credentials from AWS SSM parameters under /marginarc/ prefix).
-
-2. The `recorded_deals` table already exists in lambda/schema.sql — read it to understand the schema. If the schema doesn't match what's needed, add a migration.
-
-3. Modify the /api/deals/ingest route in lambda/server/index.js to:
-   - INSERT incoming deals into the `recorded_deals` PostgreSQL table instead of (or in addition to) the in-memory array
-   - Include all fields that knn.js uses for similarity matching: oem, oemCost, customerSegment, dealRegType, competitors, competitorNames, valueAdd, solutionComplexity, relationshipStrength, customerIndustry, customerTechSophistication, varStrategicImportance, productCategory, servicesAttached, quarterEnd, isNewLogo, displacementDeal, dealSize, marginPct, outcome (won/lost), closeDate
-
-4. Create an `allDeals()` function (or modify the existing one) that:
-   - Loads sample_deals.json once at cold start (cached in memory)
-   - Queries recorded_deals from PostgreSQL
-   - Concatenates both arrays
-   - Caches the DB results for 5 minutes to avoid hitting the DB on every API call
-
-5. Update lambda/server/index.js /api/recommend route to use this new allDeals() function when passing deals to the kNN engine.
-
-6. Add error handling: if the DB is unreachable, fall back to sample_deals.json only (don't break recommendations).
-
-7. Write tests in lambda/server/__tests__/ for the persistence layer.
-
-Important: Do NOT modify the core engine files (rules.js, metrics.js, winprob.js, knn.js) — those require explicit approval per CLAUDE.md. Only modify index.js and add new files.
-
-Create a feature branch, commit, and open a PR.
-```
-
-### 1C — Add Time Decay to kNN Similarity
-
-```
-IMPORTANT: This task modifies a core engine file (lambda/server/src/knn.js). Read .claude/CLAUDE.md first — core engine files require careful handling.
-
-The kNN similarity function in lambda/server/src/knn.js currently weights all historical deals equally regardless of age. A deal from 2016 has the same influence as a deal from 2025. This is wrong — recent deals are more relevant because margins, competition, and market conditions change.
-
-Add time decay to the similarity calculation:
-
-1. Read lambda/server/src/knn.js thoroughly. Understand the `similarity()` function and how `findNeighbors()` works.
-
-2. Add a time decay factor to the similarity score. The decay should be:
-   - Deals from the last 12 months: weight = 1.0 (no decay)
-   - Deals 1-2 years old: weight = 0.85
-   - Deals 2-3 years old: weight = 0.70
-   - Deals 3-5 years old: weight = 0.50
-   - Deals 5+ years old: weight = 0.30
-
-3. Apply the decay as a multiplier on the final similarity score, not on individual dimension weights. This way the dimension matching stays clean and the decay is a separate concern.
-
-4. The deal's close date is stored as `closeDate` (ISO string) in the deal objects. Parse it and compute the age in years.
-
-5. If `closeDate` is missing (some legacy deals), default to weight = 0.5.
-
-6. Write unit tests for the decay function with edge cases (null dates, future dates, exactly-on-boundary dates).
-
-7. Run existing tests to make sure nothing breaks: cd lambda/server && npm test
-
-Create a feature branch, commit, and open a PR. In the PR description, explain the decay curve and why these specific thresholds were chosen.
-```
+*Completed in PR #9 + #10. Added timeDecay() function with 5 decay tiers applied as multiplier in topKNeighbors(). Fixed missing closeDate in sample deals (PR #10).*
 
 ### 1D — Wire SFDC Won/Lost Deals Back to Lambda
 
@@ -103,7 +46,7 @@ Create a feature branch, commit, and open a PR. In the PR description, explain t
 Read these files to understand the current architecture:
 - sfdc/force-app/main/default/classes/MarginArcBatchAnalyzer.cls (nightly batch that scores open deals)
 - sfdc/force-app/main/default/classes/MarginArcController.cls (the main Apex controller)
-- lambda/server/index.js (the /api/deals/ingest endpoint)
+- lambda/server/index.js (the POST /api/deals endpoint — NOT /api/deals/ingest)
 
 Currently, when a deal closes in Salesforce (won or lost), the outcome is never sent back to Lambda. This means the kNN algorithm can never learn from real outcomes.
 
@@ -113,7 +56,9 @@ Create a mechanism to send closed deal outcomes to Lambda:
    - Implements Database.Batchable<SObject> and Database.AllowsCallouts
    - Queries recently closed Opportunities (Closed Won or Closed Lost in the last 7 days)
    - For each, builds a payload with: all the fields the kNN needs (see the buildPayload() method in MarginArcBatchAnalyzer for the field mapping), plus the outcome (won/lost), actual margin achieved (from Fulcrum_Planned_Margin__c or Fulcrum_GP_Percent__c), close date, and loss reason (Fulcrum_Loss_Reason__c)
-   - POSTs to the /api/deals/ingest endpoint on Lambda
+   - POSTs to the POST /api/deals endpoint on Lambda (NOT /api/deals/ingest — that route doesn't exist)
+   - The payload format must match what /api/deals expects: `{ input: {...all fields...}, achievedMarginPct: <number 0-100>, status: "Won"|"Lost", lossReason: "..." }`
+   - Read the Zod `DealRecord` schema in lambda/server/index.js to see the exact required fields and their types/enums
    - Batch size: 10 (same as MarginArcBatchAnalyzer — respects callout governor limits)
 
 2. Schedule it to run weekly (e.g., Sundays at 3 AM, after the license validator at 2 AM and before the nightly analyzer at 2 AM Mon-Sat). Add the scheduling to MarginArcInstallHandler.cls alongside the existing nightly analyzer scheduling.
@@ -131,7 +76,9 @@ Create a mechanism to send closed deal outcomes to Lambda:
 
 5. Add the new test class to the --tests list in .github/workflows/deploy-sfdc.yml (both dry-run and deploy steps).
 
-Create a feature branch, commit, and open a PR.
+6. IMPORTANT: Read the API_URL and API_Key from Fulcrum_Config__c custom setting (same pattern as MarginArcController.cls and MarginArcBatchAnalyzer.cls). Do NOT hardcode the URL.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -144,10 +91,10 @@ Create a feature branch, commit, and open a PR.
 Read these files to understand the current system:
 - lambda/server/index.js — the /api/recommend route
 - lambda/server/src/rules.js — the 22-rule margin engine
-- lambda/server/src/knn.js — nearest neighbor matching
+- lambda/server/src/knn.js — nearest neighbor matching (now includes timeDecay)
 - lambda/server/src/quality-tiers.js — data quality scoring
-- lambda/server/src/licensing/db.js — database connection and customer_config table
-- lambda/server/src/licensing/routes.js — how customer config is managed
+- lambda/server/src/analytics.js — deal persistence layer (getAllDeals, getRecordedDeals)
+- lambda/server/src/licensing/db.js — database connection and migrations
 
 Design and implement a 3-phase algorithm system where each customer can be at a different phase:
 
@@ -170,7 +117,7 @@ Design and implement a 3-phase algorithm system where each customer can be at a 
 
 Implementation:
 
-1. Add a `algorithm_phase` column to the `customer_config` table (integer, default 1). Add a migration in lambda/server/src/licensing/db.js.
+1. Add a `algorithm_phase` column to the `customer_config` table (integer, default 1). IMPORTANT: Use `ALTER TABLE customer_config ADD COLUMN IF NOT EXISTS algorithm_phase INTEGER DEFAULT 1` — do NOT use DROP TABLE, as customer_config has existing production data.
 
 2. Create a new file lambda/server/src/phases.js that:
    - Exports `getCustomerPhase(orgId)` — reads from customer_config
@@ -193,9 +140,13 @@ Implementation:
    - Data quality / completeness (0-20 points)
    - Algorithm confidence (0-15 points)
 
-6. Write tests for the phase system.
+6. Write tests for the phase system in lambda/server/__tests__/phases.test.js.
 
-Create a feature branch, commit, and open a PR. Include a table in the PR description showing the three phases and their requirements.
+7. IMPORTANT: The /api/recommend handler is async. Any new DB queries must be awaited before res.json(). Do NOT use fire-and-forget patterns — Lambda kills them after responding.
+
+8. Run all existing tests before committing: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 2B — Add Phase-Aware UX to SFDC Margin Advisor (depends on 2A)
@@ -231,7 +182,7 @@ Important LWC notes from CLAUDE.md:
 - Follow existing CSS class naming: marginarc-* prefix
 - Follow existing component naming conventions
 
-Create a feature branch, commit, and open a PR.
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 2C — Add Phase Guidance to Setup Wizard (depends on 2A)
@@ -256,13 +207,15 @@ The setup wizard currently has a 5-step flow and an "Intelligence Maturity Level
 
 3. The phase requirements (from Lambda) should be displayed as:
    - Phase 2: "50 scored deals needed (current: X)" with progress bar, "Data quality above 60% (current: X%)" with progress bar
-   - Phase 3: "Phase 2 active ✓", "20 deals with BOM data needed (current: X)" with progress bar
+   - Phase 3: "Phase 2 active", "20 deals with BOM data needed (current: X)" with progress bar
 
 4. When the admin clicks "Enable Phase 2", show a confirmation modal explaining what changes for reps, then call the API.
 
 Important: The customer/org ID for the API call should come from Fulcrum_License__c.Customer_ID__c custom setting. Read MarginArcLicenseActivator.cls to see how this is stored.
 
-Create a feature branch, commit, and open a PR.
+Important: Read the API_URL from Fulcrum_Config__c custom setting (same pattern as other controllers). Do NOT hardcode the Lambda URL.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -274,8 +227,8 @@ Create a feature branch, commit, and open a PR.
 ```
 Read these files:
 - lambda/server/index.js — look for any existing /api/bom/* routes (there's a /api/bomcatalog GET route)
-- lambda/server/data/bom_catalog.json — the current product catalog (~20 items)
-- lambda/server/data/vendor_skus.json — vendor SKU database (10 OEMs × 6 categories × 4-5 roles = ~240 entries with real SKU numbers and list prices)
+- lambda/server/src/data/bom_catalog.json — the current product catalog (~20 items)
+- lambda/server/src/data/vendor_skus.json — vendor SKU database (10 OEMs x 6 categories x 4-5 roles = ~240 entries with real SKU numbers and list prices)
 - lambda/server/src/bom.js — existing BOM generation logic, especially the lookupSku() function
 - docs/lambda-api.md — shows /api/bom/search as "NOT YET IMPLEMENTED"
 
@@ -323,9 +276,11 @@ Implement the POST /api/bom/search endpoint:
 
 7. Update docs/lambda-api.md to remove the "NOT YET IMPLEMENTED" note and document the real endpoint.
 
-8. Write tests.
+8. Write tests in lambda/server/__tests__/bom-search.test.js.
 
-Create a feature branch, commit, and open a PR.
+9. Run all existing tests before committing: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 3B — Implement BOM Per-Line Margin Optimizer (depends on 3A)
@@ -423,21 +378,23 @@ Implement the POST /api/bom/analyze endpoint that provides per-line margin optim
 
 5. Create the optimizer as a new file: lambda/server/src/bom-optimizer.js
 
-6. Wire it into index.js as POST /api/bom/analyze with x-api-key authentication.
+6. Wire it into index.js as POST /api/bom/analyze with x-api-key authentication. The handler must be async. Await all operations before res.json().
 
 7. Update docs/lambda-api.md to document the endpoint.
 
-8. Write comprehensive tests including edge cases: empty BOM, single line, impossible target, all-services BOM, all-hardware BOM.
+8. Write comprehensive tests in lambda/server/__tests__/bom-optimizer.test.js including edge cases: empty BOM, single line, impossible target, all-services BOM, all-hardware BOM.
 
-Create a feature branch, commit, and open a PR.
+9. Run all existing tests before committing: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 3C — Expand Product Catalog to 200+ Items (no dependencies)
 
 ```
-Read lambda/server/data/vendor_skus.json and lambda/server/data/bom_catalog.json to understand the current catalog structure.
+Read lambda/server/src/data/vendor_skus.json and lambda/server/src/data/bom_catalog.json to understand the current catalog structure.
 
-The current catalog has ~240 vendor SKU entries (10 OEMs × 6 categories) but many are generic placeholders. Expand it to 200+ realistic, searchable products:
+The current catalog has ~240 vendor SKU entries (10 OEMs x 6 categories) but many are generic placeholders. Expand it to 200+ realistic, searchable products:
 
 1. For each of the 10 OEMs (Cisco, Dell, HPE, Palo Alto, Fortinet, Microsoft, VMware, Aruba, Juniper, Pure Storage), add 15-25 real products across their actual product lines:
 
@@ -473,7 +430,9 @@ The current catalog has ~240 vendor SKU entries (10 OEMs × 6 categories) but ma
 
 5. Make sure the data is valid JSON and no duplicate partNumbers exist within the same manufacturer.
 
-Create a feature branch, commit, and open a PR.
+6. Verify with: cd lambda/server && node -e "const d = JSON.parse(require('fs').readFileSync('src/data/vendor_skus.json','utf8')); console.log('Total SKUs:', d.length || Object.keys(d).length)"
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -483,11 +442,11 @@ Create a feature branch, commit, and open a PR.
 ### 4A — Configurable POC Scenarios (depends on 1A)
 
 ```
-Read lambda/server/data/generateSyntheticDeals.js to understand the current synthetic data generator. It creates 7,000 deals with realistic distributions.
+Read lambda/server/src/data/generateSyntheticDeals.js to understand the current synthetic data generator. It creates 7,000 deals with realistic distributions.
 
 Add configurable POC scenario presets that generate tailored demo data for different VAR profiles. This is critical for sales demos — we need to show prospects data that looks like their business.
 
-1. Create a new file lambda/server/data/scenarios.js that exports scenario configurations:
+1. Create a new file lambda/server/src/data/scenarios.js that exports scenario configurations:
 
    - "networking-var": Heavy Cisco/Aruba/Juniper mix, 60% hardware, mid-market focus, 3-4 competitors typical, avg deal $75K
    - "security-var": Palo Alto/Fortinet dominant, 40% software + 30% services, enterprise-leaning, 2-3 competitors, avg deal $120K
@@ -506,25 +465,27 @@ Add configurable POC scenario presets that generate tailored demo data for diffe
    - BOM complexity (avg lines per deal)
 
 3. Modify generateSyntheticDeals.js to accept a scenario parameter:
-   - node generateSyntheticDeals.js --scenario=networking-var --deals=500
+   - node src/data/generateSyntheticDeals.js --scenario=networking-var --deals=500
    - Default (no args): current behavior (7,000 full-stack deals)
    - The scenario adjusts all the distribution parameters but keeps the same realistic generation logic (customer lifecycle, seasonal patterns, margin compression trend, etc.)
 
 4. Generate and save a sample file for each scenario:
-   - lambda/server/data/scenarios/networking-var.json
-   - lambda/server/data/scenarios/security-var.json
+   - lambda/server/src/data/scenarios/networking-var.json
+   - lambda/server/src/data/scenarios/security-var.json
    - etc.
    - Keep sample_deals.json as the default full dataset
 
 5. Add a --output flag to write to a specific file path.
 
-Create a feature branch, commit, and open a PR.
+6. IMPORTANT: Every generated deal must include `closeDate` in the lambdaDeal object (it was missing before PR #10 and broke time decay). Verify all scenario outputs include closeDate.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 4B — Full BOM History for All Synthetic Deals (depends on 1A, 3C)
 
 ```
-Read lambda/server/data/generateSyntheticDeals.js — specifically the BOM generation section (search for "bom" in the file). Currently, only deals from 2024+ get BOM line items. Older deals have no line-item history.
+Read lambda/server/src/data/generateSyntheticDeals.js — specifically the BOM generation section (search for "bom" in the file). Currently, only deals from 2024+ get BOM line items. Older deals have no line-item history.
 
 Expand BOM generation to all deals:
 
@@ -548,13 +509,15 @@ Expand BOM generation to all deals:
    - Professional services: 25-45%
    - Managed services: 20-35%
 
-5. The BOM total cost should align with the deal's OEM cost (Fulcrum_OEM_Cost__c), and the BOM total price should align with the deal amount.
+5. The BOM total cost should align with the deal's OEM cost (oemCost field), and the BOM total price should align with the deal amount.
 
-6. Store BOM lines in each deal object as a `bomLines` array with the same schema as Fulcrum_BOM_Line__c: description, category, quantity, unitCost, unitPrice, marginPct, vendor, productNumber, sortOrder.
+6. Store BOM lines in each deal object as a `bomLines` array with fields: description, category, quantity, unitCost, unitPrice, marginPct, vendor, productNumber, sortOrder.
 
-7. Regenerate sample_deals.json with the full BOM data.
+7. Regenerate sample_deals.json with the full BOM data. IMPORTANT: Verify closeDate is still present in all deals after regeneration.
 
-Create a feature branch, commit, and open a PR.
+8. Run all existing tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 4C — One-Click POC Data Loading in Setup Wizard (depends on 4A)
@@ -575,7 +538,7 @@ The setup wizard already has a "Load Demo Data" step. Enhance it to support scen
 
 2. Modify MarginArcDemoDataLoader.loadDemoData() to accept a scenario parameter. It should call Lambda to get scenario-specific demo data:
    - Add a new Lambda endpoint: GET /api/demo-data?scenario=networking-var&count=250
-   - Lambda returns the pre-generated scenario data (from lambda/server/data/scenarios/*.json), sliced to the requested count
+   - Lambda returns the pre-generated scenario data (from lambda/server/src/data/scenarios/*.json), sliced to the requested count
 
 3. The existing MarginArcDemoDataQueueable chain should handle the actual SFDC record creation (Accounts, Opportunities, BOM Lines, Recommendation History). Make sure it creates BOM lines for each deal (using the bomLines array from the scenario data).
 
@@ -585,7 +548,9 @@ The setup wizard already has a "Load Demo Data" step. Enhance it to support scen
 
 Important: The queueable chain exists because Salesforce has governor limits on DML operations. Don't try to insert everything in one transaction — use the existing chained queueable pattern.
 
-Create a feature branch, commit, and open a PR.
+Important: Read the API_URL from Fulcrum_Config__c custom setting. Do NOT hardcode the Lambda URL.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -605,7 +570,7 @@ Read lambda/server/index.js thoroughly. The current Lambda function serves every
 For on-prem deployment, customers need to self-host the scoring engine but NOT the licensing/admin infrastructure. Split the codebase:
 
 1. Create a new file lambda/server/engine.js that:
-   - Contains ONLY the scoring engine routes: /api/recommend, /api/bom/*, /api/bomcatalog, /api/deals/ingest, /api/sampledeals, /api/industries
+   - Contains ONLY the scoring engine routes: /api/recommend, /api/bom/*, /api/bomcatalog, /api/deals, /api/sampledeals, /api/industries
    - Has its own Express app and Lambda handler
    - Loads deal data from local files OR a customer-provided PostgreSQL connection
    - Authenticates via API key (same x-api-key pattern)
@@ -642,7 +607,11 @@ For on-prem deployment, customers need to self-host the scoring engine but NOT t
 
 7. Update docs/deployment.md with the on-prem deployment options.
 
-Create a feature branch, commit, and open a PR.
+8. IMPORTANT: The deal recording endpoint is POST /api/deals (not /api/deals/ingest). Make sure engine.js uses the same route name. The handler must be async and await the DB insert before responding (Lambda freeze issue).
+
+9. Run all existing tests before committing: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ### 5B — Create OpenAPI Spec for Engine API (depends on 3A, 3B)
@@ -658,11 +627,9 @@ Create a formal OpenAPI 3.0 specification for the MarginArc Engine API:
    - POST /api/recommend — full request/response schema with all input fields, response fields, and examples
    - POST /api/bom/search — catalog search with query/filter parameters
    - POST /api/bom/analyze — BOM optimization with per-line response
-   - POST /api/deals/ingest — deal outcome recording
+   - POST /api/deals — deal outcome recording (note: achievedMarginPct is a percentage 0-100, not a decimal)
    - GET /api/bomcatalog — full catalog retrieval
-   - GET /api/sampledeals — sample deal data
    - GET /api/industries — industry list
-   - GET /api/bom/catalog/stats — catalog metadata
 
 2. Include:
    - Authentication scheme (API key via x-api-key header)
@@ -670,12 +637,15 @@ Create a formal OpenAPI 3.0 specification for the MarginArc Engine API:
    - All response schemas
    - Error response schemas (400, 401, 500)
    - Example requests and responses for each endpoint
+   - The exact enum values for customerIndustry (see the /api/industries endpoint for the valid list)
 
 3. Add a /docs/api route in index.js that serves Swagger UI (use swagger-ui-express) pointing to the openapi.yaml file. This gives customers interactive API documentation.
 
 4. Update docs/lambda-api.md to reference the OpenAPI spec as the canonical API documentation.
 
-Create a feature branch, commit, and open a PR.
+5. Run all existing tests before committing: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -688,10 +658,12 @@ Create a feature branch, commit, and open a PR.
 This is a DESIGN task, not an implementation task. Create a design document, not code.
 
 Read these files to understand the current data model:
-- lambda/server/src/knn.js — what deal fields the similarity function uses
-- lambda/server/data/generateSyntheticDeals.js — what fields exist on a deal
-- lambda/schema.sql — current database schema
-- The website at marginarc.com describes a "MarginArc Network" concept: anonymized deal data pooled across non-competing VARs via federated learning with differential privacy
+- lambda/server/src/knn.js — what deal fields the similarity function uses (including timeDecay on closeDate)
+- lambda/server/src/analytics.js — how deals are persisted and retrieved from PostgreSQL
+- lambda/server/src/data/generateSyntheticDeals.js — what fields exist on a deal
+- lambda/server/src/licensing/db.js — current database schema and migration patterns
+
+The website at marginarc.com describes a "MarginArc Network" concept: anonymized deal data pooled across non-competing VARs via federated learning with differential privacy.
 
 Create a design document at docs/network-design.md that covers:
 
@@ -714,7 +686,7 @@ Create a design document at docs/network-design.md that covers:
    - Contributor (receives + contributes) — full accuracy boost
    - Premium Contributor (high-volume contributor) — priority model updates
 
-4. **Integration Points**: How would network data flow into the existing kNN system? Propose adding a 3rd data source to `allDeals()`: local sample data + recorded customer deals + network deals. Network deals would have a lower similarity weight (e.g., 0.6x multiplier) since they're from different VARs.
+4. **Integration Points**: How would network data flow into the existing kNN system? Propose adding a 3rd data source to `getAllDeals()` in analytics.js: local sample data + recorded customer deals + network deals. Network deals would have a lower similarity weight (e.g., 0.6x multiplier) since they're from different VARs. Consider how this interacts with timeDecay().
 
 5. **Database Schema**: Design the tables needed:
    - network_deals (anonymized deal records from all contributing VARs)
@@ -725,5 +697,5 @@ Create a design document at docs/network-design.md that covers:
 
 This is a documentation/design task only. Do not write any code. The output should be a thorough markdown document that a team could use to implement the network in a future sprint.
 
-Create a feature branch, commit, and open a PR.
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
