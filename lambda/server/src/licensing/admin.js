@@ -10,7 +10,11 @@ import { getCustomerPhaseById, setCustomerPhase, checkPhaseReadiness } from '../
 const router = express.Router();
 
 // ---------------------------------------------------------------------------
-// SSM helpers (backward-compat admin password fallback)
+// SSM helpers — DEPRECATED
+// TODO: Remove SSM fallback login entirely once all environments have at least
+// one admin user provisioned in the admin_users DB table. The shared SSM
+// password bypasses per-user audit trails and does not enforce the new password
+// strength policy. Target removal: next major release.
 // ---------------------------------------------------------------------------
 
 // Cached bcrypt hash of the SSM admin password (never store plaintext)
@@ -25,16 +29,12 @@ function getSSMClient() {
 }
 
 /**
- * Load the admin password from SSM, hash it with bcrypt on first load, and
- * cache only the hash. The plaintext is never retained in memory beyond this
- * function scope.
- *
- * NOTE: This SSM fallback should be removed once a proper admin user exists
- * in the admin_users database table.
+ * @deprecated Load the admin password from SSM. This fallback should be removed
+ * once all environments have a proper admin user in the admin_users table.
  */
 async function loadAdminPasswordHash() {
   if (ADMIN_PASSWORD_HASH) return ADMIN_PASSWORD_HASH;
-  console.log('Loading admin password from SSM...');
+  console.warn('[DEPRECATED] Loading admin password from SSM — provision a DB admin user to remove this fallback');
   const client = getSSMClient();
   const command = new GetParameterCommand({
     Name: '/marginarc/admin/password',
@@ -44,13 +44,27 @@ async function loadAdminPasswordHash() {
   const plaintext = response.Parameter.Value;
   // Hash immediately and discard the plaintext
   ADMIN_PASSWORD_HASH = await bcrypt.hash(plaintext, 12);
-  console.log('Admin password loaded from SSM and hashed with bcrypt');
+  console.warn('[DEPRECATED] Admin password loaded from SSM and hashed with bcrypt');
   return ADMIN_PASSWORD_HASH;
 }
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Validate password strength against CISO requirements.
+ * @param {string} password
+ * @returns {string|null} Error message if invalid, null if valid
+ */
+function validatePasswordStrength(password) {
+  if (password.length < 12) return 'Password must be at least 12 characters';
+  if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter';
+  if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter';
+  if (!/[0-9]/.test(password)) return 'Password must contain a digit';
+  if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain a special character';
+  return null; // valid
+}
 
 /** Whitelist of allowed sort columns per resource to prevent SQL injection */
 const ALLOWED_SORT_COLUMNS = {
@@ -252,19 +266,22 @@ router.post('/auth/login', async (req, res) => {
       }
     }
 
-    // --- Fallback: SSM password (bcrypt comparison, backward compat) ---
-    // NOTE: This fallback should be removed once a proper admin user exists in the DB.
+    // --- DEPRECATED: SSM password fallback ---
+    // TODO: Remove this block once all environments have a DB admin user.
+    // The shared SSM password bypasses per-user audit trails and the password
+    // strength policy. Log a deprecation warning on every use.
     try {
       const adminHash = await loadAdminPasswordHash();
       if (username === 'admin' && await bcrypt.compare(password, adminHash)) {
+        console.warn('[DEPRECATED] SSM fallback login used — provision a DB admin user to remove this path');
         const token = await generateToken(username, 'super_admin');
-        await logAudit(req, 'login', 'admin_users', null, { method: 'ssm_fallback' });
+        await logAudit(req, 'login', 'admin_users', null, { method: 'ssm_fallback_DEPRECATED' });
         return res.json({
           token,
           user: {
             id: 0,
             username: 'admin',
-            fullName: 'Admin (SSM)',
+            fullName: 'Admin (SSM — DEPRECATED)',
             role: 'super_admin'
           }
         });
@@ -272,6 +289,15 @@ router.post('/auth/login', async (req, res) => {
     } catch (ssmErr) {
       console.error('SSM fallback login failed:', ssmErr.message);
     }
+
+    // Log failed authentication attempt for CloudWatch alerting
+    console.warn(JSON.stringify({
+      event: 'auth_failure',
+      username: req.body.username,
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      timestamp: new Date().toISOString()
+    }));
 
     return res.status(401).json({ message: 'Invalid credentials' });
   } catch (error) {
@@ -1136,6 +1162,12 @@ router.post('/admin-users', requireRole('super_admin'), async (req, res) => {
       return res.status(400).json({ message: 'username and password are required' });
     }
 
+    // Validate password strength
+    const passwordError = validatePasswordStrength(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
+    }
+
     // Validate role
     const validRoles = ['super_admin', 'admin', 'viewer'];
     if (role && !validRoles.includes(role)) {
@@ -1261,8 +1293,12 @@ router.put('/admin-users/:id/password', async (req, res) => {
     }
 
     const { password } = req.body;
-    if (!password || password.length < 6) {
-      return res.status(400).json({ message: 'Password is required and must be at least 6 characters' });
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+    const passwordError = validatePasswordStrength(password);
+    if (passwordError) {
+      return res.status(400).json({ message: passwordError });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
