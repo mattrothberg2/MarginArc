@@ -54,9 +54,9 @@ Always `npm install --production` before zipping (corruption causes @smithy miss
 - Lambda deploys are manual (zip + AWS CLI)
 
 ## Key Config
-- Admin portal: admin / MarginArc2026!
-- API key: marginarc-key-2025
-- Lambda env var: `MARGINARC_API_KEY`
+- Admin portal credentials: stored in SSM `/marginarc/admin-password`
+- API key: stored in Lambda env var `MARGINARC_API_KEY` and GitHub Secrets
+- Do NOT hardcode secrets in source files
 - SFDC custom setting `Fulcrum_Config__c` stores API_URL__c and API_Key__c
 
 ## Safety Rules
