@@ -4,9 +4,35 @@ import { fileURLToPath } from 'url'
 import seedrandom from 'seedrandom'
 import { buildBillOfMaterials, computeManualBomStats } from '../bom.js'
 import { ruleBasedRecommendation } from '../rules.js'
+import { getScenario, listScenarios } from './scenarios.js'
 
-// Seeded RNG keeps demo data reproducible
-seedrandom('fulcrum-var-v2', { global: true })
+// ---------------------------------------------------------------------------
+// CLI argument parsing
+// ---------------------------------------------------------------------------
+
+const cliArgs = process.argv.slice(2)
+function getArg(name) {
+  const prefix = `--${name}=`
+  const arg = cliArgs.find(a => a.startsWith(prefix))
+  return arg ? arg.slice(prefix.length) : null
+}
+
+const scenarioKey = getArg('scenario')
+const cliDealCount = getArg('deals') ? parseInt(getArg('deals'), 10) : null
+const cliOutput = getArg('output')
+
+let activeScenario = null
+if (scenarioKey) {
+  activeScenario = getScenario(scenarioKey)
+  if (!activeScenario) {
+    console.error(`Unknown scenario: "${scenarioKey}"`)
+    console.error(`Available scenarios: ${listScenarios().join(', ')}`)
+    process.exit(1)
+  }
+}
+
+// Seeded RNG keeps demo data reproducible (scenario-specific seed when active)
+seedrandom(activeScenario ? `fulcrum-${scenarioKey}` : 'fulcrum-var-v2', { global: true })
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -141,7 +167,9 @@ function createManualBomLinesFromPreset(preset) {
 }
 
 function createManualBomLinesRandom() {
-  const count = Math.min(6, Math.max(2, Math.round(randNormal(3, 1))))
+  const bomAvg = activeScenario?.bomLinesAvg || 3
+  const bomSd = activeScenario?.bomLinesSd ? activeScenario.bomLinesSd * 0.5 : 1
+  const count = Math.min(8, Math.max(2, Math.round(randNormal(bomAvg, bomSd))))
   const used = new Set()
   const lines = []
   for (let i = 0; i < count; i++) {
@@ -162,7 +190,7 @@ function createManualBomLines(options = {}) {
 // Constants and distributions
 // ---------------------------------------------------------------------------
 
-const TARGET_DEALS = 7000
+const TARGET_DEALS = cliDealCount || 7000
 
 // Deal volume by year (growing VAR business)
 const YEAR_VOLUME = {
@@ -176,7 +204,8 @@ const SEASONAL = { 1: 0.80, 2: 1.00, 3: 0.90, 4: 1.30 }
 
 // Base categorical distributions
 const dealRegWeights = { NotRegistered: 0.25, StandardApproved: 0.35, PremiumHunting: 0.25, Teaming: 0.15 }
-const competitorWeights = { '0': 0.15, '1': 0.30, '2': 0.35, '3+': 0.20 }
+const defaultCompetitorWeights = { '0': 0.15, '1': 0.30, '2': 0.35, '3+': 0.20 }
+const competitorWeights = activeScenario?.competitorWeights || defaultCompetitorWeights
 const complexityWeights = { Low: 0.30, Medium: 0.40, High: 0.30 }
 const valueAddWeights = { Low: 0.25, Medium: 0.40, High: 0.35 }
 const varStrategicWeights = { Low: 0.30, Medium: 0.40, High: 0.30 }
@@ -194,7 +223,22 @@ function dealTypeWeightsForYear(year) {
 }
 
 // OEM weights shift over time (cloud/security growing, traditional HW declining)
+// When a scenario is active, use fixed OEM weights with slight temporal drift
 function oemWeightsForYear(year) {
+  if (activeScenario) {
+    // Apply slight temporal drift to scenario weights (±5% by 2026)
+    const t = clamp((year - 2016) / 10, 0, 1)
+    const drift = (t - 0.5) * 0.05 // -2.5% in 2016, +2.5% in 2026
+    const base = activeScenario.oemWeights
+    const weights = {}
+    for (const [oem, w] of Object.entries(base)) {
+      weights[oem] = Math.max(0.01, w + drift * (Math.random() - 0.5) * 0.1)
+    }
+    // Normalize to sum to 1
+    const total = Object.values(weights).reduce((a, b) => a + b, 0)
+    for (const oem of Object.keys(weights)) weights[oem] /= total
+    return weights
+  }
   const t = clamp((year - 2016) / 10, 0, 1) // 0 in 2016, 1 in 2026
   return {
     Cisco:         0.30 - t * 0.08,     // 30% → 22%
@@ -212,6 +256,7 @@ function oemWeightsForYear(year) {
 
 // Segment weights shift (more mid-market over time as VAR grows)
 function segmentWeightsForYear(year) {
+  if (activeScenario) return activeScenario.segmentWeights
   const t = clamp((year - 2016) / 10, 0, 1)
   return {
     SMB:        0.35 - t * 0.07,    // 35% → 28%
@@ -234,6 +279,32 @@ const oemToSfdcCategory = {
   'Palo Alto': 'Security', Fortinet: 'Security',
   VMware: 'Cloud', Microsoft: 'Software',
   'Pure Storage': 'Storage', NetApp: 'Storage', Arista: 'Networking'
+}
+
+// Scenario category mapping: translate scenario categories to Lambda categories
+// "Services" isn't a Lambda category — map it to the OEM's default but flag servicesAttached
+const scenarioCatToLambdaCat = { Hardware: 'Hardware', Software: 'Software', Cloud: 'Cloud', Services: null }
+
+function pickLambdaCategoryForScenario(oem) {
+  if (!activeScenario) return oemToLambdaCategory[oem]
+  const catW = activeScenario.categoryWeights
+  const roll = Math.random()
+  let acc = 0
+  for (const [cat, w] of Object.entries(catW)) {
+    acc += w
+    if (roll < acc) {
+      const mapped = scenarioCatToLambdaCat[cat]
+      // "Services" maps to the OEM's natural category
+      return mapped || oemToLambdaCategory[oem]
+    }
+  }
+  return oemToLambdaCategory[oem]
+}
+
+function isServicesCategory() {
+  if (!activeScenario) return false
+  const catW = activeScenario.categoryWeights
+  return Math.random() < (catW.Services || 0)
 }
 
 // Industry -> base OEM cost (log-normal mean)
@@ -267,20 +338,33 @@ function buildCustomerDealCounts() {
   })
   const totalWeight = rawWeights.reduce((a, b) => a + b, 0)
 
-  // Assign proportional deal counts, minimum 2
-  const counts = rawWeights.map(w => Math.max(2, Math.round(w / totalWeight * TARGET_DEALS)))
+  // When deal count is small, only include a weighted subset of customers
+  const minPerCustomer = TARGET_DEALS >= customers.length * 2 ? 2 : 1
+  const counts = rawWeights.map(w => Math.max(minPerCustomer, Math.round(w / totalWeight * TARGET_DEALS)))
   let total = counts.reduce((a, b) => a + b, 0)
+
+  // If target is very small, zero out low-weight customers to fit
+  if (total > TARGET_DEALS && minPerCustomer === 1) {
+    // Sort by weight ascending, zero out smallest customers first
+    const indexed = rawWeights.map((w, i) => ({ i, w })).sort((a, b) => a.w - b.w)
+    for (const entry of indexed) {
+      if (total <= TARGET_DEALS) break
+      if (counts[entry.i] > 0) {
+        total -= counts[entry.i]
+        counts[entry.i] = 0
+      }
+    }
+  }
 
   // Adjust to hit target exactly
   while (total < TARGET_DEALS) {
-    // Add to random high-weight customer
     const idx = randomInt(0, customers.length - 1)
     counts[idx]++
     total++
   }
   while (total > TARGET_DEALS) {
     const idx = randomInt(0, customers.length - 1)
-    if (counts[idx] > 2) { counts[idx]--; total-- }
+    if (counts[idx] > minPerCustomer) { counts[idx]--; total-- }
   }
 
   return counts
@@ -458,8 +542,9 @@ function generateDeals() {
       const varStrategicImportance = weightedPick(varStrategicWeights)
       const dealType = weightedPick(dealTypeWeightsForYear(year))
       const oem = weightedPick(oemWeightsForYear(year))
-      const lambdaCategory = oemToLambdaCategory[oem]
+      const lambdaCategory = pickLambdaCategoryForScenario(oem)
       const sfdcCategory = oemToSfdcCategory[oem]
+      const forceServices = isServicesCategory()
 
       // --- Numeric signals ---
       const customerPriceSensitivity = randomInt(1, 5)
@@ -472,14 +557,21 @@ function generateDeals() {
       const relationshipStrength = relationshipForYear(cust, year, startYear)
 
       // --- OEM Cost (log-normal, industry-based, scaled by customer avgDealSize) ---
-      const baseCost = industryCostMean[cust.industry] || 50000
+      let baseCost = industryCostMean[cust.industry] || 50000
       const custScale = (cust.avgDealSize || 30000) / 50000 // scale by customer size
-      let oemCost = Math.round(clamp(randLogNormal(baseCost * custScale, 0.55), 5000, 2000000))
+      // When scenario is active, scale base cost toward scenario's avg deal size
+      if (activeScenario) {
+        const scenarioScale = activeScenario.avgDealSize / 90000 // normalize against default ~$90K
+        baseCost = baseCost * scenarioScale
+      }
+      const sdFactor = activeScenario?.dealSizeSd || 0.55
+      let oemCost = Math.round(clamp(randLogNormal(baseCost * custScale, sdFactor), 5000, 2000000))
 
-      // --- Services attached (correlate with valueAdd) ---
-      const servicesAttached = valueAdd === 'High' ? Math.random() < 0.85
+      // --- Services attached (correlate with valueAdd; boosted by scenario services weight) ---
+      let servicesAttached = valueAdd === 'High' ? Math.random() < 0.85
         : valueAdd === 'Medium' ? Math.random() < 0.55
           : Math.random() < 0.20
+      if (forceServices) servicesAttached = true
 
       // --- Quarter end (more likely in Q4) ---
       const quarterEnd = quarter === 4 ? Math.random() < 0.40 : Math.random() < 0.15
@@ -522,7 +614,8 @@ function generateDeals() {
         stageName = pick(openStageNames)
       } else {
         // Win rate improves slightly over time (better relationships)
-        const baseWinRate = 0.58 + (year - 2016) * 0.005
+        const scenarioWinBase = activeScenario?.winRateBaseline || 0.58
+        const baseWinRate = scenarioWinBase + (year - 2016) * 0.005
         const statusRoll = Math.random()
         if (statusRoll < baseWinRate) {
           status = 'Won'
@@ -534,10 +627,12 @@ function generateDeals() {
       }
 
       // --- Compute achievedMargin causally from recommendation ---
+      const marginFloor = activeScenario ? activeScenario.marginRange[0] * 0.6 : 0.03
+      const marginCeil = activeScenario ? Math.min(activeScenario.marginRange[1] * 1.3, 0.45) : 0.45
       let achievedMargin
       if (status === 'Won' || status === 'Open') {
         achievedMargin = recommendedMargin + randNormal(0, 0.02)
-        achievedMargin = clamp(achievedMargin, 0.03, 0.45)
+        achievedMargin = clamp(achievedMargin, marginFloor, marginCeil)
       } else {
         // Lost: bimodal (60% priced too high, 40% race-to-bottom)
         if (Math.random() < 0.60) {
@@ -545,7 +640,7 @@ function generateDeals() {
         } else {
           achievedMargin = recommendedMargin + randNormal(-0.03, 0.015)
         }
-        achievedMargin = clamp(achievedMargin, 0.03, 0.45)
+        achievedMargin = clamp(achievedMargin, marginFloor, marginCeil)
       }
       achievedMargin = +achievedMargin.toFixed(4)
 
@@ -627,7 +722,9 @@ function generateDeals() {
       } else {
         // Synthetic BOM stats for historical deals (fast)
         const hasManual = Math.random() < 0.35
-        lambdaDeal.bomLineCount = randomInt(2, 6)
+        const bomAvg = activeScenario?.bomLinesAvg || 4
+        const bomSd = activeScenario?.bomLinesSd || 1.5
+        lambdaDeal.bomLineCount = Math.max(1, Math.round(randNormal(bomAvg, bomSd)))
         lambdaDeal.bomAvgMarginPct = +(achievedMargin * 100 + randNormal(0, 2)).toFixed(1)
         lambdaDeal.bomBlendedMarginPct = +(achievedMargin * 100 + randNormal(0, 1.5)).toFixed(1)
         lambdaDeal.hasManualBom = hasManual
@@ -680,15 +777,44 @@ function generateDeals() {
 // ---------------------------------------------------------------------------
 
 console.log('=== MarginArc Synthetic Data Generator v2 ===')
+if (activeScenario) {
+  console.log(`Scenario: ${activeScenario.label} (${scenarioKey})`)
+  console.log(`  ${activeScenario.description}`)
+}
 console.log(`Target: ${TARGET_DEALS} deals across ${customers.length} accounts (2016-2026)\n`)
 
 const { lambdaDeals, sfdcDeals } = generateDeals()
 
-fs.writeFileSync(path.join(__dirname, 'sample_deals.json'), JSON.stringify(lambdaDeals, null, 2))
-fs.writeFileSync(path.join(__dirname, 'sfdc_seed_data.json'), JSON.stringify(sfdcDeals, null, 2))
+// Determine output paths
+const lambdaOutPath = cliOutput
+  ? path.resolve(cliOutput)
+  : activeScenario
+    ? path.join(__dirname, 'scenarios', `${scenarioKey}.json`)
+    : path.join(__dirname, 'sample_deals.json')
 
-console.log(`\nGenerated ${lambdaDeals.length} Lambda deals -> sample_deals.json`)
-console.log(`Generated ${sfdcDeals.length} SFDC deals  -> sfdc_seed_data.json`)
+const sfdcOutPath = cliOutput
+  ? path.resolve(cliOutput.replace(/\.json$/, '-sfdc.json'))
+  : activeScenario
+    ? path.join(__dirname, 'scenarios', `${scenarioKey}-sfdc.json`)
+    : path.join(__dirname, 'sfdc_seed_data.json')
+
+// Ensure output directory exists
+const lambdaOutDir = path.dirname(lambdaOutPath)
+if (!fs.existsSync(lambdaOutDir)) {
+  fs.mkdirSync(lambdaOutDir, { recursive: true })
+}
+const sfdcOutDir = path.dirname(sfdcOutPath)
+if (!fs.existsSync(sfdcOutDir)) {
+  fs.mkdirSync(sfdcOutDir, { recursive: true })
+}
+
+fs.writeFileSync(lambdaOutPath, JSON.stringify(lambdaDeals, null, 2))
+fs.writeFileSync(sfdcOutPath, JSON.stringify(sfdcDeals, null, 2))
+
+const lambdaRelPath = path.relative(process.cwd(), lambdaOutPath)
+const sfdcRelPath = path.relative(process.cwd(), sfdcOutPath)
+console.log(`\nGenerated ${lambdaDeals.length} Lambda deals -> ${lambdaRelPath}`)
+console.log(`Generated ${sfdcDeals.length} SFDC deals  -> ${sfdcRelPath}`)
 
 // ---------------------------------------------------------------------------
 // Summary stats
