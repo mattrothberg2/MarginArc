@@ -103,7 +103,7 @@ aws lambda publish-version \
 # Test recommendation endpoint
 curl -s -X POST https://api.marginarc.com/api/recommend \
   -H "Content-Type: application/json" \
-  -H "x-api-key: marginarc-key-2025" \
+  -H "x-api-key: $MARGINARC_API_KEY" \
   -d '{"input":{"oem":"Cisco","oemCost":100000,"customerSegment":"MidMarket"},"plannedMarginPct":15}' \
   | python3 -m json.tool | head -10
 
@@ -115,7 +115,7 @@ curl -s https://api.marginarc.com/admin/ | head -3
 | Variable | Value | Purpose |
 |----------|-------|---------|
 | `NODE_ENV` | `production` | Production mode |
-| `MARGINARC_API_KEY` | `marginarc-key-2025` | API key for SFDC calls |
+| `MARGINARC_API_KEY` | *(stored in GitHub Secrets)* | API key for SFDC calls |
 
 ### Rollback
 ```bash
@@ -134,7 +134,7 @@ aws lambda update-function-code \
 ## Admin Portal
 
 **URL**: `https://api.marginarc.com/admin/`
-**Login**: admin / MarginArc2026!
+**Login**: admin / *(see SSM parameter `/marginarc/admin-password`)*
 
 The Admin SPA is built with Vite (React) and lives in `lambda/server/web/`. The built files are served directly by the Lambda function at `/admin/*`.
 
