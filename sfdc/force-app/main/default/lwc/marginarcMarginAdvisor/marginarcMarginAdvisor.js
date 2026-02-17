@@ -472,7 +472,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     if (scored >= threshold) {
       return "Data threshold met! Ask your admin to enable Phase 2 in Setup.";
     }
-    return `You\u2019ve scored ${scored} of ${threshold} deals needed to unlock margin recommendations.`;
+    return `Your team has scored ${scored} of ${threshold} deals needed to unlock margin recommendations.`;
   }
 
   get phaseThresholdMet() {
@@ -482,6 +482,73 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   // LWC templates don't allow `!` unary — use computed getter for negation
   get isNotPhaseThresholdMet() {
     return this.phaseScoredDeals < this.phaseThreshold;
+  }
+
+  // Phase 1 Deal Insights — consume API phase1Guidance, topDrivers, and scoreFactors
+  get phase1Tips() {
+    const tips = [];
+    let id = 0;
+
+    // 1. Top drivers from API response (strengths / risks)
+    const topDriversArr = this.recommendation?.topDrivers;
+    if (Array.isArray(topDriversArr)) {
+      for (const d of topDriversArr) {
+        const text = typeof d === "string" ? d : d.text || d.label || "";
+        if (!text) continue;
+        const isRisk =
+          text.toLowerCase().includes("risk") ||
+          text.toLowerCase().includes("pressure") ||
+          text.toLowerCase().includes("aggressive");
+        tips.push({
+          id: `driver-${id++}`,
+          icon: isRisk ? "utility:warning" : "utility:like",
+          text
+        });
+      }
+    }
+
+    // 2. phase1Guidance tips from API
+    const guidance = this.recommendation?.phase1Guidance;
+    if (Array.isArray(guidance)) {
+      for (const tip of guidance) {
+        const text =
+          typeof tip === "string" ? tip : tip.text || tip.label || "";
+        if (!text) continue;
+        tips.push({
+          id: `guide-${id++}`,
+          icon: "utility:info",
+          text
+        });
+      }
+    }
+
+    // 3. scoreFactors with human-readable labels
+    const factors = this.recommendation?.scoreFactors;
+    if (Array.isArray(factors) && tips.length === 0) {
+      for (const f of factors) {
+        const label = f.label || f.name || "";
+        if (!label) continue;
+        const ratio =
+          f.max > 0 ? f.score / f.max : f.direction === "positive" ? 0.7 : 0.3;
+        const icon =
+          ratio >= 0.66
+            ? "utility:like"
+            : ratio < 0.33
+              ? "utility:warning"
+              : "utility:info";
+        tips.push({
+          id: `factor-${id++}`,
+          icon,
+          text: label
+        });
+      }
+    }
+
+    return tips;
+  }
+
+  get hasPhase1Tips() {
+    return this.isPhaseOne && this.phase1Tips.length > 0;
   }
 
   get phaseProgressFraction() {
@@ -1970,6 +2037,39 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get dealScoreData() {
+    // Primary: use server-side dealScore from API response
+    if (this.degradationLevel < 3 && this.recommendation?.dealScore != null) {
+      const serverScore = this.recommendation.dealScore;
+      const score =
+        typeof serverScore === "object" ? serverScore.score : serverScore;
+      const clampedScore = Math.max(0, Math.min(100, Math.round(score)));
+      let label, color;
+      if (typeof serverScore === "object" && serverScore.label) {
+        label = serverScore.label;
+      } else if (clampedScore >= 70) {
+        label = "Good";
+      } else if (clampedScore >= 40) {
+        label = "Fair";
+      } else {
+        label = "Needs Work";
+      }
+      if (typeof serverScore === "object" && serverScore.color) {
+        color = serverScore.color;
+      } else if (clampedScore >= 70) {
+        color = "#22C55E";
+      } else if (clampedScore >= 40) {
+        color = "#F59E0B";
+      } else {
+        color = "#EF4444";
+      }
+      return {
+        score: clampedScore,
+        label,
+        color,
+        factors: this.recommendation.scoreFactors || []
+      };
+    }
+    // Fallback: client-side computation when API is unavailable
     return this.computeDealScore();
   }
 
@@ -1994,16 +2094,50 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get dealScoreFactors() {
+    // Prefer API scoreFactors with human-readable labels
+    const apiFactors = this.recommendation?.scoreFactors;
+    if (Array.isArray(apiFactors) && apiFactors.length > 0) {
+      return apiFactors.map((f) => {
+        const ratio = f.max > 0 ? f.score / f.max : 0.5;
+        let colorClass;
+        if (ratio >= 0.66) {
+          colorClass = "score-factor-label score-factor-label-green";
+        } else if (ratio >= 0.33) {
+          colorClass = "score-factor-label score-factor-label-amber";
+        } else {
+          colorClass = "score-factor-label score-factor-label-red";
+        }
+        return {
+          name: f.name,
+          label: f.label || f.name,
+          labelClass: colorClass
+        };
+      });
+    }
+
+    // Fallback: simplified natural language from client-side factors
+    const FALLBACK_LABELS = {
+      "Margin alignment": "Margin",
+      "Win probability": "Win Prob",
+      "Deal structure": "Structure",
+      "Competitive position": "Competition"
+    };
     return (this.dealScoreData?.factors || []).map((f) => {
-      const sign = f.direction === "positive" ? "+" : "";
-      const impactDisplay = sign + f.score + "/" + f.max;
+      const ratio = f.max > 0 ? f.score / f.max : 0.5;
+      const tier = ratio >= 0.66 ? "High" : ratio >= 0.33 ? "Medium" : "Low";
+      const shortName = FALLBACK_LABELS[f.name] || f.name;
+      let colorClass;
+      if (ratio >= 0.66) {
+        colorClass = "score-factor-label score-factor-label-green";
+      } else if (ratio >= 0.33) {
+        colorClass = "score-factor-label score-factor-label-amber";
+      } else {
+        colorClass = "score-factor-label score-factor-label-red";
+      }
       return {
-        ...f,
-        impact: impactDisplay,
-        pillClass:
-          f.direction === "positive"
-            ? "score-factor score-factor-positive"
-            : "score-factor score-factor-negative"
+        name: f.name,
+        label: `${shortName}: ${tier}`,
+        labelClass: colorClass
       };
     });
   }

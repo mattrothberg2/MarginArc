@@ -67,15 +67,30 @@
             </div>
           </div>
 
-          <!-- Score Factor Pills (expanded only) -->
+          <!-- Phase 1 Deal Insights -->
+          <template lwc:if={hasPhase1Tips}>
+            <div class="marginarc-phase1-insights">
+              <h3 class="insights-header">Deal Insights</h3>
+              <template for:each={phase1Tips} for:item="tip">
+                <div key={tip.id} class="insight-row">
+                  <lightning-icon
+                    icon-name={tip.icon}
+                    size="x-small"
+                  ></lightning-icon>
+                  <span class="insight-text">{tip.text}</span>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- Score Factor Labels (expanded only) -->
           <template lwc:if={isDetailExpanded}>
             <template lwc:if={hasDealScore}>
               <div class="score-factors">
                 <template for:each={dealScoreFactors} for:item="factor">
-                  <span key={factor.name} class={factor.pillClass}>
-                    <span class="factor-impact">{factor.impact}</span>
-                    {factor.name}
-                  </span>
+                  <div key={factor.name} class={factor.labelClass}>
+                    {factor.label}
+                  </div>
                 </template>
               </div>
             </template>
@@ -86,9 +101,18 @@
         <div class="marginarc-score-summary">
           <span class="summary-score">Score: {dealScore}/100</span>
           <span class="summary-divider">|</span>
-          <span class="summary-margin">Rec: {recommendedMargin}%</span>
-          <span class="summary-divider">|</span>
-          <span class="summary-confidence">{confidenceLabel}</span>
+          <template lwc:if={isPhaseOne}>
+            <span class="summary-label">{dealScoreLabel}</span>
+            <template lwc:if={hasDataQuality}>
+              <span class="summary-divider">|</span>
+              <span class="summary-dq">{dataQualityTier}</span>
+            </template>
+          </template>
+          <template lwc:if={isNotPhaseOne}>
+            <span class="summary-margin">Rec: {recommendedMargin}%</span>
+            <span class="summary-divider">|</span>
+            <span class="summary-confidence">{confidenceLabel}</span>
+          </template>
         </div>
 
         <!-- Data Quality Indicators (expanded only) -->
