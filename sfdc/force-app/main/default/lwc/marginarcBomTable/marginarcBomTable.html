@@ -5,6 +5,7 @@
       <div
         class="bom-header"
         onclick={handleToggleCollapse}
+        onkeydown={handleHeaderKeydown}
         role="button"
         tabindex="0"
         aria-expanded={isExpanded}
@@ -71,7 +72,7 @@
             <!-- Line Items -->
             <template for:each={tableRows} for:item="row">
               <div key={row.key} class="bom-row" role="row">
-                <div class="bom-col bom-col-label">
+                <div class="bom-col bom-col-label" role="gridcell">
                   <span class="bom-item-label">{row.label}</span>
                   <template lwc:if={row.productNumber}>
                     <span class="bom-item-sku">{row.productNumber}</span>
@@ -80,14 +81,16 @@
                     <span class="bom-item-note">{row.note}</span>
                   </template>
                 </div>
-                <div class="bom-col bom-col-cat">
+                <div class="bom-col bom-col-cat" role="gridcell">
                   <span class={row.categoryClass}>{row.category}</span>
                 </div>
-                <div class="bom-col bom-col-qty">
+                <div class="bom-col bom-col-qty" role="gridcell">
                   {row.quantity} <span class="bom-unit">{row.unit}</span>
                 </div>
-                <div class="bom-col bom-col-cost">{row.unitCostDisplay}</div>
-                <div class="bom-col bom-col-plan">
+                <div class="bom-col bom-col-cost" role="gridcell">
+                  {row.unitCostDisplay}
+                </div>
+                <div class="bom-col bom-col-plan" role="gridcell">
                   <div class="bom-input-wrap">
                     <input
                       type="number"
@@ -103,34 +106,42 @@
                     <span class="bom-pct-suffix">%</span>
                   </div>
                 </div>
-                <div class="bom-col bom-col-rec">
+                <div class="bom-col bom-col-rec" role="gridcell">
                   <span class="bom-rec-value">{row.recMarginDisplay}</span>
                 </div>
-                <div class="bom-col bom-col-delta">
+                <div class="bom-col bom-col-delta" role="gridcell">
                   <span class={row.deltaClass}>{row.delta}</span>
                 </div>
-                <div class="bom-col bom-col-ext">{row.planExtPriceDisplay}</div>
+                <div class="bom-col bom-col-ext" role="gridcell">
+                  {row.planExtPriceDisplay}
+                </div>
               </div>
             </template>
 
             <!-- Totals Row -->
-            <div class="bom-row bom-row-total">
-              <div class="bom-col bom-col-label"><strong>Total</strong></div>
-              <div class="bom-col bom-col-cat"></div>
-              <div class="bom-col bom-col-qty"></div>
-              <div class="bom-col bom-col-cost">{totalCostDisplay}</div>
-              <div class="bom-col bom-col-plan">
+            <div class="bom-row bom-row-total" role="row">
+              <div class="bom-col bom-col-label" role="gridcell">
+                <strong>Total</strong>
+              </div>
+              <div class="bom-col bom-col-cat" role="gridcell"></div>
+              <div class="bom-col bom-col-qty" role="gridcell"></div>
+              <div class="bom-col bom-col-cost" role="gridcell">
+                {totalCostDisplay}
+              </div>
+              <div class="bom-col bom-col-plan" role="gridcell">
                 <span class="bom-blended-value"
                   >{blendedPlanMarginDisplay}</span
                 >
               </div>
-              <div class="bom-col bom-col-rec">
+              <div class="bom-col bom-col-rec" role="gridcell">
                 <span class="bom-blended-value">{blendedRecMarginDisplay}</span>
               </div>
-              <div class="bom-col bom-col-delta">
+              <div class="bom-col bom-col-delta" role="gridcell">
                 <span class={totalDeltaClass}>{totalDelta}</span>
               </div>
-              <div class="bom-col bom-col-ext">{totalPlanPriceDisplay}</div>
+              <div class="bom-col bom-col-ext" role="gridcell">
+                {totalPlanPriceDisplay}
+              </div>
             </div>
           </div>
         </div>

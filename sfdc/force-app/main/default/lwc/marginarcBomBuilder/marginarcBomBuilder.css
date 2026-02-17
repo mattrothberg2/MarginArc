@@ -832,3 +832,184 @@
 .category-combo {
   width: 100%;
 }
+
+/* ── Responsive: Tablet / narrow laptop ── */
+@media (max-width: 1024px) {
+  .table-header {
+    grid-template-columns: 1fr 60px 40px 70px 58px 80px 80px 28px;
+  }
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) {
+    grid-template-columns: 1fr 60px 40px 70px 58px 80px 80px 28px;
+  }
+  .table-totals {
+    grid-template-columns: 1fr 60px 40px 70px 58px 80px 80px 28px;
+  }
+
+  /* Hide Part# column (1st) — description is more useful */
+  .table-header .th:first-child,
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:first-child,
+  .table-totals .td:first-child {
+    display: none;
+  }
+
+  .td {
+    padding: 2px 2px;
+  }
+  .td-num,
+  .th-num {
+    font-size: 12px;
+  }
+  .cell-input {
+    font-size: 12px;
+    padding: 3px 4px;
+  }
+  .cell-num {
+    width: 58px;
+  }
+  .cell-margin {
+    width: 48px;
+  }
+
+  /* Tighter search row */
+  .search-row {
+    flex-wrap: wrap;
+  }
+  .filter-combo {
+    width: 120px;
+  }
+}
+
+/* ── Responsive: Mobile / small tablet — card layout ── */
+@media (max-width: 768px) {
+  .bom-table {
+    min-width: 0;
+  }
+
+  /* Hide grid header row */
+  .table-header {
+    display: none;
+  }
+
+  /* Convert data rows to stacked cards */
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    border-left-width: 3px;
+  }
+
+  /* Show all cells but restyle them */
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) .td {
+    display: block;
+    text-align: left;
+    padding: 0;
+  }
+
+  /* Hide: Part# (1st), Rec% (7th), actions (9th) — keep delete visible */
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:nth-child(1) {
+    display: none;
+  }
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:nth-child(7) {
+    display: none;
+  }
+
+  /* Description takes full width */
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:nth-child(2) {
+    width: 100%;
+    flex: 1 1 100%;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:nth-child(2)
+    .cell-input {
+    font-weight: 600;
+    font-size: 13px;
+  }
+
+  /* Category badge */
+  .bom-table
+    > div[role="row"]:not(.table-header):not(.table-totals)
+    .td:nth-child(3) {
+    flex: 0 0 auto;
+  }
+
+  /* Numeric cells inline */
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) .td-num {
+    flex: 0 0 auto;
+    font-size: 12px;
+  }
+
+  /* Delete button at end */
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) .td-act {
+    position: absolute;
+    right: 8px;
+    top: 8px;
+  }
+
+  /* Cards need relative positioning for delete button */
+  .bom-table > div[role="row"]:not(.table-header):not(.table-totals) {
+    position: relative;
+    padding-right: 32px;
+  }
+
+  /* Totals row — simplified */
+  .table-totals {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .table-totals .td {
+    font-size: 12px;
+  }
+  .table-totals .td:nth-child(2),
+  .table-totals .td:nth-child(3),
+  .table-totals .td:nth-child(4),
+  .table-totals .td:nth-child(7),
+  .table-totals .td:nth-child(9) {
+    display: none;
+  }
+
+  /* Header stacks on mobile */
+  .bom-header {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .header-right {
+    flex-wrap: wrap;
+  }
+
+  /* Search stacks */
+  .search-row {
+    flex-direction: column;
+  }
+  .filter-combo {
+    width: 100%;
+  }
+  .search-input-wrap {
+    width: 100%;
+  }
+
+  /* Batch margin toolbar wraps */
+  .batch-margin-toolbar {
+    flex-wrap: wrap;
+  }
+
+  /* Analysis stats 2-col on mobile */
+  .analysis-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

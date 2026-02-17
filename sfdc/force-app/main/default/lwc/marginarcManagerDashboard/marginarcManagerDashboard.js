@@ -463,6 +463,7 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
     return FILTER_DEFS.map((f) => ({
       value: f.value,
       label: f.label + " (" + counts[f.value] + ")",
+      isActive: this.activeFilter === f.value,
       pillClass:
         this.activeFilter === f.value
           ? "filter-pill filter-pill-active"
@@ -1013,6 +1014,33 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
     return this._showDropdown || false;
   }
 
+  // ── Accessibility: aria-sort getters ──
+  _ariaSortFor(field) {
+    if (this.sortField !== field) return "none";
+    return this.sortDirection === "asc" ? "ascending" : "descending";
+  }
+  get scoreAriaSort() {
+    return this._ariaSortFor("dealScore");
+  }
+  get nameAriaSort() {
+    return this._ariaSortFor("name");
+  }
+  get amountAriaSort() {
+    return this._ariaSortFor("amount");
+  }
+  get planAriaSort() {
+    return this._ariaSortFor("plannedMargin");
+  }
+  get recAriaSort() {
+    return this._ariaSortFor("recommendedMargin");
+  }
+  get gapAriaSort() {
+    return this._ariaSortFor("marginGap");
+  }
+  get qualityAriaSort() {
+    return this._ariaSortFor("predictionQuality");
+  }
+
   // ── Event Handlers ──
   handleTimeRangeToggle() {
     this._showDropdown = !this._showDropdown;
@@ -1026,6 +1054,20 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
     setTimeout(() => {
       this._showDropdown = false;
     }, 200);
+  }
+
+  handleSectionKeydown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.toggleSection(event);
+    }
+  }
+
+  handleSortKeydown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.handleSort(event);
+    }
   }
 
   handleSort(event) {
