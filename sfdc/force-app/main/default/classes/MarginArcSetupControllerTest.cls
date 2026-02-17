@@ -848,7 +848,9 @@ private class MarginArcSetupControllerTest {
       HttpResponse res = new HttpResponse();
       res.setStatusCode(200);
       res.setHeader('Content-Type', 'application/json');
-      res.setBody('{"currentPhase":2,"message":"Phase 2 enabled successfully"}');
+      res.setBody(
+        '{"currentPhase":2,"message":"Phase 2 enabled successfully"}'
+      );
       return res;
     }
   }
@@ -925,7 +927,9 @@ private class MarginArcSetupControllerTest {
   @isTest
   static void testEnableAlgorithmPhaseNoLicense() {
     Test.startTest();
-    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(2);
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(
+      2
+    );
     Test.stopTest();
 
     System.assertEquals(false, result.get('success'));
@@ -951,7 +955,9 @@ private class MarginArcSetupControllerTest {
     Test.setMock(HttpCalloutMock.class, new PhaseEnableMock());
 
     Test.startTest();
-    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(2);
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(
+      2
+    );
     Test.stopTest();
 
     System.assertEquals(true, result.get('success'));
@@ -974,7 +980,9 @@ private class MarginArcSetupControllerTest {
     Test.setMock(HttpCalloutMock.class, new PhaseErrorMock());
 
     Test.startTest();
-    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(3);
+    Map<String, Object> result = MarginArcSetupController.enableAlgorithmPhase(
+      3
+    );
     Test.stopTest();
 
     System.assertEquals(false, result.get('success'));

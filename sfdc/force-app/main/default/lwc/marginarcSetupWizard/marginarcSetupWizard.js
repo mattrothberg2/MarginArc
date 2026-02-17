@@ -640,13 +640,16 @@ export default class MarginarcSetupWizard extends NavigationMixin(
         if (data.success) {
           this.phaseData = data;
         } else {
-          this.phaseErrorMessage = data.message || "Failed to load phase status.";
+          this.phaseErrorMessage =
+            data.message || "Failed to load phase status.";
           this.phaseData = null;
         }
       })
       .catch((error) => {
         this.phaseErrorMessage =
-          error.body?.message || error.message || "Failed to load phase status.";
+          error.body?.message ||
+          error.message ||
+          "Failed to load phase status.";
         this.phaseData = null;
       })
       .finally(() => {
@@ -724,7 +727,8 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   }
 
   get phase2ScoredDeals() {
-    if (!this.phaseData || !this.phaseData.phase2) return { required: 50, current: 0 };
+    if (!this.phaseData || !this.phaseData.phase2)
+      return { required: 50, current: 0 };
     const p2 = this.phaseData.phase2;
     return {
       required: n(p2.scoredDeals?.required || p2.scoredDealsRequired) || 50,
@@ -739,12 +743,16 @@ export default class MarginarcSetupWizard extends NavigationMixin(
 
   get phase2ScoredDealsBarStyle() {
     const d = this.phase2ScoredDeals;
-    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    const pct =
+      d.required > 0
+        ? Math.min(100, Math.round((d.current / d.required) * 100))
+        : 0;
     return "width: " + pct + "%";
   }
 
   get phase2DataQuality() {
-    if (!this.phaseData || !this.phaseData.phase2) return { required: 60, current: 0 };
+    if (!this.phaseData || !this.phaseData.phase2)
+      return { required: 60, current: 0 };
     const p2 = this.phaseData.phase2;
     return {
       required: n(p2.dataQuality?.required || p2.dataQualityRequired) || 60,
@@ -759,14 +767,19 @@ export default class MarginarcSetupWizard extends NavigationMixin(
 
   get phase2DataQualityBarStyle() {
     const d = this.phase2DataQuality;
-    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    const pct =
+      d.required > 0
+        ? Math.min(100, Math.round((d.current / d.required) * 100))
+        : 0;
     return "width: " + pct + "%";
   }
 
   get canEnablePhase2() {
     const deals = this.phase2ScoredDeals;
     const quality = this.phase2DataQuality;
-    return deals.current >= deals.required && quality.current >= quality.required;
+    return (
+      deals.current >= deals.required && quality.current >= quality.required
+    );
   }
 
   get phase2ScoredDealsBarClass() {
@@ -785,7 +798,11 @@ export default class MarginarcSetupWizard extends NavigationMixin(
 
   // Phase 3 requirements
   get showPhase3Requirements() {
-    return this.hasPhaseData && this.currentPhaseNumber >= 2 && this.currentPhaseNumber < 3;
+    return (
+      this.hasPhaseData &&
+      this.currentPhaseNumber >= 2 &&
+      this.currentPhaseNumber < 3
+    );
   }
 
   get phase2ActiveForPhase3() {
@@ -804,7 +821,8 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   }
 
   get phase3BomDeals() {
-    if (!this.phaseData || !this.phaseData.phase3) return { required: 20, current: 0 };
+    if (!this.phaseData || !this.phaseData.phase3)
+      return { required: 20, current: 0 };
     const p3 = this.phaseData.phase3;
     return {
       required: n(p3.bomDeals?.required || p3.bomDealsRequired) || 20,
@@ -819,7 +837,10 @@ export default class MarginarcSetupWizard extends NavigationMixin(
 
   get phase3BomDealsBarStyle() {
     const d = this.phase3BomDeals;
-    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    const pct =
+      d.required > 0
+        ? Math.min(100, Math.round((d.current / d.required) * 100))
+        : 0;
     return "width: " + pct + "%";
   }
 
@@ -879,15 +900,14 @@ export default class MarginarcSetupWizard extends NavigationMixin(
     enableAlgorithmPhase({ phase: this.pendingPhase })
       .then((result) => {
         if (result.success) {
-          this.showSuccess("Phase " + this.pendingPhase + " enabled successfully");
+          this.showSuccess(
+            "Phase " + this.pendingPhase + " enabled successfully"
+          );
           this.showPhaseConfirmModal = false;
           this.pendingPhase = null;
           this.loadAlgorithmPhaseStatus();
         } else {
-          this.showError(
-            "Failed to enable phase",
-            { message: result.message }
-          );
+          this.showError("Failed to enable phase", { message: result.message });
         }
       })
       .catch((error) => {

@@ -687,10 +687,7 @@ public with sharing class MarginArcSetupController {
         result.putAll(data);
       } else {
         result.put('success', false);
-        result.put(
-          'message',
-          'API returned status ' + res.getStatusCode()
-        );
+        result.put('message', 'API returned status ' + res.getStatusCode());
       }
     } catch (System.CalloutException e) {
       result.put('success', false);
@@ -769,10 +766,7 @@ public with sharing class MarginArcSetupController {
         result.putAll(data);
       } else {
         result.put('success', false);
-        result.put(
-          'message',
-          'API returned status ' + res.getStatusCode()
-        );
+        result.put('message', 'API returned status ' + res.getStatusCode());
       }
     } catch (System.CalloutException e) {
       result.put('success', false);
