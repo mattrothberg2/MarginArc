@@ -5,6 +5,19 @@
 **Runtime**: Node.js 18.x, 512MB, 30s timeout
 **Entry point**: `lambda/server/index.js`
 
+## Canonical API Documentation
+
+The **OpenAPI 3.0 specification** is the canonical reference for the MarginArc Engine API:
+
+- **Interactive docs (Swagger UI)**: [`/docs/api-reference`](https://api.marginarc.com/docs/api-reference)
+- **Spec file**: [`lambda/server/openapi.yaml`](../lambda/server/openapi.yaml)
+
+The OpenAPI spec covers all engine endpoints (`/api/recommend`, `/api/bom/*`, `/api/deals`, `/api/bomcatalog`, `/api/industries`) with full request/response schemas, enum values, examples, and authentication details.
+
+The sections below provide a quick-reference summary. For complete field-level detail, refer to the OpenAPI spec.
+
+---
+
 ## Authentication
 
 API key via `x-api-key` header. Key set in Lambda env var `MARGINARC_API_KEY`.
