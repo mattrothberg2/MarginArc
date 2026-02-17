@@ -147,9 +147,7 @@ private class MarginArcInstallHandlerTest {
     List<CronTrigger> crons = [
       SELECT Id
       FROM CronTrigger
-      WHERE
-        CronJobDetail.Name LIKE '%MarginArc%Outcome%'
-        AND State = 'WAITING'
+      WHERE CronJobDetail.Name LIKE '%MarginArc%Outcome%' AND State = 'WAITING'
     ];
     System.assert(crons.size() > 0, 'Outcome sync should be scheduled');
   }
@@ -172,9 +170,7 @@ private class MarginArcInstallHandlerTest {
     List<CronTrigger> crons = [
       SELECT Id
       FROM CronTrigger
-      WHERE
-        CronJobDetail.Name LIKE '%MarginArc%Outcome%'
-        AND State = 'WAITING'
+      WHERE CronJobDetail.Name LIKE '%MarginArc%Outcome%' AND State = 'WAITING'
     ];
     // If existing was found, no new one should be created
     System.assert(

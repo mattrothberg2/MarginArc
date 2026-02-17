@@ -3,7 +3,8 @@
     <apiVersion>62.0</apiVersion>
     <isExposed>true</isExposed>
     <masterLabel>MarginArc BOM Builder</masterLabel>
-    <description>Standalone BOM margin intelligence tool for VAR specialists</description>
+    <description
+  >Standalone BOM margin intelligence tool for VAR specialists</description>
     <targets>
         <target>lightning__RecordPage</target>
         <target>lightning__AppPage</target>

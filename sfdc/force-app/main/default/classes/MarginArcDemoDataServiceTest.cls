@@ -513,11 +513,25 @@ private class MarginArcDemoDataServiceTest {
 
       // Verify BOM lines were created
       List<Opportunity> opps = [
-        SELECT Id, Fulcrum_OEM__c,
-          (SELECT Id, Description__c, Category__c, Unit_Cost__c,
-                  Unit_Price__c, Quantity__c, Margin_Pct__c, Vendor__c,
-                  Product_Number__c, Sort_Order__c, BOM_Origin__c
-           FROM BOM_Lines__r ORDER BY Sort_Order__c)
+        SELECT
+          Id,
+          Fulcrum_OEM__c,
+          (
+            SELECT
+              Id,
+              Description__c,
+              Category__c,
+              Unit_Cost__c,
+              Unit_Price__c,
+              Quantity__c,
+              Margin_Pct__c,
+              Vendor__c,
+              Product_Number__c,
+              Sort_Order__c,
+              BOM_Origin__c
+            FROM BOM_Lines__r
+            ORDER BY Sort_Order__c
+          )
         FROM Opportunity
         WHERE Account.Name LIKE '%(Demo)%'
       ];
@@ -552,10 +566,7 @@ private class MarginArcDemoDataServiceTest {
             bom.Unit_Price__c,
             'BOM Unit Price should be populated'
           );
-          System.assert(
-            bom.Quantity__c > 0,
-            'BOM Quantity should be > 0'
-          );
+          System.assert(bom.Quantity__c > 0, 'BOM Quantity should be > 0');
           System.assertNotEquals(
             null,
             bom.Product_Number__c,
@@ -598,10 +609,7 @@ private class MarginArcDemoDataServiceTest {
 
       // Verify BOM lines exist
       Integer bomCountBefore = [SELECT COUNT() FROM Fulcrum_BOM_Line__c];
-      System.assert(
-        bomCountBefore > 0,
-        'Should have BOM lines before delete'
-      );
+      System.assert(bomCountBefore > 0, 'Should have BOM lines before delete');
 
       // Delete demo data
       RestRequest delReq = new RestRequest();
@@ -658,17 +666,21 @@ private class MarginArcDemoDataServiceTest {
       insert testOpp;
 
       Test.startTest();
-      MarginArcDemoDataService.insertBomLines(
-        new List<Opportunity>{ testOpp }
-      );
+      MarginArcDemoDataService.insertBomLines(new List<Opportunity>{ testOpp });
       Test.stopTest();
 
       // Query BOM lines and verify calculations
       List<Fulcrum_BOM_Line__c> bomLines = [
         SELECT
-          Id, Unit_Cost__c, Unit_Price__c, Quantity__c,
-          Extended_Cost__c, Extended_Price__c, Margin_Pct__c,
-          Category__c, Description__c
+          Id,
+          Unit_Cost__c,
+          Unit_Price__c,
+          Quantity__c,
+          Extended_Cost__c,
+          Extended_Price__c,
+          Margin_Pct__c,
+          Category__c,
+          Description__c
         FROM Fulcrum_BOM_Line__c
         WHERE Opportunity__c = :testOpp.Id
         ORDER BY Sort_Order__c
@@ -678,10 +690,8 @@ private class MarginArcDemoDataServiceTest {
 
       for (Fulcrum_BOM_Line__c bom : bomLines) {
         // Verify Extended_Cost = Unit_Cost * Quantity
-        Decimal expectedExtCost = (bom.Unit_Cost__c * bom.Quantity__c).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        );
+        Decimal expectedExtCost = (bom.Unit_Cost__c * bom.Quantity__c)
+          .setScale(2, System.RoundingMode.HALF_UP);
         System.assertEquals(
           expectedExtCost,
           bom.Extended_Cost__c,
@@ -690,10 +700,8 @@ private class MarginArcDemoDataServiceTest {
         );
 
         // Verify Extended_Price = Unit_Price * Quantity
-        Decimal expectedExtPrice = (bom.Unit_Price__c * bom.Quantity__c).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        );
+        Decimal expectedExtPrice = (bom.Unit_Price__c * bom.Quantity__c)
+          .setScale(2, System.RoundingMode.HALF_UP);
         System.assertEquals(
           expectedExtPrice,
           bom.Extended_Price__c,
@@ -702,30 +710,28 @@ private class MarginArcDemoDataServiceTest {
         );
 
         // Verify Unit_Price = Unit_Cost / (1 - Margin_Pct/100)
-        Decimal expectedUnitPrice = (
-          bom.Unit_Cost__c / (1 - bom.Margin_Pct__c / 100)
-        ).setScale(2, System.RoundingMode.HALF_UP);
+        Decimal expectedUnitPrice = (bom.Unit_Cost__c /
+          (1 - bom.Margin_Pct__c / 100))
+          .setScale(2, System.RoundingMode.HALF_UP);
         System.assertEquals(
           expectedUnitPrice,
           bom.Unit_Price__c,
-          'Unit Price should match margin formula for: ' +
-          bom.Description__c
+          'Unit Price should match margin formula for: ' + bom.Description__c
         );
 
         // Verify margin is within realistic range
         System.assert(
           bom.Margin_Pct__c >= 10 && bom.Margin_Pct__c <= 50,
           'Margin should be between 10-50%, got ' +
-          bom.Margin_Pct__c +
-          ' for: ' +
-          bom.Description__c
+            bom.Margin_Pct__c +
+            ' for: ' +
+            bom.Description__c
         );
 
         // Verify Unit_Price > Unit_Cost (positive margin)
         System.assert(
           bom.Unit_Price__c > bom.Unit_Cost__c,
-          'Unit Price should exceed Unit Cost for: ' +
-          bom.Description__c
+          'Unit Price should exceed Unit Cost for: ' + bom.Description__c
         );
       }
     }

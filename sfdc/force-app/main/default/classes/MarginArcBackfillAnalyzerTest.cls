@@ -662,7 +662,10 @@ private class MarginArcBackfillAnalyzerTest {
       null,
       MarginArcBackfillAnalyzer.deriveOemFromName('Unknown Vendor')
     );
-    System.assertEquals(null, MarginArcBackfillAnalyzer.deriveOemFromName(null));
+    System.assertEquals(
+      null,
+      MarginArcBackfillAnalyzer.deriveOemFromName(null)
+    );
     System.assertEquals(null, MarginArcBackfillAnalyzer.deriveOemFromName(''));
   }
 
@@ -672,7 +675,10 @@ private class MarginArcBackfillAnalyzerTest {
       '1',
       MarginArcBackfillAnalyzer.deriveCompetitorCount(null)
     );
-    System.assertEquals('1', MarginArcBackfillAnalyzer.deriveCompetitorCount(''));
+    System.assertEquals(
+      '1',
+      MarginArcBackfillAnalyzer.deriveCompetitorCount('')
+    );
     System.assertEquals(
       '1',
       MarginArcBackfillAnalyzer.deriveCompetitorCount('CDW')

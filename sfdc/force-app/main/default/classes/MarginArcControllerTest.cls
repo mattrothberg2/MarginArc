@@ -67,8 +67,8 @@ private class MarginArcControllerTest {
       res.setHeader('Content-Type', 'application/json');
       res.setBody(
         '{"lines":[{"partNumber":"C9300-24P-A","marginPct":15,"recommendedMarginPct":22,"deltaPct":7}],' +
-        '"totals":{"cost":54840,"price":64517,"blendedMarginPct":15,"totalGP":9677},' +
-        '"recommendations":{"healthScore":72,"insights":["Margins below recommended"],"suggestedBlendedMargin":22}}'
+          '"totals":{"cost":54840,"price":64517,"blendedMarginPct":15,"totalGP":9677},' +
+          '"recommendations":{"healthScore":72,"insights":["Margins below recommended"],"suggestedBlendedMargin":22}}'
       );
       return res;
     }
@@ -250,7 +250,9 @@ private class MarginArcControllerTest {
     User u = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
     System.runAs(u) {
       Test.startTest();
-      Map<String, Object> result = MarginArcController.getOpportunityData(opp.Id);
+      Map<String, Object> result = MarginArcController.getOpportunityData(
+        opp.Id
+      );
       Test.stopTest();
 
       Map<String, Object> data = result;
@@ -781,7 +783,9 @@ private class MarginArcControllerTest {
       insert testLines;
 
       Test.startTest();
-      List<Fulcrum_BOM_Line__c> result = MarginArcController.getBomLines(opp.Id);
+      List<Fulcrum_BOM_Line__c> result = MarginArcController.getBomLines(
+        opp.Id
+      );
       Test.stopTest();
 
       System.assertEquals(2, result.size());
@@ -797,7 +801,9 @@ private class MarginArcControllerTest {
     User u = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
     System.runAs(u) {
       Test.startTest();
-      List<Fulcrum_BOM_Line__c> result = MarginArcController.getBomLines(opp.Id);
+      List<Fulcrum_BOM_Line__c> result = MarginArcController.getBomLines(
+        opp.Id
+      );
       Test.stopTest();
 
       System.assertEquals(0, result.size());
@@ -848,12 +854,22 @@ private class MarginArcControllerTest {
     Test.setMock(HttpCalloutMock.class, new BomSearchMockSuccess());
 
     Test.startTest();
-    String result = MarginArcController.searchBomCatalog('C9300', 'Cisco', null);
+    String result = MarginArcController.searchBomCatalog(
+      'C9300',
+      'Cisco',
+      null
+    );
     Test.stopTest();
 
     System.assertNotEquals(null, result, 'Result should not be null');
-    System.assert(result.contains('C9300-24P-A'), 'Result should contain part number');
-    System.assert(result.contains('"total":1'), 'Result should contain total count');
+    System.assert(
+      result.contains('C9300-24P-A'),
+      'Result should contain part number'
+    );
+    System.assert(
+      result.contains('"total":1'),
+      'Result should contain total count'
+    );
   }
 
   @isTest
@@ -866,7 +882,10 @@ private class MarginArcControllerTest {
       MarginArcController.searchBomCatalog('C9300', null, null);
     } catch (AuraHandledException e) {
       threw = true;
-      System.assert(e.getMessage().contains('BOM API error'), 'Error should mention BOM API');
+      System.assert(
+        e.getMessage().contains('BOM API error'),
+        'Error should mention BOM API'
+      );
     }
     Test.stopTest();
 
@@ -885,8 +904,14 @@ private class MarginArcControllerTest {
     Test.stopTest();
 
     System.assertNotEquals(null, result, 'Result should not be null');
-    System.assert(result.contains('healthScore'), 'Result should contain healthScore');
-    System.assert(result.contains('recommendations'), 'Result should contain recommendations');
+    System.assert(
+      result.contains('healthScore'),
+      'Result should contain healthScore'
+    );
+    System.assert(
+      result.contains('recommendations'),
+      'Result should contain recommendations'
+    );
   }
 
   @isTest
@@ -900,7 +925,10 @@ private class MarginArcControllerTest {
     Test.stopTest();
 
     System.assertNotEquals(null, result, 'Result should not be null');
-    System.assert(result.contains('lines'), 'Result should contain lines array');
+    System.assert(
+      result.contains('lines'),
+      'Result should contain lines array'
+    );
   }
 
   @isTest
@@ -915,7 +943,10 @@ private class MarginArcControllerTest {
       MarginArcController.analyzeBom(bomLines, null);
     } catch (AuraHandledException e) {
       threw = true;
-      System.assert(e.getMessage().contains('BOM API error'), 'Error should mention BOM API');
+      System.assert(
+        e.getMessage().contains('BOM API error'),
+        'Error should mention BOM API'
+      );
     }
     Test.stopTest();
 

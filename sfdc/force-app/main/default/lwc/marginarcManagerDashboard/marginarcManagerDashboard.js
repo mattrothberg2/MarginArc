@@ -850,8 +850,7 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
         totalAmount: fmt$(t.totalAmount),
         complianceRate: fmtPct(compRate, 0) + compSuffix,
         compClass,
-        ragpDelta:
-          (ragp >= 0 ? "\u25B2 +" : "\u25BC ") + fmt$(t.ragpDelta),
+        ragpDelta: (ragp >= 0 ? "\u25B2 +" : "\u25BC ") + fmt$(t.ragpDelta),
         ragpClass
       };
     });

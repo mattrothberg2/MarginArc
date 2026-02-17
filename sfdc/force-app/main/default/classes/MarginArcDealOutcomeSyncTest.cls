@@ -159,7 +159,7 @@ private class MarginArcDealOutcomeSyncTest {
   @isTest
   static void testBatchWithNoClosedDeals() {
     // Delete all closed opportunities to test empty batch
-    delete [SELECT Id FROM Opportunity WHERE IsClosed = true];
+    delete [SELECT Id FROM Opportunity WHERE IsClosed = TRUE];
 
     Test.setMock(HttpCalloutMock.class, new OutcomeSyncMockSuccess());
 

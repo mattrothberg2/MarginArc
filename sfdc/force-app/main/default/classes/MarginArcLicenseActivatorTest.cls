@@ -26,7 +26,10 @@ private class MarginArcLicenseActivatorTest {
 
   @isTest
   static void testActivateLicenseSuccess() {
-    Test.setMock(HttpCalloutMock.class, MarginArcLicenseMock.successActivation());
+    Test.setMock(
+      HttpCalloutMock.class,
+      MarginArcLicenseMock.successActivation()
+    );
 
     Test.startTest();
     Map<String, Object> result = MarginArcLicenseActivator.activateLicense(

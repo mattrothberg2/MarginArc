@@ -3032,8 +3032,8 @@ global with sharing class MarginArcDemoDataService {
     public String category;
     public String unit;
     public Decimal costPctOfTotal; // fraction of OEM cost this line represents
-    public Decimal marginPctLow;   // low end of margin range (whole number, e.g. 12)
-    public Decimal marginPctHigh;  // high end of margin range (whole number, e.g. 18)
+    public Decimal marginPctLow; // low end of margin range (whole number, e.g. 12)
+    public Decimal marginPctHigh; // high end of margin range (whole number, e.g. 18)
 
     public BomTemplate(
       String productNumber,
@@ -3065,100 +3065,420 @@ global with sharing class MarginArcDemoDataService {
     templates.put(
       'Cisco',
       new List<BomTemplate>{
-        new BomTemplate('C9300-48P-A', 'Catalyst 9300 48-Port PoE+', 'Hardware', 'ea', 0.43, 12, 18),
-        new BomTemplate('C9300-DNA-E', 'DNA Essentials License', 'Software', 'ea', 0.17, 20, 30),
-        new BomTemplate('CON-SNT-C93004P', 'Cisco SmartNet 8x5xNBD', 'Support', 'yr', 0.15, 25, 35),
-        new BomTemplate('SVC-IMPL-CISCO', 'Implementation Services', 'Services', 'hr', 0.25, 30, 45)
+        new BomTemplate(
+          'C9300-48P-A',
+          'Catalyst 9300 48-Port PoE+',
+          'Hardware',
+          'ea',
+          0.43,
+          12,
+          18
+        ),
+        new BomTemplate(
+          'C9300-DNA-E',
+          'DNA Essentials License',
+          'Software',
+          'ea',
+          0.17,
+          20,
+          30
+        ),
+        new BomTemplate(
+          'CON-SNT-C93004P',
+          'Cisco SmartNet 8x5xNBD',
+          'Support',
+          'yr',
+          0.15,
+          25,
+          35
+        ),
+        new BomTemplate(
+          'SVC-IMPL-CISCO',
+          'Implementation Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          45
+        )
       }
     );
 
     templates.put(
       'Palo Alto',
       new List<BomTemplate>{
-        new BomTemplate('PA-450', 'PA-450 Next-Gen Firewall', 'Hardware', 'ea', 0.42, 14, 18),
-        new BomTemplate('PAN-PA-450-TP', 'PAN-OS Threat Prevention License', 'Software', 'ea', 0.18, 22, 30),
-        new BomTemplate('PAN-SVC-PREM-450', 'Premium Support Subscription', 'Support', 'yr', 0.15, 25, 35),
-        new BomTemplate('SVC-DEPLOY-PA', 'Deployment Services', 'Services', 'hr', 0.25, 32, 45)
+        new BomTemplate(
+          'PA-450',
+          'PA-450 Next-Gen Firewall',
+          'Hardware',
+          'ea',
+          0.42,
+          14,
+          18
+        ),
+        new BomTemplate(
+          'PAN-PA-450-TP',
+          'PAN-OS Threat Prevention License',
+          'Software',
+          'ea',
+          0.18,
+          22,
+          30
+        ),
+        new BomTemplate(
+          'PAN-SVC-PREM-450',
+          'Premium Support Subscription',
+          'Support',
+          'yr',
+          0.15,
+          25,
+          35
+        ),
+        new BomTemplate(
+          'SVC-DEPLOY-PA',
+          'Deployment Services',
+          'Services',
+          'hr',
+          0.25,
+          32,
+          45
+        )
       }
     );
 
     templates.put(
       'HPE',
       new List<BomTemplate>{
-        new BomTemplate('P56959-B21', 'ProLiant DL380 Gen10 Plus', 'Hardware', 'ea', 0.44, 12, 16),
-        new BomTemplate('BD505A', 'iLO Advanced License', 'Software', 'ea', 0.16, 22, 28),
-        new BomTemplate('H28K5E', 'HPE Pointnext 24x7 4hr', 'Support', 'yr', 0.15, 26, 34),
-        new BomTemplate('SVC-MIG-HPE', 'Migration Services', 'Services', 'hr', 0.25, 30, 42)
+        new BomTemplate(
+          'P56959-B21',
+          'ProLiant DL380 Gen10 Plus',
+          'Hardware',
+          'ea',
+          0.44,
+          12,
+          16
+        ),
+        new BomTemplate(
+          'BD505A',
+          'iLO Advanced License',
+          'Software',
+          'ea',
+          0.16,
+          22,
+          28
+        ),
+        new BomTemplate(
+          'H28K5E',
+          'HPE Pointnext 24x7 4hr',
+          'Support',
+          'yr',
+          0.15,
+          26,
+          34
+        ),
+        new BomTemplate(
+          'SVC-MIG-HPE',
+          'Migration Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          42
+        )
       }
     );
 
     templates.put(
       'Dell',
       new List<BomTemplate>{
-        new BomTemplate('PE-R750XS', 'PowerEdge R750xs Server', 'Hardware', 'ea', 0.43, 12, 17),
-        new BomTemplate('OME-ADV', 'OpenManage Enterprise Advanced', 'Software', 'ea', 0.17, 20, 28),
-        new BomTemplate('PS-PLUS-R750', 'ProSupport Plus 24x7', 'Support', 'yr', 0.15, 25, 33),
-        new BomTemplate('SVC-DEPLOY-DELL', 'Deployment Services', 'Services', 'hr', 0.25, 32, 44)
+        new BomTemplate(
+          'PE-R750XS',
+          'PowerEdge R750xs Server',
+          'Hardware',
+          'ea',
+          0.43,
+          12,
+          17
+        ),
+        new BomTemplate(
+          'OME-ADV',
+          'OpenManage Enterprise Advanced',
+          'Software',
+          'ea',
+          0.17,
+          20,
+          28
+        ),
+        new BomTemplate(
+          'PS-PLUS-R750',
+          'ProSupport Plus 24x7',
+          'Support',
+          'yr',
+          0.15,
+          25,
+          33
+        ),
+        new BomTemplate(
+          'SVC-DEPLOY-DELL',
+          'Deployment Services',
+          'Services',
+          'hr',
+          0.25,
+          32,
+          44
+        )
       }
     );
 
     templates.put(
       'Fortinet',
       new List<BomTemplate>{
-        new BomTemplate('FG-100F', 'FortiGate 100F Firewall', 'Hardware', 'ea', 0.40, 14, 18),
-        new BomTemplate('FC-10-F100F-950', 'FortiGuard UTM Bundle', 'Software', 'ea', 0.20, 22, 30),
-        new BomTemplate('FC-10-F100F-247', 'FortiCare Premium 24x7', 'Support', 'yr', 0.15, 26, 34),
-        new BomTemplate('SVC-PROF-FTNT', 'Professional Services', 'Services', 'hr', 0.25, 30, 45)
+        new BomTemplate(
+          'FG-100F',
+          'FortiGate 100F Firewall',
+          'Hardware',
+          'ea',
+          0.40,
+          14,
+          18
+        ),
+        new BomTemplate(
+          'FC-10-F100F-950',
+          'FortiGuard UTM Bundle',
+          'Software',
+          'ea',
+          0.20,
+          22,
+          30
+        ),
+        new BomTemplate(
+          'FC-10-F100F-247',
+          'FortiCare Premium 24x7',
+          'Support',
+          'yr',
+          0.15,
+          26,
+          34
+        ),
+        new BomTemplate(
+          'SVC-PROF-FTNT',
+          'Professional Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          45
+        )
       }
     );
 
     templates.put(
       'VMware',
       new List<BomTemplate>{
-        new BomTemplate('VS8-ENT-C', 'vSphere 8 Enterprise Plus', 'Software', 'ea', 0.40, 20, 28),
-        new BomTemplate('VS-VSAN8-A', 'vSAN 8 Advanced', 'Software', 'ea', 0.20, 22, 30),
-        new BomTemplate('VS-PROD-SUP', 'Production Support 24x7', 'Support', 'yr', 0.15, 28, 35),
-        new BomTemplate('SVC-IMPL-VMW', 'Implementation Services', 'Services', 'hr', 0.25, 32, 44)
+        new BomTemplate(
+          'VS8-ENT-C',
+          'vSphere 8 Enterprise Plus',
+          'Software',
+          'ea',
+          0.40,
+          20,
+          28
+        ),
+        new BomTemplate(
+          'VS-VSAN8-A',
+          'vSAN 8 Advanced',
+          'Software',
+          'ea',
+          0.20,
+          22,
+          30
+        ),
+        new BomTemplate(
+          'VS-PROD-SUP',
+          'Production Support 24x7',
+          'Support',
+          'yr',
+          0.15,
+          28,
+          35
+        ),
+        new BomTemplate(
+          'SVC-IMPL-VMW',
+          'Implementation Services',
+          'Services',
+          'hr',
+          0.25,
+          32,
+          44
+        )
       }
     );
 
     templates.put(
       'Microsoft',
       new List<BomTemplate>{
-        new BomTemplate('AAA-35638', 'Microsoft 365 E5 Subscription', 'Software', 'ea', 0.40, 20, 28),
-        new BomTemplate('DZH318Z09V2C', 'Azure Reserved Instances', 'Cloud', 'mo', 0.20, 18, 26),
-        new BomTemplate('9EA-00006', 'Premier Support Contract', 'Support', 'yr', 0.15, 26, 35),
-        new BomTemplate('SVC-MIG-MSFT', 'Migration Services', 'Services', 'hr', 0.25, 30, 42)
+        new BomTemplate(
+          'AAA-35638',
+          'Microsoft 365 E5 Subscription',
+          'Software',
+          'ea',
+          0.40,
+          20,
+          28
+        ),
+        new BomTemplate(
+          'DZH318Z09V2C',
+          'Azure Reserved Instances',
+          'Cloud',
+          'mo',
+          0.20,
+          18,
+          26
+        ),
+        new BomTemplate(
+          '9EA-00006',
+          'Premier Support Contract',
+          'Support',
+          'yr',
+          0.15,
+          26,
+          35
+        ),
+        new BomTemplate(
+          'SVC-MIG-MSFT',
+          'Migration Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          42
+        )
       }
     );
 
     templates.put(
       'Pure Storage',
       new List<BomTemplate>{
-        new BomTemplate('FA-X20R3', 'FlashArray//X20 R3', 'Hardware', 'ea', 0.45, 14, 18),
-        new BomTemplate('PURE1-BASE', 'Pure1 Management License', 'Software', 'ea', 0.15, 22, 30),
-        new BomTemplate('ES-4HR-FA', 'Evergreen//Forever Support', 'Support', 'yr', 0.15, 28, 35),
-        new BomTemplate('SVC-DATA-MIG', 'Data Migration Services', 'Services', 'hr', 0.25, 30, 44)
+        new BomTemplate(
+          'FA-X20R3',
+          'FlashArray//X20 R3',
+          'Hardware',
+          'ea',
+          0.45,
+          14,
+          18
+        ),
+        new BomTemplate(
+          'PURE1-BASE',
+          'Pure1 Management License',
+          'Software',
+          'ea',
+          0.15,
+          22,
+          30
+        ),
+        new BomTemplate(
+          'ES-4HR-FA',
+          'Evergreen//Forever Support',
+          'Support',
+          'yr',
+          0.15,
+          28,
+          35
+        ),
+        new BomTemplate(
+          'SVC-DATA-MIG',
+          'Data Migration Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          44
+        )
       }
     );
 
     templates.put(
       'NetApp',
       new List<BomTemplate>{
-        new BomTemplate('AFF-A250', 'AFF A250 All-Flash Array', 'Hardware', 'ea', 0.44, 13, 18),
-        new BomTemplate('SW-ONTAP-PREM', 'ONTAP Data Management License', 'Software', 'ea', 0.16, 22, 28),
-        new BomTemplate('CS-A2-PREM', 'SupportEdge Premium 24x7', 'Support', 'yr', 0.15, 26, 34),
-        new BomTemplate('SVC-PROF-NTAP', 'Professional Services', 'Services', 'hr', 0.25, 30, 42)
+        new BomTemplate(
+          'AFF-A250',
+          'AFF A250 All-Flash Array',
+          'Hardware',
+          'ea',
+          0.44,
+          13,
+          18
+        ),
+        new BomTemplate(
+          'SW-ONTAP-PREM',
+          'ONTAP Data Management License',
+          'Software',
+          'ea',
+          0.16,
+          22,
+          28
+        ),
+        new BomTemplate(
+          'CS-A2-PREM',
+          'SupportEdge Premium 24x7',
+          'Support',
+          'yr',
+          0.15,
+          26,
+          34
+        ),
+        new BomTemplate(
+          'SVC-PROF-NTAP',
+          'Professional Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          42
+        )
       }
     );
 
     templates.put(
       'Arista',
       new List<BomTemplate>{
-        new BomTemplate('DCS-7050X3-48YC12', '7050X3 48-Port Switch', 'Hardware', 'ea', 0.43, 13, 17),
-        new BomTemplate('CV-BASE', 'CloudVision Platform License', 'Software', 'ea', 0.17, 22, 30),
-        new BomTemplate('AR-SUP-7050', 'Arista Support 24x7', 'Support', 'yr', 0.15, 26, 34),
-        new BomTemplate('SVC-NET-ARISTA', 'Network Services', 'Services', 'hr', 0.25, 30, 44)
+        new BomTemplate(
+          'DCS-7050X3-48YC12',
+          '7050X3 48-Port Switch',
+          'Hardware',
+          'ea',
+          0.43,
+          13,
+          17
+        ),
+        new BomTemplate(
+          'CV-BASE',
+          'CloudVision Platform License',
+          'Software',
+          'ea',
+          0.17,
+          22,
+          30
+        ),
+        new BomTemplate(
+          'AR-SUP-7050',
+          'Arista Support 24x7',
+          'Support',
+          'yr',
+          0.15,
+          26,
+          34
+        ),
+        new BomTemplate(
+          'SVC-NET-ARISTA',
+          'Network Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          44
+        )
       }
     );
 
@@ -3166,10 +3486,42 @@ global with sharing class MarginArcDemoDataService {
     templates.put(
       'Default',
       new List<BomTemplate>{
-        new BomTemplate('HW-GEN-001', 'Generic Hardware', 'Hardware', 'ea', 0.43, 12, 18),
-        new BomTemplate('SW-GEN-001', 'Software License', 'Software', 'ea', 0.17, 20, 30),
-        new BomTemplate('SUP-GEN-001', 'Support Contract', 'Support', 'yr', 0.15, 25, 35),
-        new BomTemplate('SVC-GEN-001', 'Professional Services', 'Services', 'hr', 0.25, 30, 45)
+        new BomTemplate(
+          'HW-GEN-001',
+          'Generic Hardware',
+          'Hardware',
+          'ea',
+          0.43,
+          12,
+          18
+        ),
+        new BomTemplate(
+          'SW-GEN-001',
+          'Software License',
+          'Software',
+          'ea',
+          0.17,
+          20,
+          30
+        ),
+        new BomTemplate(
+          'SUP-GEN-001',
+          'Support Contract',
+          'Support',
+          'yr',
+          0.15,
+          25,
+          35
+        ),
+        new BomTemplate(
+          'SVC-GEN-001',
+          'Professional Services',
+          'Services',
+          'hr',
+          0.25,
+          30,
+          45
+        )
       }
     );
 
@@ -3196,11 +3548,13 @@ global with sharing class MarginArcDemoDataService {
       oppIds.add(o.Id);
     }
 
-    Map<Id, Opportunity> oppMap = new Map<Id, Opportunity>([
-      SELECT Id, Fulcrum_OEM__c, Fulcrum_OEM_Cost__c, Amount
-      FROM Opportunity
-      WHERE Id IN :oppIds
-    ]);
+    Map<Id, Opportunity> oppMap = new Map<Id, Opportunity>(
+      [
+        SELECT Id, Fulcrum_OEM__c, Fulcrum_OEM_Cost__c, Amount
+        FROM Opportunity
+        WHERE Id IN :oppIds
+      ]
+    );
 
     Map<String, List<BomTemplate>> allTemplates = getBomTemplates();
     List<Fulcrum_BOM_Line__c> bomLines = new List<Fulcrum_BOM_Line__c>();
@@ -3240,27 +3594,22 @@ global with sharing class MarginArcDemoDataService {
           qty = 1 + Math.mod(seed * 11, 3);
         }
 
-        Decimal unitCost = (lineCost / qty).setScale(2, System.RoundingMode.HALF_UP);
+        Decimal unitCost = (lineCost / qty)
+          .setScale(2, System.RoundingMode.HALF_UP);
 
         // Pick a margin percentage within the realistic range for this category
         Decimal marginRange = tmpl.marginPctHigh - tmpl.marginPctLow;
-        Decimal marginPct = tmpl.marginPctLow +
-          (marginRange * Math.mod(seed * 13, 100) / 100.0);
+        Decimal marginPct =
+          tmpl.marginPctLow + (marginRange * Math.mod(seed * 13, 100) / 100.0);
         marginPct = marginPct.setScale(2, System.RoundingMode.HALF_UP);
 
         // Derived fields
-        Decimal unitPrice = (unitCost / (1 - marginPct / 100)).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        );
-        Decimal extendedCost = (unitCost * qty).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        );
-        Decimal extendedPrice = (unitPrice * qty).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        );
+        Decimal unitPrice = (unitCost / (1 - marginPct / 100))
+          .setScale(2, System.RoundingMode.HALF_UP);
+        Decimal extendedCost = (unitCost * qty)
+          .setScale(2, System.RoundingMode.HALF_UP);
+        Decimal extendedPrice = (unitPrice * qty)
+          .setScale(2, System.RoundingMode.HALF_UP);
 
         Fulcrum_BOM_Line__c bom = new Fulcrum_BOM_Line__c();
         bom.Opportunity__c = opp.Id;
@@ -3271,16 +3620,17 @@ global with sharing class MarginArcDemoDataService {
         bom.Quantity__c = qty;
         bom.Unit_Cost__c = unitCost;
         bom.Unit_Price__c = unitPrice;
-        bom.List_Price__c = (unitPrice * 1.15).setScale(
-          2,
-          System.RoundingMode.HALF_UP
-        ); // list price ~15% above sell
+        bom.List_Price__c = (unitPrice * 1.15)
+          .setScale(2, System.RoundingMode.HALF_UP); // list price ~15% above sell
         bom.Extended_Cost__c = extendedCost;
         bom.Extended_Price__c = extendedPrice;
         bom.Margin_Pct__c = marginPct;
         bom.Vendor__c = String.isNotBlank(oemName) ? oemName : 'Generic';
         bom.Sort_Order__c = sortOrder++;
-        bom.Line_Key__c = tmpl.category.toLowerCase() + '-' + tmpl.productNumber.toLowerCase();
+        bom.Line_Key__c =
+          tmpl.category.toLowerCase() +
+          '-' +
+          tmpl.productNumber.toLowerCase();
         bom.BOM_Origin__c = 'demo';
 
         bomLines.add(bom);
