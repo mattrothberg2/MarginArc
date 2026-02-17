@@ -594,7 +594,8 @@ function generateDeals() {
         oem,
         servicesAttached,
         quarterEnd,
-        displacementDeal
+        displacementDeal,
+        closeDate: formatDate(closeDate)
       }
 
       if (cust.avgDealSize) lambdaDeal.avgDealSize = cust.avgDealSize
