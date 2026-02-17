@@ -1176,7 +1176,7 @@ Run prettier and eslint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 8C — Password Policy Upgrade + Admin Security (CISO P1 #8)
+### 8C — Password Policy Upgrade + Admin Security (CISO P1 #8) [COMPLETE — PR #52]
 
 ```
 Read these files:
@@ -1227,7 +1227,7 @@ Fix:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 8D — Add org_id to recorded_deals for Multi-Tenant Isolation (CTO HIGH Risk)
+### 8D — Add org_id to recorded_deals for Multi-Tenant Isolation (CTO HIGH Risk) [COMPLETE — PR #51]
 
 ```
 Read these files:
@@ -1287,7 +1287,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 9: Testing + UX Polish — Sprint 26
 
-### 9A — Rules Engine + Win Probability Test Suite (CTO Risk #3)
+### 9A — Rules Engine + Win Probability Test Suite (CTO Risk #3) [COMPLETE — PR #50]
 
 ```
 Read these files:
