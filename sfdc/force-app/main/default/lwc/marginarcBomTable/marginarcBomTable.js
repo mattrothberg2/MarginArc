@@ -288,6 +288,13 @@ export default class MarginarcBomTable extends LightningElement {
     this.isCollapsed = !this.isCollapsed;
   }
 
+  handleHeaderKeydown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      this.handleToggleCollapse();
+    }
+  }
+
   handleMarginChange(event) {
     const key = event.target.dataset.key;
     const val = parseFloat(event.target.value);

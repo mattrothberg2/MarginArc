@@ -170,6 +170,10 @@
           class="section-header"
           data-section="pipeline"
           onclick={toggleSection}
+          onkeydown={handleSectionKeydown}
+          role="button"
+          tabindex="0"
+          aria-expanded={showPipeline}
         >
           <span class="section-chevron">{pipelineChevron}</span>
           <h3 class="section-title">Pipeline Health</h3>
@@ -200,6 +204,7 @@
                 class={pill.pillClass}
                 data-filter={pill.value}
                 onclick={handleFilterChange}
+                aria-pressed={pill.isActive}
               >
                 {pill.label}
               </button>
@@ -239,31 +244,51 @@
 
           <div class="pipeline-table">
             <!-- Column Headers -->
-            <div class="table-header">
+            <div class="table-header" role="row">
               <div
                 class={scoreSortClass}
                 data-field="dealScore"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={scoreAriaSort}
               >
                 Score{scoreIndicator}
               </div>
-              <div class={nameSortClass} data-field="name" onclick={handleSort}>
+              <div
+                class={nameSortClass}
+                data-field="name"
+                onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={nameAriaSort}
+              >
                 Deal{nameIndicator}
               </div>
-              <div class="col-header">Account</div>
-              <div class="col-header">Rep</div>
+              <div class="col-header" role="columnheader">Account</div>
+              <div class="col-header" role="columnheader">Rep</div>
               <div
                 class={amountSortClass}
                 data-field="amount"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={amountAriaSort}
               >
                 Amount{amountIndicator}
               </div>
-              <div class="col-header">Stage</div>
+              <div class="col-header" role="columnheader">Stage</div>
               <div
                 class={planSortClass}
                 data-field="plannedMargin"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={planAriaSort}
               >
                 Plan{planIndicator}
               </div>
@@ -271,6 +296,10 @@
                 class={recSortClass}
                 data-field="recommendedMargin"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={recAriaSort}
               >
                 Rec{recIndicator}
               </div>
@@ -278,6 +307,10 @@
                 class={gapSortClass}
                 data-field="marginGap"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={gapAriaSort}
               >
                 Gap{gapIndicator}
               </div>
@@ -285,6 +318,10 @@
                 class={qualitySortClass}
                 data-field="predictionQuality"
                 onclick={handleSort}
+                onkeydown={handleSortKeydown}
+                role="columnheader"
+                tabindex="0"
+                aria-sort={qualityAriaSort}
               >
                 Quality{qualityIndicator}
               </div>
@@ -352,6 +389,10 @@
             class="section-header"
             data-section="rep"
             onclick={toggleSection}
+            onkeydown={handleSectionKeydown}
+            role="button"
+            tabindex="0"
+            aria-expanded={showRep}
           >
             <span class="section-chevron">{repChevron}</span>
             <h3 class="section-title">Rep Performance</h3>
@@ -415,6 +456,10 @@
               class="section-header"
               data-section="teamComp"
               onclick={toggleSection}
+              onkeydown={handleSectionKeydown}
+              role="button"
+              tabindex="0"
+              aria-expanded={showTeamComp}
             >
               <span class="section-chevron">{teamCompChevron}</span>
               <h3 class="section-title">Team Comparison</h3>
@@ -455,6 +500,10 @@
             class="section-header"
             data-section="margin"
             onclick={toggleSection}
+            onkeydown={handleSectionKeydown}
+            role="button"
+            tabindex="0"
+            aria-expanded={showMargin}
           >
             <span class="section-chevron">{marginChevron}</span>
             <h3 class="section-title">Margin Opportunity</h3>
@@ -669,6 +718,10 @@
               class="section-header"
               data-section="cohorts"
               onclick={toggleSection}
+              onkeydown={handleSectionKeydown}
+              role="button"
+              tabindex="0"
+              aria-expanded={showCohorts}
             >
               <span class="section-chevron">{cohortsChevron}</span>
               <h3 class="section-title">Does Following MarginArc Work?</h3>
@@ -747,6 +800,10 @@
             class="section-header"
             data-section="comp"
             onclick={toggleSection}
+            onkeydown={handleSectionKeydown}
+            role="button"
+            tabindex="0"
+            aria-expanded={showComp}
           >
             <span class="section-chevron">{compChevron}</span>
             <h3 class="section-title">Competitive Performance</h3>
@@ -789,6 +846,10 @@
             class="section-header"
             data-section="backfill"
             onclick={toggleSection}
+            onkeydown={handleSectionKeydown}
+            role="button"
+            tabindex="0"
+            aria-expanded={showBackfill}
           >
             <span class="section-chevron">{backfillChevron}</span>
             <h3 class="section-title">Historical Backfill Analysis</h3>

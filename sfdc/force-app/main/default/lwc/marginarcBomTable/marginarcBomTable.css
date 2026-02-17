@@ -318,3 +318,110 @@
 .bom-btn-secondary:hover {
   background: var(--slate-50);
 }
+
+/* ── Responsive: Tablet / narrow laptop ── */
+@media (max-width: 1024px) {
+  .bom-table-header,
+  .bom-row {
+    grid-template-columns: 2fr 70px 50px 80px 90px 90px 70px 90px;
+    gap: 4px;
+  }
+  .bom-table-wrap {
+    min-width: 600px;
+    padding: 0 12px 12px;
+  }
+  .bom-item-sku,
+  .bom-item-note {
+    display: none;
+  }
+  .bom-col {
+    font-size: 12px;
+  }
+  .bom-margin-input {
+    width: 48px;
+    font-size: 12px;
+  }
+  .bom-header {
+    padding: 12px 16px;
+  }
+}
+
+/* ── Responsive: Mobile / small tablet — card layout ── */
+@media (max-width: 768px) {
+  .bom-table-wrap {
+    min-width: 0;
+    padding: 0 12px 12px;
+  }
+
+  /* Hide grid header */
+  .bom-table-header {
+    display: none;
+  }
+
+  /* Card layout for rows */
+  .bom-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--slate-100);
+  }
+
+  /* Label takes full width */
+  .bom-row .bom-col-label {
+    width: 100%;
+    flex: 1 1 100%;
+    margin-bottom: 4px;
+  }
+  .bom-item-sku,
+  .bom-item-note {
+    display: none;
+  }
+
+  /* Inline numeric fields */
+  .bom-row .bom-col-cat,
+  .bom-row .bom-col-qty,
+  .bom-row .bom-col-cost,
+  .bom-row .bom-col-plan,
+  .bom-row .bom-col-rec,
+  .bom-row .bom-col-ext {
+    flex: 0 0 auto;
+    text-align: left;
+    font-size: 12px;
+  }
+
+  /* Hide delta column on mobile */
+  .bom-row .bom-col-delta {
+    display: none;
+  }
+
+  /* Totals row — simplified */
+  .bom-row-total {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .bom-row-total .bom-col-cat,
+  .bom-row-total .bom-col-qty,
+  .bom-row-total .bom-col-delta {
+    display: none;
+  }
+
+  /* Header wraps */
+  .bom-header {
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-start;
+    padding: 10px 12px;
+  }
+
+  /* Action bar stacks */
+  .bom-action-bar {
+    flex-direction: column;
+    padding: 10px 12px;
+  }
+  .bom-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
