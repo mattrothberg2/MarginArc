@@ -107,41 +107,54 @@
             </div>
           </div>
 
-          <!-- Score Factor Pills -->
-          <template lwc:if={hasDealScore}>
-            <div class="score-factors">
-              <template for:each={dealScoreFactors} for:item="factor">
-                <span key={factor.name} class={factor.pillClass}>
-                  <span class="factor-impact">{factor.impact}</span>
-                  {factor.name}
-                </span>
-              </template>
-            </div>
+          <!-- Score Factor Pills (expanded only) -->
+          <template lwc:if={isDetailExpanded}>
+            <template lwc:if={hasDealScore}>
+              <div class="score-factors">
+                <template for:each={dealScoreFactors} for:item="factor">
+                  <span key={factor.name} class={factor.pillClass}>
+                    <span class="factor-impact">{factor.impact}</span>
+                    {factor.name}
+                  </span>
+                </template>
+              </div>
+            </template>
           </template>
         </div>
 
-        <!-- Data Quality Indicators -->
-        <template lwc:if={hasDataQuality}>
-          <div class="marginarc-data-quality">
-            <div class="marginarc-dq-header">
-              <span class="marginarc-dq-title">Data Quality</span>
-              <span class={dataQualityBadgeClass}>{dataQualityTier}</span>
+        <!-- Score Summary Line (collapsed state compact info) -->
+        <div class="marginarc-score-summary">
+          <span class="summary-score">Score: {dealScore}/100</span>
+          <span class="summary-divider">|</span>
+          <span class="summary-margin">Rec: {recommendedMargin}%</span>
+          <span class="summary-divider">|</span>
+          <span class="summary-confidence">{confidenceLabel}</span>
+        </div>
+
+        <!-- Data Quality Indicators (expanded only) -->
+        <template lwc:if={isDetailExpanded}>
+          <template lwc:if={hasDataQuality}>
+            <div class="marginarc-data-quality">
+              <div class="marginarc-dq-header">
+                <span class="marginarc-dq-title">Data Quality</span>
+                <span class={dataQualityBadgeClass}>{dataQualityTier}</span>
+              </div>
+              <div class="marginarc-dq-bar-track">
+                <div
+                  class="marginarc-dq-bar-fill"
+                  style={dataQualityBarStyle}
+                ></div>
+              </div>
+              <div class="marginarc-dq-factors">
+                <template for:each={dataQualityFactors} for:item="factor">
+                  <span key={factor.name} class={factor.cssClass}>
+                    <span class="marginarc-dq-icon">{factor.icon}</span>
+                    {factor.name}
+                  </span>
+                </template>
+              </div>
             </div>
-            <div class="marginarc-dq-bar-track">
-              <div
-                class="marginarc-dq-bar-fill"
-                style={dataQualityBarStyle}
-              ></div>
-            </div>
-            <div class="marginarc-dq-factors">
-              <template for:each={dataQualityFactors} for:item="factor">
-                <span key={factor.name} class={factor.cssClass}>
-                  <span class="marginarc-dq-icon">{factor.icon}</span>
-                  {factor.name}
-                </span>
-              </template>
-            </div>
-          </div>
+          </template>
         </template>
 
         <!-- Phase 1 Callout — data foundation message -->
@@ -244,281 +257,302 @@
           </template>
         </div>
 
-        <!-- Plan vs Recommendation Comparison (Phase 2+) -->
-        <template lwc:if={showMarginRecommendation}>
-          <div class="comparison-section">
-            <div class="comparison-header">
-              <div class="comparison-col-header"></div>
-              <div class="comparison-col-header comparison-col-planned">
-                Your Plan
-              </div>
-              <div class="comparison-col-header comparison-col-recommended">
-                Recommended
-              </div>
-            </div>
+        <!-- Show/Hide Details Toggle -->
+        <div class="details-toggle-bar">
+          <button
+            class="btn-toggle-details"
+            onclick={toggleDetails}
+            aria-expanded={isDetailExpanded}
+            aria-label={detailsToggleLabel}
+          >
+            <span class="toggle-label">{detailsToggleLabel}</span>
+            <span class="toggle-chevron">{detailsToggleIcon}</span>
+          </button>
+        </div>
 
-            <div class="comparison-row">
-              <div class="comparison-label">Margin</div>
-              <div class="comparison-value">{currentMargin}%</div>
-              <div class="comparison-value comparison-value-highlight">
-                {recommendedMargin}%
+        <!-- Expandable Detail Sections -->
+        <div class={detailsPanelClass}>
+          <!-- Plan vs Recommendation Comparison (Phase 2+) -->
+          <template lwc:if={showMarginRecommendation}>
+            <div class="comparison-section">
+              <div class="comparison-header">
+                <div class="comparison-col-header"></div>
+                <div class="comparison-col-header comparison-col-planned">
+                  Your Plan
+                </div>
+                <div class="comparison-col-header comparison-col-recommended">
+                  Recommended
+                </div>
               </div>
-            </div>
 
-            <div class="comparison-row">
-              <div class="comparison-label">Sell Price</div>
-              <div class="comparison-value">{dealContextSellPrice}</div>
-              <div class="comparison-value comparison-value-highlight">
-                {recommendedSellPrice}
+              <div class="comparison-row">
+                <div class="comparison-label">Margin</div>
+                <div class="comparison-value">{currentMargin}%</div>
+                <div class="comparison-value comparison-value-highlight">
+                  {recommendedMargin}%
+                </div>
               </div>
-            </div>
 
-            <div class="comparison-row">
-              <div class="comparison-label">Gross Profit</div>
-              <div class="comparison-value">{dealContextGrossProfit}</div>
-              <div class="comparison-value comparison-value-highlight">
-                {recommendedGrossProfit}
+              <div class="comparison-row">
+                <div class="comparison-label">Sell Price</div>
+                <div class="comparison-value">{dealContextSellPrice}</div>
+                <div class="comparison-value comparison-value-highlight">
+                  {recommendedSellPrice}
+                </div>
               </div>
-            </div>
 
-            <div class="comparison-row comparison-row-highlight">
-              <div class="comparison-label">Win Probability</div>
-              <div class="comparison-value">{plannedWinProbability}%</div>
-              <div class="comparison-value comparison-value-highlight">
-                {winProbability}%
+              <div class="comparison-row">
+                <div class="comparison-label">Gross Profit</div>
+                <div class="comparison-value">{dealContextGrossProfit}</div>
+                <div class="comparison-value comparison-value-highlight">
+                  {recommendedGrossProfit}
+                </div>
               </div>
-            </div>
 
-            <div class="comparison-row comparison-row-total">
-              <div class="comparison-label">Risk-Adj GP</div>
-              <div class="comparison-value">${plannedProfit}</div>
-              <div class="comparison-value comparison-value-highlight">
-                ${recommendedProfit}
+              <div class="comparison-row comparison-row-highlight">
+                <div class="comparison-label">Win Probability</div>
+                <div class="comparison-value">{plannedWinProbability}%</div>
+                <div class="comparison-value comparison-value-highlight">
+                  {winProbability}%
+                </div>
               </div>
-            </div>
-          </div>
-        </template>
 
-        <!-- Key Drivers (Phase 2+ — margin-specific) -->
-        <template lwc:if={showMarginRecommendation}>
-          <template lwc:if={hasDrivers}>
-            <div class="drivers-section">
-              <div class="drivers-header">
-                <span class="drivers-title">Key Drivers</span>
-                <span class="drivers-count">{driverCount} factors</span>
-              </div>
-              <div class="drivers-list">
-                <template for:each={topDrivers} for:item="driver">
-                  <div key={driver.name} class="driver-row">
-                    <span class="driver-name"> {driver.label} </span>
-                    <div class="driver-bar-container">
-                      <template lwc:if={driver.isPositive}>
-                        <div
-                          class="driver-bar driver-bar-positive"
-                          style={driver.barStyle}
-                        ></div>
-                      </template>
-                      <template lwc:if={driver.isNegative}>
-                        <div
-                          class="driver-bar driver-bar-negative"
-                          style={driver.barStyle}
-                        ></div>
-                      </template>
-                    </div>
-                    <span class={driver.impactClass}>{driver.impact}</span>
-                  </div>
-                </template>
+              <div class="comparison-row comparison-row-total">
+                <div class="comparison-label">Risk-Adj GP</div>
+                <div class="comparison-value">${plannedProfit}</div>
+                <div class="comparison-value comparison-value-highlight">
+                  ${recommendedProfit}
+                </div>
               </div>
             </div>
           </template>
-        </template>
 
-        <!-- AI Summary -->
-        <template lwc:if={hasExplanation}>
-          <div class="ai-summary-section">
-            <div class="ai-summary-header">
-              <svg
-                class="ai-icon"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
-                />
-              </svg>
-              <div class="ai-summary-title-group">
-                <span class="ai-summary-title">AI Analysis</span>
-              </div>
-            </div>
-            <p class="ai-summary-text">{aiExplanation}</p>
-            <template lwc:if={hasQualitativeSummary}>
-              <p class="ai-summary-qualitative">{qualitativeSummary}</p>
-            </template>
-          </div>
-        </template>
-
-        <!-- Recommendation History -->
-        <template lwc:if={hasHistory}>
-          <div class="history-section">
-            <div
-              class="history-header"
-              onclick={toggleHistory}
-              role="button"
-              tabindex="0"
-              aria-expanded={showHistory}
-            >
-              <span class="history-chevron">{historyChevron}</span>
-              <span class="history-title">Recommendation History</span>
-              <span class="history-count">{historyItems.length}</span>
-            </div>
-            <template lwc:if={showHistory}>
-              <div class="history-timeline">
-                <template for:each={historyItems} for:item="item">
-                  <div class="history-item" key={item.id}>
-                    <div class="hist-date-col">
-                      <div class="hist-date">{item.dateStr}</div>
-                      <div class="hist-time">{item.timeStr}</div>
-                    </div>
-                    <div class="hist-dot"></div>
-                    <div class="hist-content">
-                      <div class="hist-top-row">
-                        <span class={item.sourceClass}>{item.source}</span>
-                        <span class={item.appliedClass}
-                          >{item.appliedLabel}</span
-                        >
+          <!-- Key Drivers (Phase 2+ — margin-specific) -->
+          <template lwc:if={showMarginRecommendation}>
+            <template lwc:if={hasDrivers}>
+              <div class="drivers-section">
+                <div class="drivers-header">
+                  <span class="drivers-title">Key Drivers</span>
+                  <span class="drivers-count">{driverCount} factors</span>
+                </div>
+                <div class="drivers-list">
+                  <template for:each={topDrivers} for:item="driver">
+                    <div key={driver.name} class="driver-row">
+                      <span class="driver-name"> {driver.label} </span>
+                      <div class="driver-bar-container">
+                        <template lwc:if={driver.isPositive}>
+                          <div
+                            class="driver-bar driver-bar-positive"
+                            style={driver.barStyle}
+                          ></div>
+                        </template>
+                        <template lwc:if={driver.isNegative}>
+                          <div
+                            class="driver-bar driver-bar-negative"
+                            style={driver.barStyle}
+                          ></div>
+                        </template>
                       </div>
-                      <div class="hist-metrics">
-                        <div class="hist-metric">
-                          <span class="hist-metric-label">Rec</span>
-                          <span class="hist-metric-value">{item.margin}</span>
-                        </div>
-                        <div class="hist-metric">
-                          <span class="hist-metric-label">Plan</span>
-                          <span class="hist-metric-value">{item.planned}</span>
-                        </div>
-                        <div class="hist-metric">
-                          <span class="hist-metric-label">Gap</span>
-                          <span class={item.gapClass}>{item.gapStr}</span>
-                        </div>
-                        <div class="hist-metric">
-                          <span class="hist-metric-label">Conf</span>
-                          <span class="hist-metric-value"
-                            >{item.confidence}</span
-                          >
-                        </div>
-                        <div class="hist-metric">
-                          <span class="hist-metric-label">Win%</span>
-                          <span class="hist-metric-value">{item.winProb}</span>
-                        </div>
-                      </div>
+                      <span class={driver.impactClass}>{driver.impact}</span>
                     </div>
-                  </div>
-                </template>
+                  </template>
+                </div>
               </div>
             </template>
-          </div>
-        </template>
+          </template>
 
-        <!-- BOM Summary (full BOM editing in standalone BOM Builder widget) -->
-        <template lwc:if={hasBomSummary}>
-          <div class="bom-summary-section">
-            <div class="bom-summary-header">
-              <span class="bom-summary-icon">
+          <!-- AI Summary -->
+          <template lwc:if={hasExplanation}>
+            <div class="ai-summary-section">
+              <div class="ai-summary-header">
                 <svg
+                  class="ai-icon"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1.5"
                 >
                   <path
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"
                   />
                 </svg>
-              </span>
-              <span class="bom-summary-title">Bill of Materials</span>
-              <span class="bom-summary-count">{bomLineCount} lines</span>
-            </div>
-            <div class="bom-summary-stats">
-              <div class="bom-stat">
-                <span class="bom-stat-label">Total Cost</span>
-                <span class="bom-stat-value">{bomTotalCost}</span>
-              </div>
-              <div class="bom-stat">
-                <span class="bom-stat-label">Total Price</span>
-                <span class="bom-stat-value">{bomTotalPrice}</span>
-              </div>
-              <div class="bom-stat">
-                <span class="bom-stat-label">Blended Margin</span>
-                <span class="bom-stat-value">{bomBlendedMargin}</span>
-              </div>
-            </div>
-            <!-- Phase 3: Per-line BOM margin recommendations -->
-            <template lwc:if={hasBomLineRecommendations}>
-              <div class="marginarc-bom-lines">
-                <div class="marginarc-bom-lines-header">
-                  <span class="marginarc-bom-lines-col">Line Item</span>
-                  <span class="marginarc-bom-lines-col">Current</span>
-                  <span class="marginarc-bom-lines-col">Recommended</span>
-                  <span class="marginarc-bom-lines-col">Gap</span>
+                <div class="ai-summary-title-group">
+                  <span class="ai-summary-title">AI Analysis</span>
                 </div>
-                <template for:each={bomLineItems} for:item="line">
-                  <div class="marginarc-bom-line-row" key={line.key}>
-                    <span class="marginarc-bom-line-label" title={line.label}>
-                      <span class="marginarc-bom-line-cat"
-                        >{line.category}</span
-                      >
-                      {line.label}
-                    </span>
-                    <span class="marginarc-bom-line-value"
-                      >{line.currentMarginDisplay}</span
-                    >
-                    <span
-                      class="marginarc-bom-line-value marginarc-bom-line-rec"
-                      >{line.recommendedMarginDisplay}</span
-                    >
-                    <span class={line.gapClass}>{line.gapDisplay}</span>
-                  </div>
-                </template>
               </div>
-            </template>
+              <p class="ai-summary-text">{aiExplanation}</p>
+              <template lwc:if={hasQualitativeSummary}>
+                <p class="ai-summary-qualitative">{qualitativeSummary}</p>
+              </template>
+            </div>
+          </template>
 
-            <!-- Phase 3: Optimize BOM Margins button -->
-            <template lwc:if={showBomOptimizeButton}>
-              <button
-                class="btn-bom-optimize"
-                onclick={handleOptimizeBom}
-                disabled={isBomOptimizing}
-                aria-label="Optimize BOM margins with AI"
+          <!-- Recommendation History -->
+          <template lwc:if={hasHistory}>
+            <div class="history-section">
+              <div
+                class="history-header"
+                onclick={toggleHistory}
+                role="button"
+                tabindex="0"
+                aria-expanded={showHistory}
               >
-                <template lwc:if={isBomOptimizing}>
-                  <lightning-spinner
-                    alternative-text="Optimizing"
-                    size="xx-small"
-                  ></lightning-spinner>
-                  Optimizing...
-                </template>
-                <template lwc:else>
+                <span class="history-chevron">{historyChevron}</span>
+                <span class="history-title">Recommendation History</span>
+                <span class="history-count">{historyItems.length}</span>
+              </div>
+              <template lwc:if={showHistory}>
+                <div class="history-timeline">
+                  <template for:each={historyItems} for:item="item">
+                    <div class="history-item" key={item.id}>
+                      <div class="hist-date-col">
+                        <div class="hist-date">{item.dateStr}</div>
+                        <div class="hist-time">{item.timeStr}</div>
+                      </div>
+                      <div class="hist-dot"></div>
+                      <div class="hist-content">
+                        <div class="hist-top-row">
+                          <span class={item.sourceClass}>{item.source}</span>
+                          <span class={item.appliedClass}
+                            >{item.appliedLabel}</span
+                          >
+                        </div>
+                        <div class="hist-metrics">
+                          <div class="hist-metric">
+                            <span class="hist-metric-label">Rec</span>
+                            <span class="hist-metric-value">{item.margin}</span>
+                          </div>
+                          <div class="hist-metric">
+                            <span class="hist-metric-label">Plan</span>
+                            <span class="hist-metric-value"
+                              >{item.planned}</span
+                            >
+                          </div>
+                          <div class="hist-metric">
+                            <span class="hist-metric-label">Gap</span>
+                            <span class={item.gapClass}>{item.gapStr}</span>
+                          </div>
+                          <div class="hist-metric">
+                            <span class="hist-metric-label">Conf</span>
+                            <span class="hist-metric-value"
+                              >{item.confidence}</span
+                            >
+                          </div>
+                          <div class="hist-metric">
+                            <span class="hist-metric-label">Win%</span>
+                            <span class="hist-metric-value"
+                              >{item.winProb}</span
+                            >
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </div>
+          </template>
+
+          <!-- BOM Summary (full BOM editing in standalone BOM Builder widget) -->
+          <template lwc:if={hasBomSummary}>
+            <div class="bom-summary-section">
+              <div class="bom-summary-header">
+                <span class="bom-summary-icon">
                   <svg
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2"
+                    stroke-width="1.5"
                   >
-                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    <path
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
                   </svg>
-                  Optimize BOM Margins
-                </template>
-              </button>
-            </template>
+                </span>
+                <span class="bom-summary-title">Bill of Materials</span>
+                <span class="bom-summary-count">{bomLineCount} lines</span>
+              </div>
+              <div class="bom-summary-stats">
+                <div class="bom-stat">
+                  <span class="bom-stat-label">Total Cost</span>
+                  <span class="bom-stat-value">{bomTotalCost}</span>
+                </div>
+                <div class="bom-stat">
+                  <span class="bom-stat-label">Total Price</span>
+                  <span class="bom-stat-value">{bomTotalPrice}</span>
+                </div>
+                <div class="bom-stat">
+                  <span class="bom-stat-label">Blended Margin</span>
+                  <span class="bom-stat-value">{bomBlendedMargin}</span>
+                </div>
+              </div>
+              <!-- Phase 3: Per-line BOM margin recommendations -->
+              <template lwc:if={hasBomLineRecommendations}>
+                <div class="marginarc-bom-lines">
+                  <div class="marginarc-bom-lines-header">
+                    <span class="marginarc-bom-lines-col">Line Item</span>
+                    <span class="marginarc-bom-lines-col">Current</span>
+                    <span class="marginarc-bom-lines-col">Recommended</span>
+                    <span class="marginarc-bom-lines-col">Gap</span>
+                  </div>
+                  <template for:each={bomLineItems} for:item="line">
+                    <div class="marginarc-bom-line-row" key={line.key}>
+                      <span class="marginarc-bom-line-label" title={line.label}>
+                        <span class="marginarc-bom-line-cat"
+                          >{line.category}</span
+                        >
+                        {line.label}
+                      </span>
+                      <span class="marginarc-bom-line-value"
+                        >{line.currentMarginDisplay}</span
+                      >
+                      <span
+                        class="marginarc-bom-line-value marginarc-bom-line-rec"
+                        >{line.recommendedMarginDisplay}</span
+                      >
+                      <span class={line.gapClass}>{line.gapDisplay}</span>
+                    </div>
+                  </template>
+                </div>
+              </template>
 
-            <p class="bom-summary-hint">
-              Use the BOM Builder widget on this page to edit line items and
-              analyze margins.
-            </p>
-          </div>
-        </template>
+              <!-- Phase 3: Optimize BOM Margins button -->
+              <template lwc:if={showBomOptimizeButton}>
+                <button
+                  class="btn-bom-optimize"
+                  onclick={handleOptimizeBom}
+                  disabled={isBomOptimizing}
+                  aria-label="Optimize BOM margins with AI"
+                >
+                  <template lwc:if={isBomOptimizing}>
+                    <lightning-spinner
+                      alternative-text="Optimizing"
+                      size="xx-small"
+                    ></lightning-spinner>
+                    Optimizing...
+                  </template>
+                  <template lwc:else>
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                    >
+                      <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    Optimize BOM Margins
+                  </template>
+                </button>
+              </template>
+
+              <p class="bom-summary-hint">
+                Use the BOM Builder widget on this page to edit line items and
+                analyze margins.
+              </p>
+            </div>
+          </template>
+        </div>
+        <!-- /marginarc-details-panel -->
       </div>
     </template>
   </div>

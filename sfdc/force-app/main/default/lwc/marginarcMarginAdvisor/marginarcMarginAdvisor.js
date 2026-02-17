@@ -66,6 +66,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   @track savedBomData = null;
   @track phaseInfo = null;
   @track isBomOptimizing = false;
+  @track isDetailExpanded = false;
   hasCalculated = false;
   wiredOpportunityResult; // Store for refreshApex
   _oemDataMap = {}; // OEM Name → { baseMargin, dealRegBoost, ... } from Fulcrum_OEM__c
@@ -345,6 +346,33 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       !this.error &&
       !this.recommendation
     );
+  }
+
+  // =========================================================================
+  // Progressive Disclosure: detail panel expand/collapse
+  // =========================================================================
+
+  // LWC templates don't allow `!` unary — use computed getter for negation
+  get isDetailCollapsed() {
+    return !this.isDetailExpanded;
+  }
+
+  get detailsToggleLabel() {
+    return this.isDetailExpanded ? "Hide Details" : "Show Details";
+  }
+
+  get detailsToggleIcon() {
+    return this.isDetailExpanded ? "\u25B4" : "\u25BE";
+  }
+
+  get detailsPanelClass() {
+    return this.isDetailExpanded
+      ? "marginarc-details-panel marginarc-details-expanded"
+      : "marginarc-details-panel marginarc-details-collapsed";
+  }
+
+  toggleDetails() {
+    this.isDetailExpanded = !this.isDetailExpanded;
   }
 
   // =========================================================================
