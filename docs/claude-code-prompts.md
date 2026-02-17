@@ -1398,7 +1398,7 @@ Fix:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 9C — Progressive Disclosure on Opportunity Page (UX P1 #3)
+### 9C — Progressive Disclosure on Opportunity Page (UX P1 #3) [COMPLETE — PR #60]
 
 ```
 Read these files:
@@ -1453,7 +1453,7 @@ Run prettier and eslint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 9D — BOM Builder Responsive Fix + Accessibility (UX P2 #13, P3 #14)
+### 9D — BOM Builder Responsive Fix + Accessibility (UX P2 #13, P3 #14) [COMPLETE — PR #61]
 
 ```
 Read these files:
@@ -1567,7 +1567,7 @@ Implement dual-key API rotation (same pattern as JWT secrets):
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 10B — MFA on Admin Portal (CISO P1, SOC 2 Requirement)
+### 10B — MFA on Admin Portal (CISO P1, SOC 2 Requirement) [COMPLETE — PR #62]
 
 ```
 Read these files:
@@ -1651,7 +1651,7 @@ These are markdown documents — not code. Keep the tone professional and factua
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 10D — Design Partner Onboarding Package
+### 10D — Design Partner Onboarding Package [COMPLETE — PR #59]
 
 ```
 This is a DOCUMENTATION task. Create a playbook for onboarding the first 3-5 design partners.
