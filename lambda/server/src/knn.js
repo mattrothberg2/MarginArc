@@ -1,3 +1,21 @@
+const MS_PER_YEAR = 365.25 * 24 * 60 * 60 * 1000
+
+export function timeDecay(closeDate) {
+  if (!closeDate) return 0.5
+
+  const close = new Date(closeDate)
+  if (isNaN(close.getTime())) return 0.5
+
+  const ageYears = (Date.now() - close.getTime()) / MS_PER_YEAR
+
+  if (ageYears < 0) return 1.0
+  if (ageYears <= 1) return 1.0
+  if (ageYears <= 2) return 0.85
+  if (ageYears <= 3) return 0.70
+  if (ageYears <= 5) return 0.50
+  return 0.30
+}
+
 export function similarity(input, d){
   let s = 0
   const val = (x,def=3)=> x ?? def
@@ -82,7 +100,7 @@ export function similarity(input, d){
 }
 
 export function topKNeighbors(input, deals, k=12){
-  const scored = deals.map(d => ({ d, s: similarity(input, d) })).sort((a,b)=>b.s-a.s)
+  const scored = deals.map(d => ({ d, s: similarity(input, d) * timeDecay(d.closeDate) })).sort((a,b)=>b.s-a.s)
   const top = scored.slice(0,k)
   const totalS = top.reduce((acc,x)=> acc + x.s, 0) || 1
   const wAvg = top.reduce((acc,x)=> acc + x.s*(x.d.achievedMargin||0), 0)/totalS
