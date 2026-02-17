@@ -1093,6 +1093,104 @@
   height: 16px;
 }
 
+/* =========================================================================
+   Score Summary Line (collapsed state compact info)
+   ========================================================================= */
+.marginarc-score-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 24px;
+  background: var(--slate-50);
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.summary-score {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--navy-900);
+}
+
+.summary-divider {
+  font-size: 13px;
+  color: var(--slate-400);
+  font-weight: 300;
+}
+
+.summary-margin {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--teal-600);
+}
+
+.summary-confidence {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-600);
+}
+
+/* =========================================================================
+   Details Toggle Bar
+   ========================================================================= */
+.details-toggle-bar {
+  display: flex;
+  justify-content: center;
+  padding: 8px 24px;
+  background: white;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.btn-toggle-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  background: transparent;
+  border: 1px solid var(--slate-200);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-500);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-toggle-details:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-300);
+  color: var(--slate-700);
+}
+
+.toggle-label {
+  letter-spacing: 0.3px;
+}
+
+.toggle-chevron {
+  font-size: 11px;
+  transition: transform 0.3s ease;
+}
+
+/* =========================================================================
+   Expandable Details Panel (animated)
+   ========================================================================= */
+.marginarc-details-panel {
+  overflow: hidden;
+  transition:
+    max-height 0.35s ease,
+    opacity 0.3s ease;
+}
+
+.marginarc-details-collapsed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.marginarc-details-expanded {
+  max-height: 3000px;
+  opacity: 1;
+}
+
 /* AI Summary Section */
 .ai-summary-section {
   padding: 24px;
