@@ -42,27 +42,25 @@ You can run multiple prompts in parallel Claude Code web sessions **if they don'
 | **3C** | `lambda/server/src/data/vendor_skus.json` only | Almost anything except 4B |
 | **4A** | `lambda/server/src/data/generateSyntheticDeals.js`, new `src/data/scenarios.js` | Any SFDC prompt, 6A, or 3A/3B (if 3A/3B don't touch generator) |
 | **4B** | `lambda/server/src/data/generateSyntheticDeals.js`, `sample_deals.json` | Any SFDC prompt or 6A |
-| **4C** | `sfdc/.../marginarcSetupWizard/*`, `lambda/server/index.js` | 3C, 4A*, 6A |
-| **5A** | `lambda/server/index.js`, new `engine.js`, `Dockerfile` | Any SFDC prompt or 6A |
+| **4C** | `sfdc/.../marginarcSetupWizard/*`, `lambda/server/index.js` | 3C, 6A |
+| **4D** | `sfdc/.../marginarcMarginAdvisor/*`, `marginarcManagerDashboard/*`, `marginarcDealInsights/*`, `marginarcBackfillReport/*` | Any Lambda prompt, 6A |
+| **5A** | DEFERRED | — |
 | **5B** | `lambda/server/index.js`, new `openapi.yaml` | Any SFDC prompt or 6A |
 | **6A** | new `docs/network-design.md` (design doc only) | **Everything** |
 
 ### Safe Parallel Pairs (no file conflicts)
 
-- **2A + 6A** — Lambda phases + design doc
-- **2B + 3A** or **2B + 3B** — SFDC UI + Lambda API
-- **2C + 3A** or **2C + 3B** — SFDC setup + Lambda API
-- **3C + 2A** — catalog expansion + phase system
-- **3C + 2B** or **3C + 2C** — catalog + SFDC UI
-- **4A + 2B** or **4A + 2C** — scenarios + SFDC UI
+- **3C + 4C** — catalog data + SFDC setup wizard (different dirs)
+- **3C + 4D** — catalog data + SFDC UI fixes (different dirs)
+- **4D + 5B** — SFDC UI fixes + Lambda OpenAPI spec
+- **4D + 3C** — SFDC UI fixes + Lambda catalog data
+- **4C + 5B** — both touch index.js so NOT safe, but 4C is SFDC-heavy
 - **6A + anything** — design doc touches no code
 
 ### DO NOT run in parallel (same file conflicts)
 
-- **2A + 3A** or **2A + 3B** — both modify `index.js`
-- **3A + 3B** — both modify `index.js` and `lambda-api.md`
-- **4A + 4B** — both modify `generateSyntheticDeals.js`
-- **5A + 5B** — both modify `index.js`
+- **4C + 4D** — 4C modifies setup wizard, 4D modifies other LWCs, but both deploy to same SFDC org
+- **4C + 5B** — both modify `index.js`
 - Any two prompts that both modify `lambda/server/index.js`
 
 ### How to run concurrent sessions
@@ -532,7 +530,7 @@ Add configurable POC scenario presets that generate tailored demo data for diffe
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 4B — Full BOM History for All Synthetic Deals (depends on 1A, 3C)
+### 4B — Full BOM History for All Synthetic Deals (depends on 1A, 3C) [COMPLETE]
 
 ```
 Read lambda/server/src/data/generateSyntheticDeals.js — specifically the BOM generation section (search for "bom" in the file). Currently, only deals from 2024+ get BOM line items. Older deals have no line-item history.
@@ -605,9 +603,64 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ---
 
-## Epic 5: On-Prem Architecture
+## Epic 4.5: UX Polish & Demo Readiness
 
-### 5A — Split Lambda into Engine + Mothership (depends on 1B, 2A)
+### 4D — Fix Demo-Blocking UI Bugs (depends on 2A, 2B)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.js
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.html
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.js (if it exists)
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.html (if it exists)
+- sfdc/force-app/main/default/lwc/marginarcDealInsights/marginarcDealInsights.js
+- sfdc/force-app/main/default/lwc/marginarcDealInsights/marginarcDealInsights.html
+
+These bugs were found by taking Playwright screenshots of the live SFDC org. Fix ALL of them:
+
+1. **Phase 1 progress message is misleading.** After clicking "Score My Deal", the Phase 1 message says "0 more scored deals until margin recommendations unlock." This reads as "you need zero more deals" (i.e., you're already done). Fix the message to clearly communicate how many deals are NEEDED vs how many have been scored. Example: "You've scored X deals. Score Y more to unlock margin recommendations (50 required)." The deal count comes from the API response's phaseInfo object.
+
+2. **Remove version badges from all components.** The "v4.1" badge on Margin Advisor and "v4.0" badge on Industry Intelligence are developer artifacts. Customers should not see internal version numbers. Remove all visible version number badges/labels from:
+   - marginarcMarginAdvisor
+   - marginarcDealInsights (Industry Intelligence)
+   - marginarcManagerDashboard
+   - Any other component that shows a version number
+
+3. **Fix "Does Following MarginArc Work?" showing 0.0% Avg Margin.** In the Manager Dashboard, the "MarginArc-Aligned vs Off-target" comparison section shows "0.0%" for Avg Margin on both sides. The win rate split works (100% vs 0%) but margin shows 0.0% for both. Investigate the margin calculation — it likely needs to read from `achievedMargin` or `Fulcrum_Recommended_Margin__c` on closed deals. If the field is null/missing in the data, show "N/A" instead of "0.0%".
+
+4. **Fix "100% Alignment" header KPI contradiction.** The dashboard header shows "100% Alignment" but the warning banner says "184 deals with margin >3pp below recommendation." These can't both be true. Investigate the Alignment calculation — it may be computing against the wrong field or filtering incorrectly. The alignment metric should be: "% of deals where the rep's planned margin is within 3pp of the MarginArc recommendation."
+
+5. **Score factor pills need denominators.** After clicking "Score My Deal", the score factors show "+35 Margin aligned with recommendation" and "+18 Strong win probability" — but the rep doesn't know these are out of 40 and 25 respectively. Change to show the denominator: "+35/40 Margin alignment", "+18/25 Win probability", etc. The max values come from the API response's scoreFactors object (each factor has a `score` and `max` field).
+
+6. **ROI Report tab is broken.** The Fulcrum_ROI_Report tab (which links to marginarcBackfillReport component) shows "Page doesn't exist." Either the component doesn't exist, wasn't deployed, or has an error. Investigate and fix. If the component is a stub/placeholder, create a minimal version that shows a "Coming Soon" message with the MarginArc branding rather than a Salesforce error page.
+
+7. **Data quality column has no variance.** Every deal in the Pipeline Health table shows "EXCELLENT" quality. This means the quality scoring has no signal — if everything is excellent, the column is useless. Check how quality grades are computed (likely from predictionQuality in the API response) and verify that the synthetic data produces a realistic distribution. If the issue is that all synthetic deals have all fields populated (so quality is always high), consider adjusting the threshold or adding a field-completeness component to the grade.
+
+Run prettier and eslint before committing:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcManagerDashboard/**/*.{js,html}
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcDealInsights/**/*.{js,html}
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcBackfillReport/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarc*/**/*.js
+
+Add any new test classes to .github/workflows/deploy-sfdc.yml (both dry-run and deploy steps).
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+## Epic 5: API & Polish
+
+### 5A — Split Lambda into Engine + Mothership (depends on 1B, 2A) [DEFERRED — not needed yet]
+
+> **Deprioritized**: Premature microservice split. The monolith Lambda works fine and splitting adds
+> complexity for zero user-facing value. Revisit when on-prem deployment is actually needed.
+
+<details>
+<summary>Original prompt (click to expand)</summary>
 
 ```
 Read lambda/server/index.js thoroughly. The current Lambda function serves everything:
@@ -663,6 +716,7 @@ For on-prem deployment, customers need to self-host the scoring engine but NOT t
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
+</details>
 
 ### 5B — Create OpenAPI Spec for Engine API (depends on 3A, 3B)
 
