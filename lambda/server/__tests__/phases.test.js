@@ -15,7 +15,9 @@ const {
   getCustomerPhaseById,
   setCustomerPhase,
   checkPhaseReadiness,
-  computeDealScore
+  computeDealScore,
+  generateTopDrivers,
+  generatePhase1Guidance
 } = await import('../src/phases.js')
 
 // ── Tests ──────────────────────────────────────────────────────────
@@ -202,7 +204,7 @@ describe('checkPhaseReadiness', () => {
 // ─── computeDealScore ─────────────────────────────────────────────
 
 describe('computeDealScore', () => {
-  it('returns 0-100 score with factor breakdown', () => {
+  it('returns 0-100 score with factor breakdown including label and direction', () => {
     const result = computeDealScore({
       plannedMarginPct: 20,
       suggestedMarginPct: 20,
@@ -217,6 +219,14 @@ describe('computeDealScore', () => {
     expect(result.scoreFactors).toHaveProperty('winProbability')
     expect(result.scoreFactors).toHaveProperty('dataQuality')
     expect(result.scoreFactors).toHaveProperty('algorithmConfidence')
+
+    // Each factor must have label and direction
+    for (const key of ['marginAlignment', 'winProbability', 'dataQuality', 'algorithmConfidence']) {
+      expect(result.scoreFactors[key]).toHaveProperty('label')
+      expect(result.scoreFactors[key]).toHaveProperty('direction')
+      expect(typeof result.scoreFactors[key].label).toBe('string')
+      expect(['positive', 'negative']).toContain(result.scoreFactors[key].direction)
+    }
   })
 
   it('gives perfect alignment score when planned matches suggested', () => {
@@ -367,5 +377,145 @@ describe('computeDealScore', () => {
     expect(result.scoreFactors.winProbability.max).toBe(25)
     expect(result.scoreFactors.dataQuality.max).toBe(20)
     expect(result.scoreFactors.algorithmConfidence.max).toBe(15)
+  })
+
+  it('assigns low-ratio labels when scores are low', () => {
+    const result = computeDealScore({
+      plannedMarginPct: 50,
+      suggestedMarginPct: 5,
+      winProbability: 0,
+      confidence: 0,
+      predictionQuality: { score: 0 }
+    })
+
+    expect(result.scoreFactors.marginAlignment.label).toMatch(/significantly below/)
+    expect(result.scoreFactors.winProbability.label).toMatch(/low/)
+    expect(result.scoreFactors.dataQuality.label).toMatch(/Missing deal data/)
+    expect(result.scoreFactors.algorithmConfidence.label).toMatch(/Limited comparable/)
+    // All should be negative direction
+    expect(result.scoreFactors.marginAlignment.direction).toBe('negative')
+    expect(result.scoreFactors.winProbability.direction).toBe('negative')
+    expect(result.scoreFactors.dataQuality.direction).toBe('negative')
+    expect(result.scoreFactors.algorithmConfidence.direction).toBe('negative')
+  })
+
+  it('assigns high-ratio labels when scores are high', () => {
+    const result = computeDealScore({
+      plannedMarginPct: 20,
+      suggestedMarginPct: 20,
+      winProbability: 1.0,
+      confidence: 1.0,
+      predictionQuality: { score: 100 }
+    })
+
+    expect(result.scoreFactors.marginAlignment.label).toMatch(/well-aligned/)
+    expect(result.scoreFactors.winProbability.label).toMatch(/Strong win/)
+    expect(result.scoreFactors.dataQuality.label).toMatch(/Excellent data/)
+    expect(result.scoreFactors.algorithmConfidence.label).toMatch(/Many comparable/)
+    // All should be positive direction
+    expect(result.scoreFactors.marginAlignment.direction).toBe('positive')
+    expect(result.scoreFactors.winProbability.direction).toBe('positive')
+    expect(result.scoreFactors.dataQuality.direction).toBe('positive')
+    expect(result.scoreFactors.algorithmConfidence.direction).toBe('positive')
+  })
+
+  it('assigns mid-ratio labels for moderate scores', () => {
+    const result = computeDealScore({
+      plannedMarginPct: 16,
+      suggestedMarginPct: 20,
+      winProbability: 0.5,
+      confidence: 0.5,
+      predictionQuality: { score: 50 }
+    })
+
+    expect(result.scoreFactors.marginAlignment.label).toMatch(/right range/)
+    expect(result.scoreFactors.winProbability.label).toMatch(/Moderate win/)
+    expect(result.scoreFactors.dataQuality.label).toMatch(/Good data/)
+    expect(result.scoreFactors.algorithmConfidence.label).toMatch(/Some comparable/)
+  })
+})
+
+// ─── generateTopDrivers ──────────────────────────────────────────
+
+describe('generateTopDrivers', () => {
+  it('returns empty array for null/empty drivers', () => {
+    expect(generateTopDrivers(null)).toEqual([])
+    expect(generateTopDrivers([])).toEqual([])
+  })
+
+  it('returns up to 3 plain-English sentences sorted by absolute impact', () => {
+    const drivers = [
+      { name: 'SMB base', val: 0.20 },
+      { name: '2 competitors', val: -0.02 },
+      { name: 'Premium/Hunting registration', val: 0.06 },
+      { name: 'Services attached', val: 0.02 },
+      { name: 'High complexity', val: 0.01 }
+    ]
+    const result = generateTopDrivers(drivers)
+    expect(result).toHaveLength(3)
+    expect(result[0]).toBe('SMB segment pricing supports higher base margins')
+    expect(result[1]).toBe('Deal registration (Premium Hunting) is protecting your margin')
+    expect(result[2]).toBe('2 competitors are pressuring price — consider differentiation')
+  })
+
+  it('falls back to generic sentence for unknown driver names', () => {
+    const drivers = [{ name: 'Some unknown driver', val: 0.05 }]
+    const result = generateTopDrivers(drivers)
+    expect(result).toHaveLength(1)
+    expect(result[0]).toBe('Some unknown driver is influencing the recommendation')
+  })
+
+  it('returns fewer than 3 if fewer drivers exist', () => {
+    const drivers = [{ name: 'Services attached', val: 0.02 }]
+    const result = generateTopDrivers(drivers)
+    expect(result).toHaveLength(1)
+  })
+})
+
+// ─── generatePhase1Guidance ──────────────────────────────────────
+
+describe('generatePhase1Guidance', () => {
+  it('returns empty array for null/empty drivers', () => {
+    expect(generatePhase1Guidance(null, {})).toEqual([])
+    expect(generatePhase1Guidance([], {})).toEqual([])
+  })
+
+  it('includes deal strengths from top positive driver', () => {
+    const drivers = [
+      { name: 'Premium/Hunting registration', val: 0.06 },
+      { name: '2 competitors', val: -0.02 }
+    ]
+    const result = generatePhase1Guidance(drivers, { dealRegType: 'PremiumHunting', competitors: '2' })
+    expect(result.some(g => g.startsWith('Deal strengths:'))).toBe(true)
+  })
+
+  it('includes watch-out from top negative driver', () => {
+    const drivers = [
+      { name: 'Premium/Hunting registration', val: 0.06 },
+      { name: '3+ competitors', val: -0.035 }
+    ]
+    const result = generatePhase1Guidance(drivers, { dealRegType: 'PremiumHunting', competitors: '3+' })
+    expect(result.some(g => g.startsWith('Watch out for:'))).toBe(true)
+  })
+
+  it('adds registration tip when dealRegType is NotRegistered', () => {
+    const drivers = [{ name: 'No registration benefit', val: 0 }]
+    const result = generatePhase1Guidance(drivers, { dealRegType: 'NotRegistered', competitors: '1' })
+    expect(result).toContain('Registering this deal could improve your margin position')
+  })
+
+  it('adds competition tip when competitors >= 3', () => {
+    const drivers = [{ name: '3+ competitors', val: -0.035 }]
+    const result = generatePhase1Guidance(drivers, { dealRegType: 'PremiumHunting', competitors: '3+' })
+    expect(result).toContain('With multiple competitors, focus on value differentiation')
+  })
+
+  it('returns at most 3 items', () => {
+    const drivers = [
+      { name: 'SMB base', val: 0.20 },
+      { name: '3+ competitors', val: -0.035 }
+    ]
+    const result = generatePhase1Guidance(drivers, { dealRegType: 'NotRegistered', competitors: '3+' })
+    expect(result.length).toBeLessThanOrEqual(3)
   })
 })

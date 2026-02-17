@@ -37,7 +37,7 @@ import docsContentRouter from './src/docs/content.js'
 import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, invalidateDealsCache } from './src/analytics.js'
 
 // Phase system
-import { ensurePhaseSchema, getCustomerPhase, computeDealScore } from './src/phases.js'
+import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrivers, generatePhase1Guidance } from './src/phases.js'
 
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, ensureMfaSchema, query as dbQuery } from './src/licensing/db.js'
@@ -556,11 +556,17 @@ app.post('/api/recommend', async (req,res)=> {
       })
     }
 
+    // Generate top drivers as plain-English sentences
+    const topDrivers = generateTopDrivers(response.drivers)
+
     // Phase 1: Score Only — return deal score but suppress margin recommendation
     if (phase === 1) {
+      const phase1Guidance = generatePhase1Guidance(response.drivers, input)
       return res.json({
         dealScore,
         scoreFactors,
+        topDrivers,
+        phase1Guidance,
         dataQuality: predictionQuality,
         suggestedMarginPct: null,
         suggestedPrice: null,
@@ -587,6 +593,7 @@ app.post('/api/recommend', async (req,res)=> {
       predictionQuality,
       dealScore,
       scoreFactors,
+      topDrivers,
       phaseInfo: { current: phase }
     }
 

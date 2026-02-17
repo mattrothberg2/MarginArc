@@ -150,6 +150,146 @@ export async function checkPhaseReadiness(customerId) {
 }
 
 // ---------------------------------------------------------------------------
+// Factor label lookups (score/max ratio → human-readable sentence)
+// ---------------------------------------------------------------------------
+
+const FACTOR_LABELS = {
+  marginAlignment: (ratio) => {
+    if (ratio < 0.33) return 'Your margin is significantly below market for this deal profile'
+    if (ratio <= 0.66) return 'Your margin is in the right range but could be optimized'
+    return 'Your margin is well-aligned with market benchmarks'
+  },
+  winProbability: (ratio) => {
+    if (ratio < 0.33) return 'Win probability is low — competitive pressure or pricing risk'
+    if (ratio <= 0.66) return 'Moderate win probability — deal structure is reasonable'
+    return 'Strong win probability — deal is well-positioned'
+  },
+  dataQuality: (ratio) => {
+    if (ratio < 0.33) return 'Missing deal data is reducing scoring accuracy — fill in more fields'
+    if (ratio <= 0.66) return 'Good data coverage — a few more fields would improve accuracy'
+    return 'Excellent data quality — scoring is highly confident'
+  },
+  algorithmConfidence: (ratio) => {
+    if (ratio < 0.33) return 'Limited comparable deals — recommendation based on general benchmarks'
+    if (ratio <= 0.66) return 'Some comparable deals found — recommendation is moderately confident'
+    return 'Many comparable deals — recommendation is highly confident'
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Driver name → plain-English sentence mapping (deterministic lookup)
+// ---------------------------------------------------------------------------
+
+const DRIVER_SENTENCES = {
+  // Segment bases
+  'SMB base': 'SMB segment pricing supports higher base margins',
+  'Mid-market base': 'Mid-market segment provides a moderate margin baseline',
+  'Enterprise base': 'Enterprise segment typically has compressed base margins',
+  // Deal registration
+  'Premium/Hunting registration': 'Deal registration (Premium Hunting) is protecting your margin',
+  'Standard/Teaming registration': 'Deal registration (Standard/Teaming) provides some margin protection',
+  'No registration benefit': 'No deal registration — registering could improve your margin position',
+  // Competition
+  'No competitors': 'No direct competition allows stronger margin positioning',
+  '1 competitor': 'Single competitor — balanced competitive pressure',
+  '2 competitors': '2 competitors are pressuring price — consider differentiation',
+  '3+ competitors': '3+ competitors creating significant price pressure',
+  // Value-add
+  'High VAR value-add': 'High value-add justifies premium margin',
+  'Medium VAR value-add': 'Medium value-add supports moderate margin',
+  // Relationship
+  'Strategic relationship': 'Strategic relationship supports margin confidence',
+  'Good relationship': 'Good relationship provides moderate margin support',
+  // Price sensitivity
+  'High price sensitivity': 'Customer is price-sensitive — margin pressure expected',
+  'Low price sensitivity': 'Low price sensitivity supports higher margins',
+  // Customer loyalty
+  'High customer loyalty': 'High customer loyalty reduces competitive risk',
+  'Low customer loyalty': 'Low customer loyalty increases switching risk',
+  // Product category
+  'Services category': 'Services category typically supports higher margins',
+  'Software/Cloud': 'Software/Cloud category supports moderate margin uplift',
+  'Complex solution': 'Complex solution mix supports margin premium',
+  // Solution complexity
+  'High complexity': 'High solution complexity justifies margin premium',
+  'Low complexity': 'Low complexity limits margin justification',
+  // Strategic importance
+  'High strategic importance (accept lower)': 'Strategic importance suggests accepting lower margin for long-term value',
+  // Deal urgency
+  'High deal urgency': 'High deal urgency supports stronger pricing',
+  'Low deal urgency': 'Low deal urgency — buyer has time to shop alternatives',
+  // New logo
+  'New logo deal': 'New logo deal — margin concession to acquire the account',
+  // Differentiation
+  'Strong solution differentiation': 'Strong differentiation supports premium pricing',
+  'Weak solution differentiation': 'Weak differentiation limits pricing power',
+  // Tech sophistication
+  'High tech sophistication': 'Tech-savvy buyer may push back on pricing',
+  'Low tech sophistication': 'Lower tech sophistication reduces price scrutiny',
+  // Deal size
+  'XL deal size': 'Extra-large deal size compresses margin expectations',
+  'Large deal size': 'Large deal size creates some margin compression',
+  'Small deal premium': 'Small deal size supports higher margin rates',
+  'Mega deal compression': 'Mega deal compression reduces achievable margin',
+  // Services
+  'Services attached': 'Services attached typically support higher blended margins',
+  'Services uplift on hardware': 'Services on hardware/complex deals boost blended margin',
+  // Timing
+  'Quarter-end timing': 'Quarter-end timing may provide additional vendor incentives',
+  // Displacement
+  'Displacement deal': 'Displacement deal requires more aggressive pricing',
+}
+
+/**
+ * Convert a list of drivers [{name, val}] into top 3 plain-English sentences.
+ * Sorts by absolute impact and uses deterministic lookup.
+ */
+export function generateTopDrivers(drivers) {
+  if (!Array.isArray(drivers) || drivers.length === 0) return []
+
+  return drivers
+    .slice() // don't mutate original
+    .sort((a, b) => Math.abs(b.val) - Math.abs(a.val))
+    .slice(0, 3)
+    .map(d => DRIVER_SENTENCES[d.name] || `${d.name} is influencing the recommendation`)
+}
+
+/**
+ * Generate Phase 1 directional guidance from drivers and deal context.
+ * Returns 2-3 tips when suggestedMarginPct is null (Phase 1).
+ */
+export function generatePhase1Guidance(drivers, input) {
+  if (!Array.isArray(drivers) || drivers.length === 0) return []
+
+  const sorted = drivers.slice().sort((a, b) => Math.abs(b.val) - Math.abs(a.val))
+  const guidance = []
+
+  // Top positive drivers → "Deal strengths: ..."
+  const positives = sorted.filter(d => d.val > 0)
+  if (positives.length > 0) {
+    guidance.push(`Deal strengths: ${positives[0].name}`)
+  }
+
+  // Top negative drivers → "Watch out for: ..."
+  const negatives = sorted.filter(d => d.val < 0)
+  if (negatives.length > 0) {
+    guidance.push(`Watch out for: ${negatives[0].name}`)
+  }
+
+  // Contextual tips
+  if (input?.dealRegType === 'NotRegistered') {
+    guidance.push('Registering this deal could improve your margin position')
+  }
+
+  const competitorCount = input?.competitors === '3+' ? 4 : parseInt(input?.competitors || '0', 10)
+  if (competitorCount >= 3) {
+    guidance.push('With multiple competitors, focus on value differentiation')
+  }
+
+  return guidance.slice(0, 3)
+}
+
+// ---------------------------------------------------------------------------
 // Deal score computation (0–100)
 // ---------------------------------------------------------------------------
 
@@ -199,14 +339,23 @@ export function computeDealScore({ plannedMarginPct, suggestedMarginPct, winProb
     clamp(confScore, 0, 15)
   )
 
+  const factors = {
+    marginAlignment: { score: Math.round(clamp(alignmentScore, 0, 40)), max: 40 },
+    winProbability: { score: Math.round(clamp(winScore, 0, 25)), max: 25 },
+    dataQuality: { score: Math.round(clamp(dqScore, 0, 20)), max: 20 },
+    algorithmConfidence: { score: Math.round(clamp(confScore, 0, 15)), max: 15 }
+  }
+
+  // Add human-readable labels and direction to each factor
+  for (const [key, factor] of Object.entries(factors)) {
+    const ratio = factor.max > 0 ? factor.score / factor.max : 0
+    factor.label = FACTOR_LABELS[key](ratio)
+    factor.direction = ratio >= 0.5 ? 'positive' : 'negative'
+  }
+
   return {
     dealScore: clamp(total, 0, 100),
-    scoreFactors: {
-      marginAlignment: { score: Math.round(clamp(alignmentScore, 0, 40)), max: 40 },
-      winProbability: { score: Math.round(clamp(winScore, 0, 25)), max: 25 },
-      dataQuality: { score: Math.round(clamp(dqScore, 0, 20)), max: 20 },
-      algorithmConfidence: { score: Math.round(clamp(confScore, 0, 15)), max: 15 }
-    }
+    scoreFactors: factors
   }
 }
 
