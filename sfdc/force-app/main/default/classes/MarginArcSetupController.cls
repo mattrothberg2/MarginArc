@@ -627,4 +627,164 @@ public with sharing class MarginArcSetupController {
 
     return result;
   }
+
+  /**
+   * Retrieves the current algorithm phase status from Lambda.
+   * Calls GET /admin/api/customers/:id/phase using the customer ID
+   * from Fulcrum_License__c and API URL from Fulcrum_Config__c.
+   */
+  @AuraEnabled
+  public static Map<String, Object> getAlgorithmPhaseStatus() {
+    Map<String, Object> result = new Map<String, Object>();
+
+    try {
+      Fulcrum_License__c license = Fulcrum_License__c.getOrgDefaults();
+      if (license == null || String.isBlank(license.Customer_ID__c)) {
+        result.put('success', false);
+        result.put(
+          'message',
+          'No active license found. Activate a license to view algorithm phases.'
+        );
+        return result;
+      }
+      String customerId = license.Customer_ID__c;
+
+      Fulcrum_Config__c cfg = Fulcrum_Config__c.getOrgDefaults();
+      if (cfg == null || String.isBlank(cfg.API_URL__c)) {
+        result.put('success', false);
+        result.put('message', 'API URL not configured in MarginArc Config.');
+        return result;
+      }
+
+      String baseUrl = cfg.API_URL__c;
+      Integer idx = baseUrl.indexOf('/api/');
+      if (idx > 0) {
+        baseUrl = baseUrl.substring(0, idx);
+      }
+
+      String endpoint =
+        baseUrl +
+        '/admin/api/customers/' +
+        EncodingUtil.urlEncode(customerId, 'UTF-8') +
+        '/phase';
+
+      HttpRequest req = new HttpRequest();
+      req.setEndpoint(endpoint);
+      req.setMethod('GET');
+      req.setTimeout(15000);
+      if (String.isNotBlank(cfg.API_Key__c)) {
+        req.setHeader('x-api-key', cfg.API_Key__c);
+      }
+
+      Http http = new Http();
+      HttpResponse res = http.send(req);
+
+      if (res.getStatusCode() == 200) {
+        Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(
+          res.getBody()
+        );
+        result.put('success', true);
+        result.putAll(data);
+      } else {
+        result.put('success', false);
+        result.put(
+          'message',
+          'API returned status ' + res.getStatusCode()
+        );
+      }
+    } catch (System.CalloutException e) {
+      result.put('success', false);
+      result.put(
+        'message',
+        'Network error: Unable to reach the API. Check your connection.'
+      );
+    } catch (Exception e) {
+      result.put('success', false);
+      result.put('message', 'Error: ' + e.getMessage());
+    }
+
+    return result;
+  }
+
+  /**
+   * Enables a specific algorithm phase by calling Lambda.
+   * Calls POST /admin/api/customers/:id/phase with the requested phase number.
+   */
+  @AuraEnabled
+  public static Map<String, Object> enableAlgorithmPhase(Integer phase) {
+    Map<String, Object> result = new Map<String, Object>();
+
+    try {
+      Fulcrum_License__c license = Fulcrum_License__c.getOrgDefaults();
+      if (license == null || String.isBlank(license.Customer_ID__c)) {
+        result.put('success', false);
+        result.put(
+          'message',
+          'No active license found. Activate a license first.'
+        );
+        return result;
+      }
+      String customerId = license.Customer_ID__c;
+
+      Fulcrum_Config__c cfg = Fulcrum_Config__c.getOrgDefaults();
+      if (cfg == null || String.isBlank(cfg.API_URL__c)) {
+        result.put('success', false);
+        result.put('message', 'API URL not configured in MarginArc Config.');
+        return result;
+      }
+
+      String baseUrl = cfg.API_URL__c;
+      Integer idx = baseUrl.indexOf('/api/');
+      if (idx > 0) {
+        baseUrl = baseUrl.substring(0, idx);
+      }
+
+      String endpoint =
+        baseUrl +
+        '/admin/api/customers/' +
+        EncodingUtil.urlEncode(customerId, 'UTF-8') +
+        '/phase';
+
+      HttpRequest req = new HttpRequest();
+      req.setEndpoint(endpoint);
+      req.setMethod('POST');
+      req.setHeader('Content-Type', 'application/json');
+      req.setTimeout(15000);
+      if (String.isNotBlank(cfg.API_Key__c)) {
+        req.setHeader('x-api-key', cfg.API_Key__c);
+      }
+
+      Map<String, Object> body = new Map<String, Object>();
+      body.put('phase', phase);
+      req.setBody(JSON.serialize(body));
+
+      Http http = new Http();
+      HttpResponse res = http.send(req);
+
+      if (res.getStatusCode() == 200) {
+        Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(
+          res.getBody()
+        );
+        result.put('success', true);
+        result.putAll(data);
+      } else {
+        result.put('success', false);
+        result.put(
+          'message',
+          'API returned status ' + res.getStatusCode()
+        );
+      }
+    } catch (System.CalloutException e) {
+      result.put('success', false);
+      result.put(
+        'message',
+        'Network error: Unable to reach the API. Check your connection.'
+      );
+    } catch (Exception e) {
+      result.put('success', false);
+      result.put('message', 'Error: ' + e.getMessage());
+    }
+
+    return result;
+  }
 }

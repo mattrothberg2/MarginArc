@@ -7,6 +7,8 @@ import runBackfill from "@salesforce/apex/MarginArcSetupController.runBackfill";
 import getBackfillJobStatus from "@salesforce/apex/MarginArcSetupController.getBackfillJobStatus";
 import runNightlyAnalyzer from "@salesforce/apex/MarginArcSetupController.runNightlyAnalyzer";
 import getMaturityAssessment from "@salesforce/apex/MarginArcSetupController.getMaturityAssessment";
+import getAlgorithmPhaseStatus from "@salesforce/apex/MarginArcSetupController.getAlgorithmPhaseStatus";
+import enableAlgorithmPhase from "@salesforce/apex/MarginArcSetupController.enableAlgorithmPhase";
 import loadDemoData from "@salesforce/apex/MarginArcDemoDataLoader.loadDemoData";
 
 function n(val) {
@@ -19,6 +21,7 @@ const STEP_LABELS = [
   "Data Quality",
   "Configuration",
   "Backfill",
+  "Algorithm Phases",
   "Complete"
 ];
 
@@ -28,6 +31,27 @@ const MATURITY_NAMES = [
   "Populated",
   "Operational",
   "Optimized"
+];
+
+const PHASE_DEFINITIONS = [
+  {
+    number: 1,
+    title: "Phase 1: Foundation",
+    description:
+      "Rule-based margin recommendations using OEM vendor data, deal size, and customer segment."
+  },
+  {
+    number: 2,
+    title: "Phase 2: Learning",
+    description:
+      "Historical win/loss patterns are incorporated. The engine learns from scored deals to calibrate win probability and adjust margins."
+  },
+  {
+    number: 3,
+    title: "Phase 3: Advanced",
+    description:
+      "Full BOM-level analysis with component-level margin optimization, vendor-specific cost modeling, and competitive intelligence."
+  }
 ];
 
 const BACKFILL_POLL_INTERVAL_MS = 3000;
@@ -57,6 +81,14 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   @track isNightlyRunning = false;
   @track nightlyJobComplete = false;
 
+  // ── Algorithm Phase State ──
+  @track phaseData = null;
+  @track isLoadingPhase = false;
+  @track phaseErrorMessage = "";
+  @track showPhaseConfirmModal = false;
+  @track pendingPhase = null;
+  @track isEnablingPhase = false;
+
   // ── Poll interval ref ──
   _backfillPollInterval = null;
 
@@ -77,7 +109,7 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   // ═══════════════════════════════════════════
 
   get totalWizardSteps() {
-    return 6;
+    return 7;
   }
 
   get totalChecks() {
@@ -108,12 +140,16 @@ export default class MarginarcSetupWizard extends NavigationMixin(
     return this.currentStep === 6;
   }
 
+  get isStep7() {
+    return this.currentStep === 7;
+  }
+
   get showPrevButton() {
     return this.currentStep > 1;
   }
 
   get showNextButton() {
-    return this.currentStep < 6;
+    return this.currentStep < 7;
   }
 
   handlePrevStep() {
@@ -124,7 +160,7 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   }
 
   handleNextStep() {
-    if (this.currentStep < 6) {
+    if (this.currentStep < 7) {
       this.currentStep++;
       this.onStepChange();
     }
@@ -145,6 +181,9 @@ export default class MarginarcSetupWizard extends NavigationMixin(
       this.loadFieldSuggestions();
     }
     if (this.currentStep === 6) {
+      this.loadAlgorithmPhaseStatus();
+    }
+    if (this.currentStep === 7) {
       this.loadMaturityAssessment();
     }
   }
@@ -590,7 +629,277 @@ export default class MarginarcSetupWizard extends NavigationMixin(
   }
 
   // ═══════════════════════════════════════════
-  // STEP 6: INTELLIGENCE MATURITY
+  // STEP 6: ALGORITHM PHASES
+  // ═══════════════════════════════════════════
+
+  loadAlgorithmPhaseStatus() {
+    this.isLoadingPhase = true;
+    this.phaseErrorMessage = "";
+    getAlgorithmPhaseStatus()
+      .then((data) => {
+        if (data.success) {
+          this.phaseData = data;
+        } else {
+          this.phaseErrorMessage = data.message || "Failed to load phase status.";
+          this.phaseData = null;
+        }
+      })
+      .catch((error) => {
+        this.phaseErrorMessage =
+          error.body?.message || error.message || "Failed to load phase status.";
+        this.phaseData = null;
+      })
+      .finally(() => {
+        this.isLoadingPhase = false;
+      });
+  }
+
+  get hasPhaseData() {
+    return this.phaseData != null && !this.isLoadingPhase;
+  }
+
+  get phaseError() {
+    return (
+      this.phaseErrorMessage !== "" &&
+      !this.isLoadingPhase &&
+      this.phaseData == null
+    );
+  }
+
+  get currentPhaseNumber() {
+    return this.phaseData ? n(this.phaseData.currentPhase) : 1;
+  }
+
+  get phaseIndicators() {
+    const current = this.currentPhaseNumber;
+    return PHASE_DEFINITIONS.map((def) => {
+      const isCompleted = def.number < current;
+      const isCurrent = def.number === current;
+      const isUpcoming = def.number > current;
+      const hasConnector = def.number < PHASE_DEFINITIONS.length;
+
+      let iconClass = "phase-icon";
+      let titleClass = "phase-title";
+      let descClass = "phase-desc";
+      let connectorClass = "phase-connector";
+      let containerClass = "phase-item";
+
+      if (isCompleted) {
+        iconClass += " phase-icon-completed";
+        titleClass += " phase-title-completed";
+        containerClass += " phase-item-completed";
+        connectorClass += " phase-connector-completed";
+      } else if (isCurrent) {
+        iconClass += " phase-icon-current";
+        titleClass += " phase-title-current";
+        containerClass += " phase-item-current";
+        connectorClass += " phase-connector-active";
+      } else {
+        iconClass += " phase-icon-upcoming";
+        titleClass += " phase-title-upcoming";
+        containerClass += " phase-item-upcoming";
+        connectorClass += " phase-connector-upcoming";
+      }
+
+      return {
+        number: def.number,
+        title: def.title,
+        description: def.description,
+        isCompleted,
+        isCurrent,
+        isUpcoming,
+        hasConnector,
+        iconClass,
+        titleClass,
+        descClass,
+        connectorClass,
+        containerClass
+      };
+    });
+  }
+
+  // Phase 2 requirements
+  get showPhase2Requirements() {
+    return this.hasPhaseData && this.currentPhaseNumber < 2;
+  }
+
+  get phase2ScoredDeals() {
+    if (!this.phaseData || !this.phaseData.phase2) return { required: 50, current: 0 };
+    const p2 = this.phaseData.phase2;
+    return {
+      required: n(p2.scoredDeals?.required || p2.scoredDealsRequired) || 50,
+      current: n(p2.scoredDeals?.current || p2.scoredDealsCurrent) || 0
+    };
+  }
+
+  get phase2ScoredDealsText() {
+    const d = this.phase2ScoredDeals;
+    return d.current + " of " + d.required + " scored deals";
+  }
+
+  get phase2ScoredDealsBarStyle() {
+    const d = this.phase2ScoredDeals;
+    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    return "width: " + pct + "%";
+  }
+
+  get phase2DataQuality() {
+    if (!this.phaseData || !this.phaseData.phase2) return { required: 60, current: 0 };
+    const p2 = this.phaseData.phase2;
+    return {
+      required: n(p2.dataQuality?.required || p2.dataQualityRequired) || 60,
+      current: n(p2.dataQuality?.current || p2.dataQualityCurrent) || 0
+    };
+  }
+
+  get phase2DataQualityText() {
+    const d = this.phase2DataQuality;
+    return d.current + "% of " + d.required + "% data quality";
+  }
+
+  get phase2DataQualityBarStyle() {
+    const d = this.phase2DataQuality;
+    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    return "width: " + pct + "%";
+  }
+
+  get canEnablePhase2() {
+    const deals = this.phase2ScoredDeals;
+    const quality = this.phase2DataQuality;
+    return deals.current >= deals.required && quality.current >= quality.required;
+  }
+
+  get phase2ScoredDealsBarClass() {
+    const d = this.phase2ScoredDeals;
+    return d.current >= d.required
+      ? "phase-progress-fill phase-progress-met"
+      : "phase-progress-fill";
+  }
+
+  get phase2DataQualityBarClass() {
+    const d = this.phase2DataQuality;
+    return d.current >= d.required
+      ? "phase-progress-fill phase-progress-met"
+      : "phase-progress-fill";
+  }
+
+  // Phase 3 requirements
+  get showPhase3Requirements() {
+    return this.hasPhaseData && this.currentPhaseNumber >= 2 && this.currentPhaseNumber < 3;
+  }
+
+  get phase2ActiveForPhase3() {
+    if (!this.phaseData || !this.phaseData.phase3) return false;
+    return this.currentPhaseNumber >= 2;
+  }
+
+  get phase2ActiveText() {
+    return this.phase2ActiveForPhase3 ? "Active" : "Not active";
+  }
+
+  get phase2ActiveStatusClass() {
+    return this.phase2ActiveForPhase3
+      ? "phase-req-value phase-req-met"
+      : "phase-req-value phase-req-unmet";
+  }
+
+  get phase3BomDeals() {
+    if (!this.phaseData || !this.phaseData.phase3) return { required: 20, current: 0 };
+    const p3 = this.phaseData.phase3;
+    return {
+      required: n(p3.bomDeals?.required || p3.bomDealsRequired) || 20,
+      current: n(p3.bomDeals?.current || p3.bomDealsCurrent) || 0
+    };
+  }
+
+  get phase3BomDealsText() {
+    const d = this.phase3BomDeals;
+    return d.current + " of " + d.required + " deals with BOM data";
+  }
+
+  get phase3BomDealsBarStyle() {
+    const d = this.phase3BomDeals;
+    const pct = d.required > 0 ? Math.min(100, Math.round((d.current / d.required) * 100)) : 0;
+    return "width: " + pct + "%";
+  }
+
+  get phase3BomDealsBarClass() {
+    const d = this.phase3BomDeals;
+    return d.current >= d.required
+      ? "phase-progress-fill phase-progress-met"
+      : "phase-progress-fill";
+  }
+
+  get canEnablePhase3() {
+    const bom = this.phase3BomDeals;
+    return this.phase2ActiveForPhase3 && bom.current >= bom.required;
+  }
+
+  get isPhase3Active() {
+    return this.hasPhaseData && this.currentPhaseNumber >= 3;
+  }
+
+  get phaseDescriptions() {
+    return PHASE_DEFINITIONS;
+  }
+
+  // Phase enable handlers
+  handleEnablePhase2() {
+    this.pendingPhase = 2;
+    this.showPhaseConfirmModal = true;
+  }
+
+  handleEnablePhase3() {
+    this.pendingPhase = 3;
+    this.showPhaseConfirmModal = true;
+  }
+
+  get phaseConfirmMessage() {
+    if (this.pendingPhase === 2) {
+      return "Enabling Phase 2 activates the Learning algorithm. Reps will see margin recommendations that incorporate historical win/loss patterns from your scored deals. Recommendations may shift as the engine recalibrates based on your data. This change takes effect immediately.";
+    }
+    if (this.pendingPhase === 3) {
+      return "Enabling Phase 3 activates Advanced BOM-level analysis. Reps will see component-level margin breakdowns and vendor-specific cost recommendations. The Margin Advisor widget will display additional BOM fields. This change takes effect immediately.";
+    }
+    return "";
+  }
+
+  handleClosePhaseModal() {
+    this.showPhaseConfirmModal = false;
+    this.pendingPhase = null;
+  }
+
+  handleModalContentClick(event) {
+    event.stopPropagation();
+  }
+
+  handleConfirmEnablePhase() {
+    if (!this.pendingPhase) return;
+    this.isEnablingPhase = true;
+    enableAlgorithmPhase({ phase: this.pendingPhase })
+      .then((result) => {
+        if (result.success) {
+          this.showSuccess("Phase " + this.pendingPhase + " enabled successfully");
+          this.showPhaseConfirmModal = false;
+          this.pendingPhase = null;
+          this.loadAlgorithmPhaseStatus();
+        } else {
+          this.showError(
+            "Failed to enable phase",
+            { message: result.message }
+          );
+        }
+      })
+      .catch((error) => {
+        this.showError("Failed to enable phase", error);
+      })
+      .finally(() => {
+        this.isEnablingPhase = false;
+      });
+  }
+
+  // ═══════════════════════════════════════════
+  // STEP 7: INTELLIGENCE MATURITY
   // ═══════════════════════════════════════════
 
   loadMaturityAssessment() {

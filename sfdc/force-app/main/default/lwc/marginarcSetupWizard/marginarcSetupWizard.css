@@ -1398,4 +1398,383 @@
     flex: 1;
     padding: 8px 12px;
   }
+
+  .phase-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .phase-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 13px;
+  }
+
+  .phase-connector {
+    display: none;
+  }
+
+  .phase-desc-card {
+    padding: 12px;
+  }
+
+  .phase-modal {
+    width: 95%;
+    margin: 20px auto;
+    max-height: calc(100vh - 40px);
+  }
+}
+
+/* ═══════════════════════════════════════════
+   STEP 6: ALGORITHM PHASES
+   ═══════════════════════════════════════════ */
+
+/* Phase Track */
+.phase-track {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 24px 0;
+  position: relative;
+}
+
+.phase-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px 0;
+  position: relative;
+}
+
+.phase-item-completed {
+  opacity: 1;
+}
+
+.phase-item-current {
+  opacity: 1;
+}
+
+.phase-item-upcoming {
+  opacity: 0.55;
+}
+
+.phase-icon {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.phase-icon-completed {
+  background: var(--green-500, #22c55e);
+  color: #fff;
+}
+
+.phase-icon-current {
+  background: var(--teal-500, #02b1b5);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(2, 177, 181, 0.2);
+}
+
+.phase-icon-upcoming {
+  background: var(--slate-200, #e2e8f0);
+  color: var(--slate-500, #64748b);
+}
+
+.phase-check {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.phase-number {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.phase-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.phase-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--navy-800, #1e293b);
+}
+
+.phase-title-completed {
+  color: var(--green-600, #16a34a);
+}
+
+.phase-title-current {
+  color: var(--teal-500, #02b1b5);
+}
+
+.phase-title-upcoming {
+  color: var(--slate-500, #64748b);
+}
+
+.phase-desc {
+  font-size: 13px;
+  color: var(--slate-500, #64748b);
+  line-height: 1.5;
+}
+
+.phase-connector {
+  position: absolute;
+  left: 19px;
+  top: 56px;
+  bottom: -16px;
+  width: 2px;
+  background: var(--slate-200, #e2e8f0);
+}
+
+.phase-connector-completed {
+  background: var(--green-500, #22c55e);
+}
+
+.phase-connector-active {
+  background: linear-gradient(
+    to bottom,
+    var(--teal-500, #02b1b5),
+    var(--slate-200, #e2e8f0)
+  );
+}
+
+.phase-connector-upcoming {
+  background: var(--slate-200, #e2e8f0);
+}
+
+/* Phase Requirements */
+.phase-requirements {
+  background: var(--slate-50, #f8fafc);
+  border: 1px solid var(--slate-200, #e2e8f0);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 16px 0;
+}
+
+.phase-req-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--navy-800, #1e293b);
+  margin: 0 0 16px 0;
+}
+
+.phase-req-item {
+  margin-bottom: 14px;
+}
+
+.phase-req-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.phase-req-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-600, #475569);
+}
+
+.phase-req-value {
+  font-size: 13px;
+  color: var(--slate-500, #64748b);
+  font-weight: 500;
+}
+
+.phase-req-met {
+  color: var(--green-600, #16a34a);
+  font-weight: 600;
+}
+
+.phase-req-unmet {
+  color: var(--red-500, #ef4444);
+  font-weight: 600;
+}
+
+.phase-progress-track {
+  height: 8px;
+  background: var(--slate-200, #e2e8f0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.phase-progress-fill {
+  height: 100%;
+  background: var(--teal-500, #02b1b5);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+
+.phase-progress-met {
+  background: var(--green-500, #22c55e);
+}
+
+.phase-req-actions {
+  margin-top: 16px;
+  text-align: right;
+}
+
+/* Phase Complete Banner */
+.phase-complete-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, #ecfdf5, #f0fdfa);
+  border: 1px solid var(--green-200, #bbf7d0);
+  border-radius: 10px;
+  padding: 16px 20px;
+  margin: 16px 0;
+}
+
+.phase-complete-icon {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  background: var(--green-500, #22c55e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.phase-complete-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--green-700, #15803d);
+}
+
+/* Phase Descriptions */
+.phase-descriptions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.phase-desc-card {
+  background: #fff;
+  border: 1px solid var(--slate-200, #e2e8f0);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.phase-desc-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-800, #1e293b);
+  margin: 0 0 6px 0;
+}
+
+.phase-desc-text {
+  font-size: 12px;
+  color: var(--slate-500, #64748b);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ═══════════════════════════════════════════
+   PHASE CONFIRMATION MODAL
+   ═══════════════════════════════════════════ */
+
+.phase-modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 24px;
+}
+
+.phase-modal {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+}
+
+.phase-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--slate-200, #e2e8f0);
+}
+
+.phase-modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--navy-900, #0f172a);
+  margin: 0;
+}
+
+.phase-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--slate-400, #94a3b8);
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+
+.phase-modal-close:hover {
+  background: var(--slate-100, #f1f5f9);
+  color: var(--slate-600, #475569);
+}
+
+.phase-modal-body {
+  padding: 24px;
+}
+
+.phase-modal-text {
+  font-size: 14px;
+  color: var(--slate-600, #475569);
+  line-height: 1.65;
+  margin: 0;
+}
+
+.phase-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--slate-200, #e2e8f0);
+  background: var(--slate-50, #f8fafc);
+}
+
+/* Phase descriptions responsive */
+@media (max-width: 768px) {
+  .phase-descriptions {
+    grid-template-columns: 1fr;
+  }
 }
