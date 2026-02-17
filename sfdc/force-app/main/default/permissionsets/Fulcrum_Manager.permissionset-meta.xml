@@ -436,9 +436,13 @@
         <viewAllRecords>true</viewAllRecords>
     </objectPermissions>
 
-    <!-- Tab Visibility for Manager Dashboard -->
+    <!-- Tab Visibility for Manager Dashboard and ROI Report -->
     <tabSettings>
         <tab>Fulcrum_Manager_Dashboard</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
+    <tabSettings>
+        <tab>Fulcrum_ROI_Report</tab>
         <visibility>Visible</visibility>
     </tabSettings>
 </PermissionSet>
