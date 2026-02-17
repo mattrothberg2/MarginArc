@@ -496,7 +496,7 @@ app.post('/api/recommend', async (req,res)=> {
       structuredLog('warn', 'phase_lookup_failed', { orgId, error: phaseErr?.message })
     }
 
-    const deals = await fetchAllDeals(sampleDeals)
+    const deals = await fetchAllDeals(sampleDeals, orgId)
     const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
     const algorithmMarginPct = rec.suggestedMarginPct
     const algorithmSuggestedPrice = rec.suggestedPrice
@@ -661,9 +661,10 @@ app.post('/api/deals', async (req,res)=> {
       }))
     }
     // Persist to DB before responding (Lambda freezes after response, killing fire-and-forget promises)
+    const orgId = req.headers['x-org-id'] || null
     try {
-      await insertRecordedDeal(deal)
-      invalidateDealsCache()
+      await insertRecordedDeal(deal, orgId)
+      invalidateDealsCache(orgId)
     } catch (err) {
       console.error('Failed to persist deal:', err.message)
     }

@@ -93,10 +93,12 @@ describe('ensureDealsSchema', () => {
   it('runs CREATE TABLE and CREATE INDEX queries', async () => {
     mockQuery.mockResolvedValue({ rows: [], rowCount: 0 })
     await ensureDealsSchema()
-    expect(mockQuery).toHaveBeenCalledTimes(3)
+    expect(mockQuery).toHaveBeenCalledTimes(5)
     expect(mockQuery.mock.calls[0][0]).toMatch(/CREATE TABLE IF NOT EXISTS recorded_deals/)
     expect(mockQuery.mock.calls[1][0]).toMatch(/CREATE INDEX IF NOT EXISTS idx_recorded_deals_created_at/)
     expect(mockQuery.mock.calls[2][0]).toMatch(/CREATE INDEX IF NOT EXISTS idx_recorded_deals_status/)
+    expect(mockQuery.mock.calls[3][0]).toMatch(/ALTER TABLE recorded_deals ADD COLUMN IF NOT EXISTS org_id/)
+    expect(mockQuery.mock.calls[4][0]).toMatch(/CREATE INDEX IF NOT EXISTS idx_recorded_deals_org_id/)
   })
 })
 
@@ -109,7 +111,7 @@ describe('insertRecordedDeal', () => {
     const [sql, params] = mockQuery.mock.calls[0]
     expect(sql).toMatch(/INSERT INTO recorded_deals/)
     expect(sql).toMatch(/RETURNING id/)
-    expect(params).toHaveLength(27)
+    expect(params).toHaveLength(28)
     // Spot-check key parameter positions
     expect(params[0]).toBe('Enterprise')          // segment
     expect(params[1]).toBe('Manufacturing & Automotive') // industry
@@ -119,6 +121,7 @@ describe('insertRecordedDeal', () => {
     expect(params[19]).toBe(JSON.stringify(['CDW', 'SHI'])) // competitor_names
     expect(params[23]).toBe(0.22)                  // achieved_margin
     expect(params[24]).toBe('Won')                 // status
+    expect(params[27]).toBe('global')              // org_id default
   })
 
   it('handles null optional fields', async () => {

@@ -37,11 +37,14 @@ export async function ensureDealsSchema() {
   `)
   await query(`CREATE INDEX IF NOT EXISTS idx_recorded_deals_created_at ON recorded_deals(created_at)`)
   await query(`CREATE INDEX IF NOT EXISTS idx_recorded_deals_status ON recorded_deals(status)`)
+  // Per-org tenant isolation: add org_id column to existing table (safe for production data)
+  await query(`ALTER TABLE recorded_deals ADD COLUMN IF NOT EXISTS org_id TEXT DEFAULT 'global'`)
+  await query(`CREATE INDEX IF NOT EXISTS idx_recorded_deals_org_id ON recorded_deals(org_id)`)
   console.log('Deals schema ensured')
 }
 
 // ── Insert a recorded deal ─────────────────────────────────────────
-export async function insertRecordedDeal(deal) {
+export async function insertRecordedDeal(deal, orgId) {
   const result = await query(
     `INSERT INTO recorded_deals (
       segment, industry, product_category, deal_reg_type, competitors,
@@ -51,9 +54,9 @@ export async function insertRecordedDeal(deal) {
       is_new_logo, solution_differentiation, oem_cost,
       oem, services_attached, quarter_end, competitor_names,
       bom_line_count, bom_avg_margin_pct, has_manual_bom,
-      achieved_margin, status, loss_reason, bom_lines
+      achieved_margin, status, loss_reason, bom_lines, org_id
     ) VALUES (
-      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27
+      $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28
     ) RETURNING id`,
     [
       deal.segment,
@@ -82,16 +85,16 @@ export async function insertRecordedDeal(deal) {
       deal.achievedMargin,
       deal.status,
       deal.lossReason || '',
-      deal.bomLines ? JSON.stringify(deal.bomLines) : null
+      deal.bomLines ? JSON.stringify(deal.bomLines) : null,
+      orgId || 'global'
     ]
   )
   return result.rows[0].id
 }
 
-// ── Cached read ────────────────────────────────────────────────────
+// ── Per-org cached read ─────────────────────────────────────────────
 const CACHE_TTL_MS = 5 * 60 * 1000 // 5 minutes
-let cachedDeals = null
-let cacheTimestamp = 0
+const dealsCache = new Map() // keyed by orgId (or 'global' for unfiltered)
 
 function rowToDeal(row) {
   return {
@@ -126,31 +129,57 @@ function rowToDeal(row) {
   }
 }
 
-export async function getRecordedDeals() {
+/**
+ * Get recorded deals, optionally filtered by orgId.
+ * If orgId is provided, only that org's deals are returned.
+ * If orgId is omitted/null, all deals are returned (admin/analytics use).
+ */
+export async function getRecordedDeals(orgId) {
+  const cacheKey = orgId || 'global'
   const now = Date.now()
-  if (cachedDeals && (now - cacheTimestamp) < CACHE_TTL_MS) {
-    return cachedDeals
+  const cached = dealsCache.get(cacheKey)
+  if (cached && (now - cached.timestamp) < CACHE_TTL_MS) {
+    return cached.deals
   }
   try {
-    const result = await query('SELECT * FROM recorded_deals ORDER BY created_at')
-    cachedDeals = result.rows.map(rowToDeal)
-    cacheTimestamp = Date.now()
-    return cachedDeals
+    let result
+    if (orgId) {
+      result = await query('SELECT * FROM recorded_deals WHERE org_id = $1 ORDER BY created_at', [orgId])
+    } else {
+      result = await query('SELECT * FROM recorded_deals ORDER BY created_at')
+    }
+    const deals = result.rows.map(rowToDeal)
+    dealsCache.set(cacheKey, { deals, timestamp: Date.now() })
+    return deals
   } catch (err) {
     console.error('Failed to load recorded deals from DB:', err.message)
-    return cachedDeals || []
+    return cached?.deals || []
   }
 }
 
-export function invalidateDealsCache() {
-  cachedDeals = null
-  cacheTimestamp = 0
+/**
+ * Invalidate the deals cache.
+ * If orgId is provided, invalidates only that org's cache entry (plus the global entry).
+ * If orgId is omitted, clears the entire cache.
+ */
+export function invalidateDealsCache(orgId) {
+  if (orgId) {
+    dealsCache.delete(orgId)
+    dealsCache.delete('global') // global aggregate is also stale
+  } else {
+    dealsCache.clear()
+  }
 }
 
 // ── Combined deal pool ─────────────────────────────────────────────
-export async function getAllDeals(sampleDeals) {
+/**
+ * Get all deals (sample + recorded), optionally filtered by orgId.
+ * When orgId is provided, only that org's recorded deals are included
+ * alongside the shared sample data — preventing cross-customer data leakage.
+ */
+export async function getAllDeals(sampleDeals, orgId) {
   try {
-    const recorded = await getRecordedDeals()
+    const recorded = await getRecordedDeals(orgId)
     return sampleDeals.concat(recorded)
   } catch (err) {
     console.error('Failed to get all deals:', err.message)

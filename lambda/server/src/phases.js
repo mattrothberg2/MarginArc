@@ -83,25 +83,29 @@ export async function checkPhaseReadiness(customerId) {
   )
   const orgIds = orgResult.rows.map(r => r.org_id).filter(Boolean)
 
-  // Count recorded deals and compute average data quality
+  // Count recorded deals and compute average data quality for this customer's org(s)
   let totalDeals = 0
   let dealsWithBom = 0
   let qualitySum = 0
 
   if (orgIds.length > 0) {
-    // For now, recorded_deals is global (not per-org), so count all.
-    // When per-org deal tracking is added, filter by org_id.
+    // Build placeholders for org_id IN (...) filter
+    const placeholders = orgIds.map((_, i) => `$${i + 1}`).join(', ')
+    const orgFilter = `WHERE org_id IN (${placeholders})`
+
     const dealCountResult = await query(
-      `SELECT COUNT(*) as total FROM recorded_deals`
+      `SELECT COUNT(*) as total FROM recorded_deals ${orgFilter}`,
+      orgIds
     )
     totalDeals = parseInt(dealCountResult.rows[0].total, 10)
 
     const bomCountResult = await query(
-      `SELECT COUNT(*) as total FROM recorded_deals WHERE bom_line_count > 0`
+      `SELECT COUNT(*) as total FROM recorded_deals ${orgFilter} AND bom_line_count > 0`,
+      orgIds
     )
     dealsWithBom = parseInt(bomCountResult.rows[0].total, 10)
 
-    // Compute average data quality score from recorded deals.
+    // Compute average data quality score from this customer's recorded deals.
     // A deal is considered "high quality" if it has most optional fields filled.
     // We approximate quality by counting non-null optional fields per deal.
     const qualityResult = await query(`
@@ -118,8 +122,8 @@ export async function checkPhaseReadiness(customerId) {
         CASE WHEN bom_line_count > 0 THEN 10 ELSE 0 END +
         34
       ) as avg_quality
-      FROM recorded_deals
-    `)
+      FROM recorded_deals ${orgFilter}
+    `, orgIds)
     qualitySum = qualityResult.rows[0].avg_quality
       ? parseFloat(qualityResult.rows[0].avg_quality)
       : 0
