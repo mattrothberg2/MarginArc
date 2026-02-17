@@ -162,13 +162,6 @@ components:
         - oemCost
         - productCategory
         - customerSegment
-        - relationshipStrength
-        - customerTechSophistication
-        - dealRegType
-        - competitors
-        - valueAdd
-        - solutionComplexity
-        - varStrategicImportance
         - customerIndustry
       properties:
         oem:
@@ -184,19 +177,40 @@ components:
         customerSegment:
           $ref: '#/components/schemas/CustomerSegment'
         relationshipStrength:
-          $ref: '#/components/schemas/RelationshipStrength'
+          allOf:
+            - $ref: '#/components/schemas/RelationshipStrength'
+          default: Good
+          description: Defaults to "Good" if omitted.
         customerTechSophistication:
-          $ref: '#/components/schemas/CustomerTechSophistication'
+          allOf:
+            - $ref: '#/components/schemas/CustomerTechSophistication'
+          default: Medium
+          description: Defaults to "Medium" if omitted.
         dealRegType:
-          $ref: '#/components/schemas/DealRegType'
+          allOf:
+            - $ref: '#/components/schemas/DealRegType'
+          default: NotRegistered
+          description: Defaults to "NotRegistered" if omitted.
         competitors:
-          $ref: '#/components/schemas/Competitors'
+          allOf:
+            - $ref: '#/components/schemas/Competitors'
+          default: "1"
+          description: Defaults to "1" if omitted.
         valueAdd:
-          $ref: '#/components/schemas/ValueAdd'
+          allOf:
+            - $ref: '#/components/schemas/ValueAdd'
+          default: Medium
+          description: Defaults to "Medium" if omitted.
         solutionComplexity:
-          $ref: '#/components/schemas/SolutionComplexity'
+          allOf:
+            - $ref: '#/components/schemas/SolutionComplexity'
+          default: Medium
+          description: Defaults to "Medium" if omitted.
         varStrategicImportance:
-          $ref: '#/components/schemas/VarStrategicImportance'
+          allOf:
+            - $ref: '#/components/schemas/VarStrategicImportance'
+          default: Medium
+          description: Defaults to "Medium" if omitted.
         customerIndustry:
           $ref: '#/components/schemas/CustomerIndustry'
         customerPriceSensitivity:
@@ -875,26 +889,38 @@ paths:
                     $ref: '#/components/schemas/BomLineInput'
                   description: Optional manual BOM lines. When provided, the blended BOM margin overrides the algorithm margin.
                   maxItems: 50
-            example:
-              input:
-                oem: Cisco
-                oemCost: 100000
-                productCategory: Hardware
-                customerSegment: MidMarket
-                dealRegType: StandardApproved
-                competitors: "1"
-                competitorNames: ["CDW"]
-                valueAdd: High
-                solutionComplexity: Medium
-                relationshipStrength: Good
-                customerIndustry: Technology
-                customerTechSophistication: Medium
-                servicesAttached: false
-                quarterEnd: false
-                isNewLogo: false
-                varStrategicImportance: Medium
-              plannedMarginPct: 15
-              bomLines: []
+            examples:
+              minimal:
+                summary: Minimal payload (only required fields)
+                value:
+                  input:
+                    oemCost: 100000
+                    productCategory: Hardware
+                    customerSegment: MidMarket
+                    customerIndustry: Technology
+                  plannedMarginPct: 15
+              full:
+                summary: Full payload with all optional fields
+                value:
+                  input:
+                    oem: Cisco
+                    oemCost: 100000
+                    productCategory: Hardware
+                    customerSegment: MidMarket
+                    dealRegType: StandardApproved
+                    competitors: "1"
+                    competitorNames: ["CDW"]
+                    valueAdd: High
+                    solutionComplexity: Medium
+                    relationshipStrength: Good
+                    customerIndustry: Technology
+                    customerTechSophistication: Medium
+                    servicesAttached: false
+                    quarterEnd: false
+                    isNewLogo: false
+                    varStrategicImportance: Medium
+                  plannedMarginPct: 15
+                  bomLines: []
       responses:
         "200":
           description: Recommendation computed successfully.
@@ -1168,22 +1194,35 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/DealRecordRequest'
-            example:
-              input:
-                oem: Cisco
-                oemCost: 100000
-                productCategory: Hardware
-                customerSegment: MidMarket
-                dealRegType: StandardApproved
-                competitors: "1"
-                valueAdd: High
-                solutionComplexity: Medium
-                relationshipStrength: Good
-                customerIndustry: Technology
-                customerTechSophistication: Medium
-                varStrategicImportance: Medium
-              achievedMarginPct: 18.5
-              status: Won
+            examples:
+              minimal:
+                summary: Minimal payload (only required fields + outcome)
+                value:
+                  input:
+                    oemCost: 100000
+                    productCategory: Hardware
+                    customerSegment: MidMarket
+                    customerIndustry: Technology
+                  achievedMarginPct: 18.5
+                  status: Won
+              full:
+                summary: Full payload with all optional fields
+                value:
+                  input:
+                    oem: Cisco
+                    oemCost: 100000
+                    productCategory: Hardware
+                    customerSegment: MidMarket
+                    dealRegType: StandardApproved
+                    competitors: "1"
+                    valueAdd: High
+                    solutionComplexity: Medium
+                    relationshipStrength: Good
+                    customerIndustry: Technology
+                    customerTechSophistication: Medium
+                    varStrategicImportance: Medium
+                  achievedMarginPct: 18.5
+                  status: Won
       responses:
         "200":
           description: Deal recorded successfully.
