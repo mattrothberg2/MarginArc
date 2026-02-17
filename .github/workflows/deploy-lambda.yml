@@ -27,9 +27,17 @@ jobs:
         with:
           node-version: "18"
 
-      - name: Install production dependencies
+      - name: Install dependencies
         working-directory: lambda/server
-        run: npm install --production
+        run: npm install
+
+      - name: Run tests
+        working-directory: lambda/server
+        run: npm test
+
+      - name: Prune dev dependencies
+        working-directory: lambda/server
+        run: npm prune --production
 
       - name: Create deployment zip
         working-directory: lambda/server
