@@ -9,6 +9,7 @@ import { fileURLToPath } from 'url'
 import { z } from 'zod'
 import swaggerUi from 'swagger-ui-express'
 import yaml from 'js-yaml'
+import { apiKeyMiddleware, validateApiKey, setQueryFn } from './src/api-keys.js'
 import { computeRecommendation } from './src/rules.js'
 import { explainRecommendation, summarizeQualitative } from './src/gemini.js'
 import { compareWithPlan } from './src/metrics.js'
@@ -39,11 +40,15 @@ import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, in
 import { ensurePhaseSchema, getCustomerPhase, computeDealScore } from './src/phases.js'
 
 // Ensure Salesforce DB schema on cold start (idempotent)
-import { ensureSalesforceSchema, ensureDocsSchema } from './src/licensing/db.js'
+import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, query as dbQuery } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
 ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
 ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
 ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
+ensureApiKeySchema().catch(err => console.error('Failed to ensure api_key schema:', err.message))
+
+// Wire up DB query function for per-customer API key lookups
+setQueryFn(dbQuery)
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -206,19 +211,17 @@ app.use('/oauth', oauthRoutes)
 
 // Scenario data endpoint for SFDC Apex callouts (API-key authed)
 // Must be defined BEFORE the JWT-authed demo-data router so GET /api/demo-data?scenario=... is caught here
-app.get('/api/demo-data', (req, res) => {
+app.get('/api/demo-data', async (req, res) => {
   const { scenario, count } = req.query
   if (!scenario) {
     return res.status(400).json({ error: 'scenario query parameter is required' })
   }
 
   // Inline API key check (this route is before the general API key middleware)
-  const apiKey = process.env.MARGINARC_API_KEY || ''
-  if (apiKey) {
-    const provided = req.headers['x-api-key'] || ''
-    if (provided !== apiKey) {
-      return res.status(401).json({ error: 'Invalid or missing API key' })
-    }
+  const provided = req.headers['x-api-key'] || ''
+  const keyValid = await validateApiKey(provided)
+  if (!keyValid) {
+    return res.status(401).json({ error: 'Invalid or missing API key' })
   }
 
   const validScenarios = ['networking-var', 'security-var', 'cloud-var', 'full-stack-var', 'services-heavy-var']
@@ -280,20 +283,10 @@ app.get('/api/demo-data', (req, res) => {
 app.use('/api/demo-data', demoDataRoutes)
 
 // API key authentication for production (applies to other /api routes)
-const MARGINARC_API_KEY = process.env.MARGINARC_API_KEY || ''
-if (MARGINARC_API_KEY) {
-  app.use('/api', (req, res, next) => {
-    if (req.path === '/health') return next()
-    // Skip API key check for licensing routes and demo-data (JWT-authed)
-    if (req.path.startsWith('/v1/license')) return next()
-    if (req.path.startsWith('/demo-data')) return next()
-    const provided = req.headers['x-api-key'] || ''
-    if (provided !== MARGINARC_API_KEY) {
-      return res.status(401).json({ error: 'Invalid or missing API key' })
-    }
-    next()
-  })
-}
+// Supports dual-key rotation: accepts requests matching either the primary or
+// secondary key loaded from SSM (with 5-min TTL cache). Falls back to the
+// MARGINARC_API_KEY env var for backwards compatibility.
+app.use('/api', apiKeyMiddleware)
 
 // Rate limiting
 const limiter = rateLimit({
