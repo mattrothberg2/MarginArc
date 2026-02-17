@@ -568,7 +568,7 @@ Expand BOM generation to all deals:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 4C — One-Click POC Data Loading in Setup Wizard (depends on 4A)
+### 4C — One-Click POC Data Loading in Setup Wizard (depends on 4A) [COMPLETE — PR #34, PR #35 prettier fix]
 
 ```
 Read these files:
