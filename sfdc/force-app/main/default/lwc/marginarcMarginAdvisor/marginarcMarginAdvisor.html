@@ -8,7 +8,7 @@
             alternative-text="Loading"
             size="medium"
           ></lightning-spinner>
-          <p class="loading-text">Scoring your deal...</p>
+          <p class="loading-text">Analyzing your deal...</p>
         </div>
       </div>
     </template>
@@ -23,50 +23,6 @@
       </div>
     </template>
 
-    <!-- Initial State - Score My Deal Button -->
-    <template lwc:if={showCalculateButton}>
-      <div class="marginarc-card">
-        <div class="initial-state">
-          <div class="marginarc-logo">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="1.5"
-            >
-              <path
-                d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"
-              />
-            </svg>
-          </div>
-          <h3 class="initial-title">MarginArc Margin Advisor</h3>
-          <p class="initial-subtitle">
-            AI-powered deal scoring for this {detectedOem} opportunity
-          </p>
-          <div class="deal-summary">
-            <span class="deal-tag">{detectedOem}</span>
-            <span class="deal-tag">{formattedAmount}</span>
-            <span class="deal-tag">{detectedSegment}</span>
-          </div>
-          <button
-            class="btn-calculate"
-            onclick={handleCalculate}
-            aria-label="Score my deal with MarginArc AI"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Score My Deal
-          </button>
-        </div>
-      </div>
-    </template>
-
     <!-- Recommendation Display -->
     <template lwc:if={hasRecommendation}>
       <div class="marginarc-card">
@@ -76,7 +32,11 @@
             <div class="score-title-group">
               <h3 class="score-main-title">Deal Score</h3>
               <span class="header-badge"
-                >{detectedOem} &bull; {detectedSegment}</span
+                >{detectedOem} &bull; {detectedSegment}<template
+                  lwc:if={isSegmentInferred}
+                >
+                  <span class="segment-estimated">(estimated)</span></template
+                ></span
               >
             </div>
           </div>
