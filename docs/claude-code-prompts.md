@@ -718,7 +718,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 </details>
 
-### 5B — Create OpenAPI Spec for Engine API (depends on 3A, 3B)
+### 5B — Create OpenAPI Spec for Engine API (depends on 3A, 3B) [COMPLETE — PR #37]
 
 ```
 Read these files to understand all API endpoints:
