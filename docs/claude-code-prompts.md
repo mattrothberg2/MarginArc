@@ -1346,7 +1346,7 @@ Verify all new tests pass alongside existing 138 tests.
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 9B — Add npm test to Lambda CI Pipeline (CTO Gap)
+### 9B — Add npm test to Lambda CI Pipeline (CTO Gap) [COMPLETE — PR #54]
 
 ```
 Read .github/workflows/deploy-lambda.yml — the current Lambda CI/CD pipeline.
