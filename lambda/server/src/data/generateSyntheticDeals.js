@@ -41,6 +41,7 @@ const customers = JSON.parse(fs.readFileSync(path.join(__dirname, 'customers.jso
 const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, 'bom_catalog.json'), 'utf-8'))
 const catalogById = new Map(catalog.map(item => [item.productId, item]))
 const presets = JSON.parse(fs.readFileSync(path.join(__dirname, 'bom_presets.json'), 'utf-8'))
+const vendorSkuData = JSON.parse(fs.readFileSync(path.join(__dirname, 'vendor_skus.json'), 'utf-8'))
 
 // ---------------------------------------------------------------------------
 // Utility functions
@@ -184,6 +185,202 @@ function createManualBomLinesRandom() {
 function createManualBomLines(options = {}) {
   if (options.preset) return createManualBomLinesFromPreset(options.preset)
   return createManualBomLinesRandom()
+}
+
+// ---------------------------------------------------------------------------
+// BOM generation from vendor_skus.json (all deals)
+// ---------------------------------------------------------------------------
+
+// Deal amount → BOM line count by deal size tier
+function bomLineCountForAmount(amount) {
+  if (amount < 50000) return randomInt(2, 4)
+  if (amount < 200000) return randomInt(4, 8)
+  if (amount < 500000) return randomInt(6, 12)
+  return randomInt(8, 20)
+}
+
+// Per-line margin ranges by BOM category (as decimals)
+const BOM_MARGIN_RANGES = {
+  'Hardware':              [0.08, 0.18],
+  'Software':              [0.12, 0.25],
+  'Cloud':                 [0.10, 0.20],
+  'Professional Services': [0.25, 0.45],
+  'Managed Services':      [0.20, 0.35],
+  'Support':               [0.12, 0.22]
+}
+
+// Line slot recipes by Lambda product category
+// weight = relative cost share; multi = can repeat for larger BOMs
+const BOM_SLOT_RECIPES = {
+  Hardware: [
+    { skuCat: 'Hardware', skuRole: 'core', bomCat: 'Hardware', weight: 5.5, multi: true },
+    { skuCat: 'Hardware', skuRole: 'services', bomCat: 'Professional Services', weight: 1.8 },
+    { skuCat: 'Hardware', skuRole: 'support', bomCat: 'Support', weight: 1.2 },
+    { skuCat: 'Software', skuRole: 'subscription', bomCat: 'Software', weight: 1.0 },
+    { skuCat: 'ProfessionalServices', skuRole: 'consulting', bomCat: 'Professional Services', weight: 0.3 },
+    { skuCat: 'ManagedServices', skuRole: 'subscription', bomCat: 'Managed Services', weight: 0.2 }
+  ],
+  Software: [
+    { skuCat: 'Software', skuRole: 'subscription', bomCat: 'Software', weight: 4.5, multi: true },
+    { skuCat: 'Software', skuRole: 'onboarding', bomCat: 'Professional Services', weight: 2.0 },
+    { skuCat: 'Software', skuRole: 'enablement', bomCat: 'Professional Services', weight: 1.5 },
+    { skuCat: 'Software', skuRole: 'support', bomCat: 'Support', weight: 1.0 },
+    { skuCat: 'ProfessionalServices', skuRole: 'consulting', bomCat: 'Professional Services', weight: 0.5 },
+    { skuCat: 'ProfessionalServices', skuRole: 'specialists', bomCat: 'Professional Services', weight: 0.5 }
+  ],
+  Cloud: [
+    { skuCat: 'Cloud', skuRole: 'capacity', bomCat: 'Cloud', weight: 4.0, multi: true },
+    { skuCat: 'Cloud', skuRole: 'managed', bomCat: 'Managed Services', weight: 2.5 },
+    { skuCat: 'Cloud', skuRole: 'optimization', bomCat: 'Software', weight: 1.5 },
+    { skuCat: 'ProfessionalServices', skuRole: 'consulting', bomCat: 'Professional Services', weight: 1.0 },
+    { skuCat: 'ManagedServices', skuRole: 'subscription', bomCat: 'Managed Services', weight: 1.0 }
+  ]
+}
+
+function pickSkuFromPool(vendorData, skuCat, skuRole, excludeSkus) {
+  const pool = vendorData?.[skuCat]?.[skuRole]
+  if (!Array.isArray(pool) || !pool.length) return null
+  const available = pool.filter(s => !excludeSkus.has(s.sku))
+  if (available.length) return available[Math.floor(Math.random() * available.length)]
+  return null
+}
+
+function computeBomQuantity(bomCat, lineCost, sku) {
+  if (bomCat === 'Hardware') {
+    if (sku && sku.listPrice > 1000) {
+      const discounted = sku.listPrice * 0.75
+      return Math.max(1, Math.round(lineCost / discounted))
+    }
+    return 1
+  }
+  if (bomCat === 'Professional Services') {
+    if (sku && sku.listPrice < 500) {
+      const rate = sku.listPrice * 0.82
+      return Math.max(8, Math.round(lineCost / rate / 4) * 4)
+    }
+    return Math.max(1, Math.round(lineCost / 250))
+  }
+  if (bomCat === 'Support') return 1
+  if (bomCat === 'Software') {
+    if (sku && sku.listPrice < 1000) {
+      return Math.max(1, Math.round(lineCost / (sku.listPrice * 0.82)))
+    }
+    return 1
+  }
+  if (bomCat === 'Cloud') return randomInt(6, 24)
+  if (bomCat === 'Managed Services') return 12
+  return 1
+}
+
+function rc(v) { return Math.round(v * 100) / 100 }
+
+function generateDealBomLines(oem, lambdaCategory, targetCount, oemCost, amount, isCompetitive) {
+  const vendorData = vendorSkuData[oem]
+  const recipe = BOM_SLOT_RECIPES[lambdaCategory] || BOM_SLOT_RECIPES.Hardware
+  const usedSkus = new Set()
+  const slots = []
+
+  // Phase 1: One slot per recipe entry (priority order)
+  for (const def of recipe) {
+    if (slots.length >= targetCount) break
+    if (!vendorData) break
+    const sku = pickSkuFromPool(vendorData, def.skuCat, def.skuRole, usedSkus)
+    if (!sku) continue
+    usedSkus.add(sku.sku)
+    slots.push({ ...def, sku })
+  }
+
+  // Phase 2: Fill remaining with multi-eligible or repeated entries
+  const multiDefs = recipe.filter(d => d.multi)
+  let attempts = 0
+  while (slots.length < targetCount && attempts < 60) {
+    attempts++
+    const def = multiDefs.length && Math.random() < 0.7 ? pick(multiDefs) : pick(recipe)
+    if (!vendorData) break
+    let sku = pickSkuFromPool(vendorData, def.skuCat, def.skuRole, usedSkus)
+    if (sku) {
+      usedSkus.add(sku.sku)
+      slots.push({ ...def, sku, weight: def.weight * (0.4 + Math.random() * 0.4) })
+    } else {
+      const pool = vendorData?.[def.skuCat]?.[def.skuRole]
+      if (pool?.length) {
+        sku = pool[Math.floor(Math.random() * pool.length)]
+        slots.push({ ...def, sku, weight: def.weight * (0.3 + Math.random() * 0.3) })
+      }
+    }
+  }
+
+  // Phase 3: Generic fallback lines if vendor data missing
+  const fallbackCats = ['Professional Services', 'Support', 'Managed Services']
+  while (slots.length < targetCount) {
+    slots.push({
+      skuCat: null, skuRole: null,
+      bomCat: fallbackCats[slots.length % fallbackCats.length],
+      weight: 0.3,
+      sku: null
+    })
+  }
+
+  // Normalize cost weights
+  const totalWeight = slots.reduce((s, sl) => s + sl.weight, 0)
+
+  // Compute deal-level margin and shift category ranges to center on it.
+  // This prevents the final price-scaling step from distorting per-line margins.
+  const dealMarginOnPrice = amount > 0 ? (amount - oemCost) / amount : 0.15
+  let weightedCatMid = 0
+  for (const slot of slots) {
+    const range = BOM_MARGIN_RANGES[slot.bomCat] || [0.10, 0.20]
+    weightedCatMid += ((range[0] + range[1]) / 2) * (slot.weight / totalWeight)
+  }
+  const marginShift = dealMarginOnPrice - weightedCatMid
+
+  // Build lines with cost distribution and shifted per-category margins
+  const lines = slots.map((slot, idx) => {
+    const costFraction = slot.weight / totalWeight
+    const lineCost = oemCost * costFraction
+
+    const range = BOM_MARGIN_RANGES[slot.bomCat] || [0.10, 0.20]
+    let mLo = range[0] + marginShift
+    let mHi = range[1] + marginShift
+    if (isCompetitive) { mLo -= 0.02; mHi -= 0.02 }
+    // Clamp to prevent unrealistic values
+    mLo = Math.max(0.02, mLo)
+    mHi = Math.max(mLo + 0.01, mHi)
+    mHi = Math.min(0.55, mHi)
+    const marginDecimal = mLo + Math.random() * (mHi - mLo)
+    const linePrice = lineCost / (1 - marginDecimal)
+    const qty = computeBomQuantity(slot.bomCat, lineCost, slot.sku)
+
+    return {
+      description: slot.sku ? slot.sku.name : `${slot.bomCat} - Item ${idx + 1}`,
+      category: slot.bomCat,
+      quantity: qty,
+      unitCost: rc(lineCost / qty),
+      unitPrice: rc(linePrice / qty),
+      marginPct: +(marginDecimal * 100).toFixed(1),
+      vendor: oem,
+      productNumber: slot.sku ? slot.sku.sku : '',
+      sortOrder: idx + 1
+    }
+  })
+
+  // Final price scaling to exactly match deal amount (should be close to 1.0 now)
+  const rawPriceTotal = lines.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
+  if (rawPriceTotal > 0 && amount > 0) {
+    const scale = amount / rawPriceTotal
+    for (const line of lines) {
+      line.unitPrice = rc(line.unitPrice * scale)
+      let newMargin = line.unitPrice > 0 ? (1 - line.unitCost / line.unitPrice) : 0
+      // Enforce minimum margin floor of 2%
+      if (newMargin < 0.02) {
+        newMargin = 0.02
+        line.unitPrice = rc(line.unitCost / (1 - 0.02))
+      }
+      line.marginPct = +(newMargin * 100).toFixed(1)
+    }
+  }
+
+  return lines
 }
 
 // ---------------------------------------------------------------------------
@@ -696,39 +893,24 @@ function generateDeals() {
       if (cust.avgDealSize) lambdaDeal.avgDealSize = cust.avgDealSize
       if (status === 'Lost' && lossReason) lambdaDeal.lossReason = lossReason
 
-      // --- BOM generation ---
-      // Full BOM for recent deals (2024+), synthetic stats for older ones (performance)
-      if (year >= 2024) {
-        const recForBom = { suggestedMarginPct: achievedMargin * 100, suggestedPrice: amount }
-        if (Math.random() < 0.35) {
-          const preset = Math.random() < 0.6 ? presets[Math.floor(Math.random() * presets.length)] : null
-          const manualLines = createManualBomLines({ preset })
-          const manualStats = computeManualBomStats(manualLines)
-          lambdaDeal.bomLineCount = manualStats.lineCount
-          lambdaDeal.bomAvgMarginPct = manualStats.avgMarginPct
-          lambdaDeal.bomBlendedMarginPct = manualStats.blendedMarginPct
-          lambdaDeal.hasManualBom = true
-          lambdaDeal.manualBomLines = manualLines.map(line => ({
-            ...line,
-            note: preset ? preset.label : ''
-          }))
-        } else {
-          const autoBom = buildBillOfMaterials(rulesInput, recForBom)
-          lambdaDeal.bomLineCount = autoBom.stats.lineCount
-          lambdaDeal.bomAvgMarginPct = autoBom.stats.avgMarginPct
-          lambdaDeal.bomBlendedMarginPct = autoBom.stats.blendedMarginPct
-          lambdaDeal.hasManualBom = false
-        }
-      } else {
-        // Synthetic BOM stats for historical deals (fast)
-        const hasManual = Math.random() < 0.35
-        const bomAvg = activeScenario?.bomLinesAvg || 4
-        const bomSd = activeScenario?.bomLinesSd || 1.5
-        lambdaDeal.bomLineCount = Math.max(1, Math.round(randNormal(bomAvg, bomSd)))
-        lambdaDeal.bomAvgMarginPct = +(achievedMargin * 100 + randNormal(0, 2)).toFixed(1)
-        lambdaDeal.bomBlendedMarginPct = +(achievedMargin * 100 + randNormal(0, 1.5)).toFixed(1)
-        lambdaDeal.hasManualBom = hasManual
-      }
+      // --- BOM generation (all deals get full BOM lines) ---
+      const bomTargetCount = bomLineCountForAmount(amount)
+      const isCompetitiveDeal = competitors === '2' || competitors === '3+'
+      const bomLines = generateDealBomLines(oem, lambdaCategory, bomTargetCount, oemCost, amount, isCompetitiveDeal)
+
+      lambdaDeal.bomLines = bomLines
+      lambdaDeal.bomLineCount = bomLines.length
+
+      const bomTotalCost = bomLines.reduce((s, l) => s + l.unitCost * l.quantity, 0)
+      const bomTotalPrice = bomLines.reduce((s, l) => s + l.unitPrice * l.quantity, 0)
+      const bomBlendedMargin = bomTotalPrice > 0 ? (bomTotalPrice - bomTotalCost) / bomTotalPrice : 0
+      const bomAvgMargin = bomLines.length > 0
+        ? bomLines.reduce((s, l) => s + l.marginPct, 0) / bomLines.length
+        : 0
+
+      lambdaDeal.bomAvgMarginPct = +bomAvgMargin.toFixed(1)
+      lambdaDeal.bomBlendedMarginPct = +(bomBlendedMargin * 100).toFixed(1)
+      lambdaDeal.hasManualBom = false
 
       lambdaDeals.push(lambdaDeal)
 
