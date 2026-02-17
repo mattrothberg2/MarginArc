@@ -79,8 +79,40 @@ Returns industry list from customers.json.
 ### GET /api/bomcatalog
 Returns the 50-item curated product catalog.
 
-### POST /api/bom/search (NOT YET IMPLEMENTED)
-Search product catalog by query, manufacturer, category.
+### POST /api/bom/search
+Search the unified product catalog (vendor SKUs + curated catalog) by free-text query, manufacturer, and/or category.
+
+**Request**:
+```json
+{
+  "query": "C9300",
+  "manufacturer": "Cisco",
+  "category": "Hardware",
+  "limit": 20
+}
+```
+
+All fields are optional. `query` performs case-insensitive substring matching on partNumber and description (multiple words use AND logic). `manufacturer` and `category` are exact filters (case-insensitive). `limit` defaults to 20, max 100.
+
+**Response**:
+```json
+{
+  "results": [
+    {
+      "partNumber": "C9300-48P-A",
+      "description": "Catalyst 9300 48-Port PoE+ Switch",
+      "manufacturer": "Cisco",
+      "category": "Hardware",
+      "role": "core",
+      "listPrice": 12495,
+      "suggestedDiscount": 0.30,
+      "typicalMarginRange": { "low": 8, "high": 18 }
+    }
+  ],
+  "total": 4,
+  "query": "C9300"
+}
+```
 
 ### POST /api/bom/analyze (NOT YET IMPLEMENTED)
 Analyze BOM lines and return per-line margin recommendations.

@@ -10,6 +10,7 @@ import { computeRecommendation } from './src/rules.js'
 import { explainRecommendation, summarizeQualitative } from './src/gemini.js'
 import { compareWithPlan } from './src/metrics.js'
 import { buildBillOfMaterials, computeManualBomStats } from './src/bom.js'
+import { searchCatalog } from './src/bom-search.js'
 import { assessPredictionQuality } from './src/quality.js'
 import rateLimit from 'express-rate-limit'
 import serverless from 'serverless-http'
@@ -341,6 +342,16 @@ app.get('/api/sampledeals', async (req,res)=> {
 app.get('/api/industries', (req,res)=> res.json(industries))
 
 app.get('/api/bomcatalog', (req,res)=> res.json({ catalog: bomCatalog, presets: bomPresets }))
+
+app.post('/api/bom/search', (req, res) => {
+  try {
+    const { query, manufacturer, category, limit } = req.body || {}
+    const result = searchCatalog({ query, manufacturer, category, limit })
+    res.json(result)
+  } catch (e) {
+    res.status(400).json({ error: e?.message || 'Invalid request' })
+  }
+})
 
 app.get('/api/customers', (req,res)=> {
   const q = (req.query.q||'').toLowerCase()
