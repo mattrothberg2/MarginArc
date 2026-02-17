@@ -254,18 +254,30 @@
                 >
                 <span class="stat-label">Accounts Analyzed</span>
               </div>
-              <div class="stat-item">
-                <span class="stat-value">{similarAccountData.totalDeals}</span>
-                <span class="stat-label">Total Deals</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{similarAccountData.avgWinRate}%</span>
-                <span class="stat-label">Avg Win Rate</span>
-              </div>
-              <div class="stat-item">
-                <span class="stat-value">{similarAccountData.avgMargin}%</span>
-                <span class="stat-label">Avg Margin</span>
-              </div>
+              <template lwc:if={showSimilarTotalDeals}>
+                <div class="stat-item">
+                  <span class="stat-value"
+                    >{similarAccountData.totalDeals}</span
+                  >
+                  <span class="stat-label">Total Deals</span>
+                </div>
+              </template>
+              <template lwc:if={showSimilarAvgWinRate}>
+                <div class="stat-item">
+                  <span class="stat-value"
+                    >{similarAccountData.avgWinRate}%</span
+                  >
+                  <span class="stat-label">Avg Win Rate</span>
+                </div>
+              </template>
+              <template lwc:if={showSimilarAvgMargin}>
+                <div class="stat-item">
+                  <span class="stat-value"
+                    >{similarAccountData.avgMargin}%</span
+                  >
+                  <span class="stat-label">Avg Margin</span>
+                </div>
+              </template>
             </div>
           </div>
 

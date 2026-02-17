@@ -394,9 +394,35 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get phaseCalloutMessage() {
     const scored = this.phaseScoredDeals;
-    const needed = this.dealsUntilNextPhase;
     const threshold = this.phaseThreshold;
-    return `You\u2019ve scored ${scored} deal${scored !== 1 ? "s" : ""}. Score ${needed} more to unlock margin recommendations (${threshold} required).`;
+    if (scored >= threshold) {
+      return "Data threshold met! Ask your admin to enable Phase 2 in Setup.";
+    }
+    return `You\u2019ve scored ${scored} of ${threshold} deals needed to unlock margin recommendations.`;
+  }
+
+  get phaseThresholdMet() {
+    return this.phaseScoredDeals >= this.phaseThreshold;
+  }
+
+  // LWC templates don't allow `!` unary — use computed getter for negation
+  get isNotPhaseThresholdMet() {
+    return this.phaseScoredDeals < this.phaseThreshold;
+  }
+
+  get phaseProgressFraction() {
+    return `${this.phaseScoredDeals}/${this.phaseThreshold}`;
+  }
+
+  get phaseProgressPercent() {
+    const scored = this.phaseScoredDeals;
+    const threshold = this.phaseThreshold;
+    if (threshold <= 0) return 100;
+    return Math.min(100, Math.round((scored / threshold) * 100));
+  }
+
+  get phaseProgressBarStyle() {
+    return `width: ${this.phaseProgressPercent}%`;
   }
 
   // Data quality indicators from phaseInfo
@@ -1567,8 +1593,16 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       this.recommendation = recommendation;
 
       // Extract phase info from API response
+      // Optimistically increment scored deals by 1 since the deal just scored
+      // may not yet be reflected in the async API response
       if (recommendation.phaseInfo) {
-        this.phaseInfo = recommendation.phaseInfo;
+        const apiScored = recommendation.phaseInfo.scoredDeals || 0;
+        const apiUntilNext = recommendation.phaseInfo.dealsUntilNextPhase || 0;
+        this.phaseInfo = {
+          ...recommendation.phaseInfo,
+          scoredDeals: apiScored + 1,
+          dealsUntilNextPhase: Math.max(0, apiUntilNext - 1)
+        };
       }
     } catch (err) {
       console.error("Recommendation error:", err);
