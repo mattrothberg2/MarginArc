@@ -354,4 +354,16 @@ export default class MarginarcCompetitiveIntel extends LightningElement {
   get displayAccountName() {
     return this.accountName || "Unknown Account";
   }
+
+  get showSimilarTotalDeals() {
+    return n(this.similarAccountData?.totalDeals) > 0;
+  }
+
+  get showSimilarAvgWinRate() {
+    return n(this.similarAccountData?.totalDeals) > 0;
+  }
+
+  get showSimilarAvgMargin() {
+    return n(this.similarAccountData?.totalDeals) > 0;
+  }
 }

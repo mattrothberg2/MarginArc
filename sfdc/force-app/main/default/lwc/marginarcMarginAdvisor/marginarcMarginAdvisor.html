@@ -159,7 +159,22 @@
                 />
               </svg>
             </div>
-            <p class="marginarc-phase-callout-text">{phaseCalloutMessage}</p>
+            <div class="marginarc-phase-callout-body">
+              <p class="marginarc-phase-callout-text">{phaseCalloutMessage}</p>
+              <template lwc:if={isNotPhaseThresholdMet}>
+                <div class="marginarc-phase-progress">
+                  <div class="marginarc-phase-progress-track">
+                    <div
+                      class="marginarc-phase-progress-fill"
+                      style={phaseProgressBarStyle}
+                    ></div>
+                  </div>
+                  <span class="marginarc-phase-progress-label"
+                    >{phaseProgressFraction}</span
+                  >
+                </div>
+              </template>
+            </div>
           </div>
         </template>
 

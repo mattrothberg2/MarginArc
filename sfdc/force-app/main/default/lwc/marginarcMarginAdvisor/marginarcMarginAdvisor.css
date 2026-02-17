@@ -1600,12 +1600,46 @@
   color: var(--indigo-500);
 }
 
+.marginarc-phase-callout-body {
+  flex: 1;
+  min-width: 0;
+}
+
 .marginarc-phase-callout-text {
   margin: 0;
   font-size: 14px;
   line-height: 1.5;
   color: var(--slate-700);
   font-weight: 500;
+}
+
+.marginarc-phase-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.marginarc-phase-progress-track {
+  flex: 1;
+  height: 6px;
+  background: var(--slate-200);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.marginarc-phase-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--indigo-500), var(--teal-500));
+  transition: width 0.3s ease;
+}
+
+.marginarc-phase-progress-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--indigo-500);
+  white-space: nowrap;
 }
 
 /* =========================================================================
