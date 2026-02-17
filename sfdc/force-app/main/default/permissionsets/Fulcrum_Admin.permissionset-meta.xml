@@ -477,4 +477,8 @@
         <tab>Fulcrum_Getting_Started</tab>
         <visibility>Visible</visibility>
     </tabSettings>
+    <tabSettings>
+        <tab>Fulcrum_ROI_Report</tab>
+        <visibility>Visible</visibility>
+    </tabSettings>
 </PermissionSet>
