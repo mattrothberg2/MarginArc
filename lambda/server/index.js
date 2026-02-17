@@ -436,7 +436,7 @@ const DealRecord = z.object({
   bomLines: BomLinesInput.optional()
 })
 
-app.post('/api/deals', (req,res)=> {
+app.post('/api/deals', async (req,res)=> {
   try {
     const { input, achievedMarginPct, status, lossReason, bomLines } = DealRecord.parse(req.body)
     const manualStats = bomLines?.length ? computeManualBomStats(bomLines) : null
@@ -482,10 +482,13 @@ app.post('/api/deals', (req,res)=> {
         recommendedMarginPct: line.recommendedMarginPct
       }))
     }
-    // Persist to DB (fire-and-forget — don't block the HTTP response)
-    insertRecordedDeal(deal)
-      .then(() => invalidateDealsCache())
-      .catch(err => console.error('Failed to persist deal:', err.message))
+    // Persist to DB before responding (Lambda freezes after response, killing fire-and-forget promises)
+    try {
+      await insertRecordedDeal(deal)
+      invalidateDealsCache()
+    } catch (err) {
+      console.error('Failed to persist deal:', err.message)
+    }
     res.json({ ok:true })
   } catch (e) {
     res.status(400).json({ error: e?.message || 'Invalid input' })
