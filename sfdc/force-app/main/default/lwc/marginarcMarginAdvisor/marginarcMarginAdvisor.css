@@ -323,6 +323,26 @@
   font-weight: 700;
 }
 
+/* Score Factor Labels (natural language, 3-tier color) */
+.score-factor-label {
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 2px 0;
+}
+
+.score-factor-label-green {
+  color: #86efac;
+}
+
+.score-factor-label-amber {
+  color: #fde047;
+}
+
+.score-factor-label-red {
+  color: #fca5a5;
+}
+
 /* =========================================================================
    Recommended Margin Callout
    ========================================================================= */
@@ -1130,6 +1150,18 @@
   color: var(--slate-600);
 }
 
+.summary-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--slate-700);
+}
+
+.summary-dq {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--slate-500);
+}
+
 /* =========================================================================
    Details Toggle Bar
    ========================================================================= */
@@ -1839,6 +1871,45 @@
 .marginarc-dq-icon {
   font-weight: 700;
   font-size: 12px;
+}
+
+/* =========================================================================
+   Phase 1 Deal Insights
+   ========================================================================= */
+.marginarc-phase1-insights {
+  margin-top: 16px;
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+.insights-header {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0 0 10px 0;
+}
+
+.insight-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.insight-row:last-child {
+  border-bottom: none;
+}
+
+.insight-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.4;
 }
 
 /* =========================================================================
