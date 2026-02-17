@@ -13,6 +13,7 @@ global class MarginArcInstallHandler implements InstallHandler {
       initializeConfig();
       initializeLicenseConfig();
       scheduleNightlyAnalyzer();
+      scheduleOutcomeSync();
       if (context.previousVersion() == null) {
         sendWelcomeEmail(context.installerID());
       }
@@ -67,6 +68,27 @@ global class MarginArcInstallHandler implements InstallHandler {
         'MarginArc Nightly Analyzer',
         '0 0 2 * * ?',
         new MarginArcBatchAnalyzer()
+      );
+    }
+  }
+
+  /**
+   * Schedules MarginArcDealOutcomeSync weekly on Sundays at 3 AM
+   * if not already scheduled.
+   */
+  @TestVisible
+  private void scheduleOutcomeSync() {
+    List<CronTrigger> existing = [
+      SELECT Id
+      FROM CronTrigger
+      WHERE CronJobDetail.Name LIKE '%MarginArc%Outcome%' AND State = 'WAITING'
+      LIMIT 1
+    ];
+    if (existing.isEmpty()) {
+      System.schedule(
+        'MarginArc Deal Outcome Sync',
+        '0 0 3 ? * SUN',
+        new MarginArcDealOutcomeSync()
       );
     }
   }
