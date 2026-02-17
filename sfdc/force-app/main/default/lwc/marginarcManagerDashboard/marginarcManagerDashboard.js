@@ -50,6 +50,20 @@ const SORT_FIELDS = {
 
 const PAGE_SIZE = 25;
 
+const KPI_TOOLTIPS = {
+  totalPipeline:
+    "Sum of Amount across all open opportunities in your pipeline.",
+  marginArcValue:
+    "Additional gross profit your team would capture if every deal followed MarginArc's margin recommendations. Calculated as the sum of (Recommended Margin - Planned Margin) x Deal Amount across all open deals.",
+  winRate: "Percentage of deals closed as Won in the last 90 days.",
+  alignment:
+    "Percentage of open deals where the rep's planned margin is within 3 percentage points of MarginArc's recommendation. Higher alignment = more margin-disciplined team.",
+  dataQuality:
+    "Average prediction readiness score (0-100) across all open deals. Measures how many deal attributes are filled in — more data means more accurate recommendations."
+};
+
+const SEARCH_DEBOUNCE_MS = 300;
+
 const FILTER_DEFS = [
   { value: "all", label: "All" },
   { value: "critical", label: "Critical" },
@@ -78,8 +92,10 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
   @track _userContextData = null;
   @track backfillSummaryData = null;
   @track backfillDetailsData = null;
+  @track searchTerm = "";
 
   _showDropdown = false;
+  _searchDebounceTimer = null;
   timeRangeOptions = TIME_RANGE_OPTIONS;
 
   // User context wire
@@ -213,6 +229,23 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
             ? "kpi-value kpi-amber"
             : "kpi-value kpi-negative"
     };
+  }
+
+  // ── KPI Tooltips ──
+  get tooltipTotalPipeline() {
+    return KPI_TOOLTIPS.totalPipeline;
+  }
+  get tooltipMarginArcValue() {
+    return KPI_TOOLTIPS.marginArcValue;
+  }
+  get tooltipWinRate() {
+    return KPI_TOOLTIPS.winRate;
+  }
+  get tooltipAlignment() {
+    return KPI_TOOLTIPS.alignment;
+  }
+  get tooltipDataQuality() {
+    return KPI_TOOLTIPS.dataQuality;
   }
 
   get winRateDisplay() {
@@ -373,9 +406,41 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
   }
 
   get filteredDeals() {
+    let deals = this.allSortedDeals;
+    if (this.activeFilter !== "all") {
+      deals = deals.filter((d) => d.status === this.activeFilter);
+    }
+    if (this.searchTerm) {
+      const term = this.searchTerm.toLowerCase();
+      deals = deals.filter(
+        (d) =>
+          (d.name && d.name.toLowerCase().includes(term)) ||
+          (d.accountName && d.accountName.toLowerCase().includes(term)) ||
+          (d.ownerName && d.ownerName.toLowerCase().includes(term))
+      );
+    }
+    return deals;
+  }
+
+  get totalDealCount() {
     const all = this.allSortedDeals;
-    if (this.activeFilter === "all") return all;
-    return all.filter((d) => d.status === this.activeFilter);
+    if (this.activeFilter !== "all") {
+      return all.filter((d) => d.status === this.activeFilter).length;
+    }
+    return all.length;
+  }
+
+  get searchResultsText() {
+    const filtered = this.filteredDeals.length;
+    const total = this.totalDealCount;
+    if (this.searchTerm) {
+      return "Showing " + filtered + " of " + total + " deals";
+    }
+    return "";
+  }
+
+  get hasSearchTerm() {
+    return this.searchTerm.length > 0;
   }
 
   get sortedDeals() {
@@ -978,6 +1043,27 @@ export default class MarginarcManagerDashboard extends NavigationMixin(
   handleFilterChange(event) {
     this.activeFilter = event.currentTarget.dataset.filter;
     this.currentPage = 1;
+  }
+
+  handleSearchInput(event) {
+    const value = event.target.value;
+    if (this._searchDebounceTimer) {
+      clearTimeout(this._searchDebounceTimer);
+    }
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._searchDebounceTimer = setTimeout(() => {
+      this.searchTerm = value;
+      this.currentPage = 1;
+    }, SEARCH_DEBOUNCE_MS);
+  }
+
+  handleClearSearch() {
+    this.searchTerm = "";
+    this.currentPage = 1;
+    const input = this.template.querySelector(".search-input");
+    if (input) {
+      input.value = "";
+    }
   }
 
   handlePrevPage() {

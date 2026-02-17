@@ -94,29 +94,64 @@
       <div class="kpi-strip">
         <div class="kpi-card">
           <div class="kpi-value">{kpis.totalPipeline}</div>
-          <div class="kpi-label">TOTAL PIPELINE</div>
+          <div class="kpi-label-row">
+            <span class="kpi-label">TOTAL PIPELINE</span>
+            <lightning-helptext
+              content={tooltipTotalPipeline}
+              icon-name="utility:info"
+              class="kpi-tooltip"
+            ></lightning-helptext>
+          </div>
           <div class="kpi-sub">{kpis.dealCount} deals</div>
         </div>
         <div class="kpi-card">
           <div class={kpis.ragpDeltaClass}>{kpis.ragpDelta}</div>
-          <div class="kpi-label">MARGINARC VALUE</div>
+          <div class="kpi-label-row">
+            <span class="kpi-label">MARGINARC VALUE</span>
+            <lightning-helptext
+              content={tooltipMarginArcValue}
+              icon-name="utility:info"
+              class="kpi-tooltip"
+            ></lightning-helptext>
+          </div>
           <div class="kpi-sub">additional GP Upside if followed</div>
         </div>
         <div class="kpi-card">
           <div class={winRateClass}>{winRateDisplay}</div>
-          <div class="kpi-label">WIN RATE</div>
+          <div class="kpi-label-row">
+            <span class="kpi-label">WIN RATE</span>
+            <lightning-helptext
+              content={tooltipWinRate}
+              icon-name="utility:info"
+              class="kpi-tooltip"
+            ></lightning-helptext>
+          </div>
           <div class="kpi-sub">{selectedTimeRangeLabel}</div>
         </div>
         <div class="kpi-card">
           <div class={kpis.complianceClass}>{kpis.complianceRate}</div>
-          <div class="kpi-label">ALIGNMENT</div>
+          <div class="kpi-label-row">
+            <span class="kpi-label">ALIGNMENT</span>
+            <lightning-helptext
+              content={tooltipAlignment}
+              icon-name="utility:info"
+              class="kpi-tooltip"
+            ></lightning-helptext>
+          </div>
           <div class="kpi-sub">within 3pp of recommendation</div>
         </div>
         <div class="kpi-card">
           <div class={kpis.avgPredictionQualityClass}>
             {kpis.avgPredictionQuality}
           </div>
-          <div class="kpi-label">DATA QUALITY</div>
+          <div class="kpi-label-row">
+            <span class="kpi-label">DATA QUALITY</span>
+            <lightning-helptext
+              content={tooltipDataQuality}
+              icon-name="utility:info"
+              class="kpi-tooltip"
+            ></lightning-helptext>
+          </div>
           <div class="kpi-sub">avg prediction readiness</div>
         </div>
       </div>
@@ -168,6 +203,37 @@
               >
                 {pill.label}
               </button>
+            </template>
+          </div>
+
+          <!-- Search Bar -->
+          <div class="search-bar">
+            <div class="search-input-wrapper">
+              <svg class="search-icon" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fill-rule="evenodd"
+                  d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z"
+                  clip-rule="evenodd"
+                />
+              </svg>
+              <input
+                type="text"
+                class="search-input"
+                placeholder="Search by deal, account, or rep name..."
+                oninput={handleSearchInput}
+              />
+              <template lwc:if={hasSearchTerm}>
+                <button
+                  class="search-clear-btn"
+                  onclick={handleClearSearch}
+                  aria-label="Clear search"
+                >
+                  &#10005;
+                </button>
+              </template>
+            </div>
+            <template lwc:if={hasSearchTerm}>
+              <span class="search-results-count">{searchResultsText}</span>
             </template>
           </div>
 
