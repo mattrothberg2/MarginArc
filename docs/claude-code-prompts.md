@@ -24,6 +24,54 @@ These are hard-won lessons from running prompts 1A-1C. Every prompt should respe
 
 9. **PR creation**: Create a feature branch, commit, and push. Then open a PR from the GitHub UI at `https://github.com/mattrothberg2/MarginArc/pull/new/<branch-name>`.
 
+10. **SFDC CI/CD is now live (as of PR #17).** The pipeline runs prettier, eslint, aborts CronTrigger jobs, deploys, runs tests, and reschedules jobs. If you modify any `.cls` or LWC `.js` file, run `cd sfdc && npx prettier --write <file>` and `npx eslint <file>` before committing. Add any new test classes to the `--tests` list in `.github/workflows/deploy-sfdc.yml` (both dry-run and deploy steps).
+
+## Running Prompts Concurrently
+
+You can run multiple prompts in parallel Claude Code web sessions **if they don't modify the same files**. The main bottleneck is `lambda/server/index.js` — many Lambda prompts add routes to it.
+
+### Concurrency Map
+
+| Prompt | Modifies | Safe to run with |
+|--------|----------|-----------------|
+| **2A** | `lambda/server/index.js`, new `src/phases.js` | Any SFDC prompt (2B*, 2C*, 4C*) or 6A |
+| **2B** | `sfdc/.../marginarcMarginAdvisor/*` | 3A, 3B, 3C, 4A, 4B, 6A (any Lambda-only prompt) |
+| **2C** | `sfdc/.../marginarcSetupWizard/*`, `MarginArcSetupController.cls` | 3A, 3B, 3C, 4A, 4B, 6A (any Lambda-only prompt) |
+| **3A** | `lambda/server/index.js`, `docs/lambda-api.md` | Any SFDC prompt (2B, 2C, 4C) or 6A |
+| **3B** | `lambda/server/index.js`, new `src/bom-optimizer.js` | Any SFDC prompt or 6A |
+| **3C** | `lambda/server/src/data/vendor_skus.json` only | Almost anything except 4B |
+| **4A** | `lambda/server/src/data/generateSyntheticDeals.js`, new `src/data/scenarios.js` | Any SFDC prompt, 6A, or 3A/3B (if 3A/3B don't touch generator) |
+| **4B** | `lambda/server/src/data/generateSyntheticDeals.js`, `sample_deals.json` | Any SFDC prompt or 6A |
+| **4C** | `sfdc/.../marginarcSetupWizard/*`, `lambda/server/index.js` | 3C, 4A*, 6A |
+| **5A** | `lambda/server/index.js`, new `engine.js`, `Dockerfile` | Any SFDC prompt or 6A |
+| **5B** | `lambda/server/index.js`, new `openapi.yaml` | Any SFDC prompt or 6A |
+| **6A** | new `docs/network-design.md` (design doc only) | **Everything** |
+
+### Safe Parallel Pairs (no file conflicts)
+
+- **2A + 6A** — Lambda phases + design doc
+- **2B + 3A** or **2B + 3B** — SFDC UI + Lambda API
+- **2C + 3A** or **2C + 3B** — SFDC setup + Lambda API
+- **3C + 2A** — catalog expansion + phase system
+- **3C + 2B** or **3C + 2C** — catalog + SFDC UI
+- **4A + 2B** or **4A + 2C** — scenarios + SFDC UI
+- **6A + anything** — design doc touches no code
+
+### DO NOT run in parallel (same file conflicts)
+
+- **2A + 3A** or **2A + 3B** — both modify `index.js`
+- **3A + 3B** — both modify `index.js` and `lambda-api.md`
+- **4A + 4B** — both modify `generateSyntheticDeals.js`
+- **5A + 5B** — both modify `index.js`
+- Any two prompts that both modify `lambda/server/index.js`
+
+### How to run concurrent sessions
+
+1. Open two Claude Code web tabs, both connected to `mattrothberg2/MarginArc`
+2. Paste one prompt in each tab
+3. Each will create its own feature branch — no conflicts during development
+4. **Merge order matters**: merge whichever finishes first, then the second PR may need a rebase if they touched nearby (but different) files. If they touch completely different directories (`sfdc/` vs `lambda/`), merge order doesn't matter.
+
 ---
 
 ## Epic 1: Fix the Foundation
@@ -40,7 +88,9 @@ These are hard-won lessons from running prompts 1A-1C. Every prompt should respe
 
 *Completed in PR #9 + #10. Added timeDecay() function with 5 decay tiers applied as multiplier in topKNeighbors(). Fixed missing closeDate in sample deals (PR #10).*
 
-### 1D — Wire SFDC Won/Lost Deals Back to Lambda
+### 1D — Wire SFDC Won/Lost Deals Back to Lambda [COMPLETE]
+
+*Completed in PR #12. Created MarginArcDealOutcomeSync batch (weekly Sunday 3 AM) that sends closed Won/Lost deals to Lambda POST /api/deals. Also fixed SFDC CI/CD pipeline (PRs #13-17): npm cache, npm ci→install, prettier, eslint, CronTrigger auto-abort/reschedule.*
 
 ```
 Read these files to understand the current architecture:
