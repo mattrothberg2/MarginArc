@@ -605,7 +605,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 4.5: UX Polish & Demo Readiness
 
-### 4D — Fix Demo-Blocking UI Bugs (depends on 2A, 2B)
+### 4D — Fix Demo-Blocking UI Bugs (depends on 2A, 2B) [COMPLETE — PR #40]
 
 ```
 Read these files:
@@ -756,7 +756,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 6: Future-Proofing for MarginArc Network
 
-### 6A — Design Network Data Schema (no code changes needed yet)
+### 6A — Design Network Data Schema (no code changes needed yet) [COMPLETE — PR #39]
 
 ```
 This is a DESIGN task, not an implementation task. Create a design document, not code.
@@ -800,6 +800,911 @@ Create a design document at docs/network-design.md that covers:
 6. **Privacy Guarantees**: Describe what differential privacy mechanisms would be applied (noise injection on margin values, k-anonymity on deal characteristics, minimum cohort sizes before sharing).
 
 This is a documentation/design task only. Do not write any code. The output should be a thorough markdown document that a team could use to implement the network in a future sprint.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+---
+
+# Post-Review Sprints (Sprint 24–27)
+
+> **Source**: 5-perspective executive review conducted 2026-02-17 (`docs/executive-review-2026-02-17.md`).
+> Reviewers: CEO (7/10), CTO (7.5/10), CISO (6.5/10), Head of UX (6.6/10), VAR CRO (MAYBE→YES).
+> These sprints systematically address all P0–P2 issues and the CTO/CISO risk registers.
+
+### Concurrency Map (Sprints 24–27)
+
+| Prompt | Modifies | Safe to run with |
+|--------|----------|-----------------|
+| **7A** | `lambda/server/src/licensing/db.js`, `lambda/server/index.js`, `lambda/server/package.json`, `lambda/server/src/gemini.js` | Any SFDC prompt (7B, 7C) |
+| **7B** | `sfdc/.../marginarcBackfillReport/*`, possibly `sfdc/.../tabs/*` | Any Lambda prompt (7A, 7D) |
+| **7C** | SFDC org data only (Apex anonymous scripts + API calls) — no file changes | **Everything** |
+| **7D** | `lambda/server/index.js` (Zod schemas), `lambda/server/openapi.yaml` | Any SFDC prompt (7B, 7C) |
+| **8A** | `sfdc/.../marginarcMarginAdvisor/*`, `sfdc/.../marginarcDealInsights/*` | Any Lambda prompt (8C, 8D) |
+| **8B** | `sfdc/.../marginarcManagerDashboard/*` | 8C, 8D (Lambda only) |
+| **8C** | `lambda/server/src/licensing/admin.js`, `lambda/server/src/licensing/auth.js` | Any SFDC prompt (8A, 8B) |
+| **8D** | `lambda/server/src/analytics.js`, `lambda/server/src/phases.js`, `lambda/server/index.js` | Any SFDC prompt |
+| **9A** | `lambda/server/__tests__/rules.test.js` (new), `lambda/server/__tests__/winprob.test.js` (new) | Almost anything |
+| **9B** | `.github/workflows/deploy-lambda.yml` | Almost anything |
+| **9C** | `sfdc/.../marginarcMarginAdvisor/*` | Any Lambda prompt, 9D |
+| **9D** | `sfdc/.../marginarcBomBuilder/*`, `sfdc/.../marginarcBomTable/*`, `sfdc/.../marginarcManagerDashboard/*` | Any Lambda prompt |
+| **10A** | `lambda/server/index.js`, `lambda/server/src/licensing/admin.js` | Any SFDC prompt |
+| **10B** | `lambda/server/src/licensing/admin.js`, `lambda/server/src/licensing/auth.js`, `lambda/server/src/licensing/db.js` | Any SFDC prompt |
+| **10C** | `docs/` only | **Everything** |
+| **10D** | `docs/` only | **Everything** |
+
+---
+
+## Epic 7: P0 Fixes — Sprint 24 (This Week)
+
+### 7A — DB SSL + Security Headers + Gemini Key to SSM (CISO CRITICAL-1 & CRITICAL-2)
+
+```
+Read these files:
+- lambda/server/src/licensing/db.js — the PostgreSQL connection pool configuration (lines 50-63 have no `ssl` property)
+- lambda/server/index.js — the Express app setup (no helmet middleware present)
+- lambda/server/src/gemini.js — Gemini API key loaded from process.env instead of SSM
+- lambda/server/package.json — current dependencies
+
+The CISO security review flagged two CRITICAL items that must be fixed immediately:
+
+**CRITICAL-1: No SSL on PostgreSQL connection**
+
+The database connection in db.js lines 50-63 has no `ssl` config. All DB traffic (licenses, tokens, deals) is potentially unencrypted between Lambda and RDS.
+
+Fix:
+1. Add `ssl: { rejectUnauthorized: true }` to the dbConfig object in the `loadDBConfig()` function.
+2. If the RDS instance uses Amazon's RDS CA bundle, you may need `ssl: { rejectUnauthorized: false }` initially (many RDS instances use Amazon root CA which Node.js trusts). Start with `ssl: { rejectUnauthorized: true }` and fall back to `ssl: true` only if connection fails. Add a comment explaining why.
+
+**CRITICAL-2: No security headers**
+
+The Express app has zero security headers. The admin portal at `/admin` has no clickjacking/XSS protection.
+
+Fix:
+1. Install `helmet`: add it to package.json dependencies
+2. Import and use helmet middleware BEFORE any route handlers in index.js (after the CORS setup, before routes):
+   ```javascript
+   import helmet from 'helmet'
+   app.use(helmet({
+     contentSecurityPolicy: {
+       directives: {
+         defaultSrc: ["'self'"],
+         scriptSrc: ["'self'", "'unsafe-inline'"],  // needed for admin SPA
+         styleSrc: ["'self'", "'unsafe-inline'"],    // needed for admin SPA
+         imgSrc: ["'self'", "data:", "https:"],
+         connectSrc: ["'self'", "https://api.marginarc.com"],
+         fontSrc: ["'self'", "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
+         frameSrc: ["'none'"],
+         objectSrc: ["'none'"],
+         baseUri: ["'self'"]
+       }
+     },
+     crossOriginEmbedderPolicy: false,  // needed for external fonts
+     hsts: { maxAge: 31536000, includeSubDomains: true }
+   }))
+   ```
+3. IMPORTANT: The admin SPA, docs SPA, and public landing page all use inline scripts/styles. The CSP must allow `'unsafe-inline'` for script-src and style-src to avoid breaking them. Test by verifying the admin portal, docs portal, and public site all still load after adding helmet.
+4. The Swagger UI at `/docs/api-reference` also uses inline scripts — make sure it still works.
+
+**Also fix: Move Gemini API key to SSM**
+
+The CTO review noted that `gemini.js` line 1 reads `GEMINI_API_KEY` from `process.env` instead of SSM like other secrets.
+
+1. Read lambda/server/src/gemini.js
+2. Change it to load the key from SSM parameter `/marginarc/gemini/api-key` using the same pattern as db.js (lazy-loaded, cached)
+3. IMPORTANT: Keep the `process.env.GEMINI_API_KEY` as a fallback for local development:
+   ```javascript
+   const GEMINI_API_KEY = process.env.GEMINI_API_KEY || await getSSMParameter('/marginarc/gemini/api-key');
+   ```
+4. The SSM parameter already exists — this was set up when Gemini was first integrated. The Lambda function has IAM permission to read it.
+
+Run all tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 7B — Fix ROI Report Tab (P0 — Every Reviewer Flagged)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.js
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.html
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.css
+- sfdc/force-app/main/default/lwc/marginarcBackfillReport/marginarcBackfillReport.js-meta.xml
+- sfdc/force-app/main/default/tabs/ — look for any tab referencing this component or "ROI"
+
+Every reviewer flagged that the ROI Report tab shows "Page doesn't exist" in Salesforce. This is the #1 credibility killer — a broken tab in a paid product destroys trust immediately.
+
+Investigate and fix:
+
+1. Check if the tab definition file exists at `sfdc/force-app/main/default/tabs/Fulcrum_ROI_Report.tab-meta.xml` (or similar). If it references a component by the old name (`fulcrumBackfillReport`), update it to `marginarcBackfillReport`.
+
+2. If no tab file exists in the repo, create one at `sfdc/force-app/main/default/tabs/Fulcrum_ROI_Report.tab-meta.xml`:
+   ```xml
+   <?xml version="1.0" encoding="UTF-8"?>
+   <CustomTab xmlns="http://soap.sforce.com/2006/04/metadata">
+       <label>ROI Report</label>
+       <lwcComponent>marginarcBackfillReport</lwcComponent>
+       <motif>Custom57: Handsaw</motif>
+   </CustomTab>
+   ```
+
+3. Verify the component itself works by checking:
+   - Does the .js controller have valid Apex imports? Check that all `@wire` and imperative Apex calls reference `MarginArc*` class names (not `Fulcrum*`).
+   - Does the .html template render without errors? Check for any undefined variables or missing getter methods.
+   - Is the component exposed for the right targets in the .js-meta.xml? It should include `lightning__Tab`.
+
+4. If the component has substantive bugs that prevent rendering, fix them. If it's a stub that was never fully built, implement a minimal working version:
+   - Show a "Backfill Analysis" header with MarginArc branding (match the navy gradient style from other components)
+   - Display a summary of the most recent backfill run (if data exists) or a "Run Backfill Analysis" CTA if no data
+   - The backfill data comes from MarginArcBackfillAnalyzer.cls — read that class to understand what data is available
+   - At minimum, show: total deals analyzed, total GP opportunity identified, average margin gap, and a table of top 10 deals with the biggest margin gap
+
+5. Run prettier and eslint:
+   cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcBackfillReport/**/*.{js,html}
+   cd sfdc && npx eslint force-app/main/default/lwc/marginarcBackfillReport/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 7C — Promote Demo Org to Phase 2 + Pre-Load OEM/Competitor Data (P0)
+
+```
+This is an ORG CONFIGURATION task, not a code task. You are running Apex anonymous scripts and API calls against the live Salesforce org and Lambda API.
+
+Read these files to understand the current state:
+- lambda/server/src/phases.js — how phases work (Phase 2 requires >=50 recorded deals + avg quality >60)
+- lambda/server/index.js — the admin API endpoints for phase management (GET/POST /admin/api/customers/:id/phase)
+- sfdc/force-app/main/default/classes/MarginArcSetupController.cls — OEM and Competitor configuration
+
+The demo org has 361 deals loaded but is stuck in Phase 1, meaning reps see deal scores but NO margin recommendations. Every reviewer flagged this as a demo blocker.
+
+**Step 1: Check current phase status**
+
+Call the Lambda admin API to see the current phase:
+```bash
+# First, get an admin JWT token
+TOKEN=$(curl -s -X POST https://api.marginarc.com/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"username":"admin","password":"MarginArc2026!"}' | jq -r '.token')
+
+# Check phase readiness for the demo org
+curl -s https://api.marginarc.com/admin/api/customers/1/phase \
+  -H "Authorization: Bearer $TOKEN" | jq .
+```
+
+**Step 2: Record enough deals to meet Phase 2 requirements**
+
+If the phase readiness check shows fewer than 50 recorded deals, we need to backfill. Run this against the Lambda API to record synthetic deals:
+
+```bash
+# Record 60 synthetic deals to meet the 50-deal threshold
+for i in $(seq 1 60); do
+  curl -s -X POST https://api.marginarc.com/api/deals \
+    -H "Content-Type: application/json" \
+    -H "x-api-key: marginarc-key-2025" \
+    -d "{
+      \"input\": {
+        \"oem\": \"Cisco\",
+        \"oemCost\": $((50000 + RANDOM % 200000)),
+        \"customerSegment\": \"MidMarket\",
+        \"productCategory\": \"Hardware\",
+        \"relationshipStrength\": \"Good\",
+        \"customerTechSophistication\": \"Medium\",
+        \"dealRegType\": \"StandardApproved\",
+        \"competitors\": \"1\",
+        \"valueAdd\": \"Medium\",
+        \"solutionComplexity\": \"Medium\",
+        \"varStrategicImportance\": \"Medium\",
+        \"customerIndustry\": \"Technology\"
+      },
+      \"achievedMarginPct\": $((12 + RANDOM % 15)),
+      \"status\": \"Won\"
+    }" > /dev/null
+done
+```
+
+Vary the OEMs (Cisco, Dell, HPE, Palo Alto, Fortinet), segments (SMB, MidMarket, Enterprise), and industries across the 60 deals for realistic distribution.
+
+**Step 3: Promote to Phase 2**
+
+```bash
+curl -s -X POST https://api.marginarc.com/admin/api/customers/1/phase \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"phase": 2}' | jq .
+```
+
+**Step 4: Pre-load OEM Vendor and Competitor records**
+
+Run Apex anonymous scripts to populate the OEM Vendors and Competitors sections in the Setup tab. IMPORTANT: Before running, check the actual field API names by reading the object directories under `sfdc/force-app/main/default/objects/Fulcrum_OEM_Vendor__c/` and `sfdc/force-app/main/default/objects/Fulcrum_Competitor__c/`. Adjust field names below if they differ.
+
+Create 7 OEM Vendor records (Cisco, Dell, HPE, Palo Alto, Fortinet, Microsoft, VMware) with realistic base margins, deal reg boosts, quarter-end discounts, and services boosts.
+
+Create 5 Competitor records (CDW, SHI, Presidio, Optiv, Insight) with price aggression, margin aggression, typical discount, services capability, primary OEMs, and primary strength.
+
+**Step 5: Verify with Playwright headless browser**
+
+Take screenshots of:
+1. An Opportunity page — verify "Score My Deal" now returns a recommended margin (not just a score)
+2. The Setup tab — verify OEM Vendors and Competitors sections are populated
+3. The Dashboard tab — verify pipeline data shows margin recommendations
+
+No code changes needed — this is all org configuration. No branch/PR required.
+```
+
+### 7D — Make API Fields Optional with Defaults (P1 #5)
+
+```
+Read lambda/server/index.js — specifically the Zod schemas starting around line 289.
+
+The CEO and CTO reviews flagged that the API is too strict for direct integration. The DealInput Zod schema requires several fields that a lightweight integration (webhook, form submission, or minimal REST client) might not have:
+
+Currently REQUIRED (should be OPTIONAL with defaults):
+- customerTechSophistication (line 295) — required enum, should default to "Medium"
+- varStrategicImportance (line 300) — required enum, should default to "Medium"
+- solutionComplexity (line 299) — required enum, should default to "Medium"
+- valueAdd (line 298) — required enum, should default to "Medium"
+- relationshipStrength (line 294) — required enum, should default to "Good"
+- dealRegType (line 296) — required enum, should default to "NotRegistered"
+- competitors (line 297) — required enum, should default to "1"
+
+Fix:
+1. Change each of these fields from `.enum([...])` to `.enum([...]).optional().default("Medium")` (or appropriate default):
+   - customerTechSophistication → default "Medium"
+   - varStrategicImportance → default "Medium"
+   - solutionComplexity → default "Medium"
+   - valueAdd → default "Medium"
+   - relationshipStrength → default "Good"
+   - dealRegType → default "NotRegistered"
+   - competitors → default "1"
+
+2. Keep these fields REQUIRED (they are core to the recommendation and cannot be defaulted meaningfully):
+   - oem (already optional)
+   - oemCost (must know the cost)
+   - productCategory (core to margin calculation)
+   - customerSegment (core to base margin)
+   - customerIndustry (core to industry adjustment)
+
+3. Update the OpenAPI spec at lambda/server/openapi.yaml:
+   - Mark the newly-optional fields as `required: false` in the schema
+   - Add `default: "Medium"` (or appropriate default) to each
+   - Update the example requests to show a minimal payload with only the 5 required fields
+
+4. Test with a minimal payload that only sends the required fields:
+   ```bash
+   curl -X POST https://api.marginarc.com/api/recommend \
+     -H "Content-Type: application/json" \
+     -H "x-api-key: marginarc-key-2025" \
+     -d '{"input":{"oemCost":100000,"productCategory":"Hardware","customerSegment":"MidMarket","customerIndustry":"Technology"},"plannedMarginPct":15}'
+   ```
+   This should return a valid recommendation, not a Zod validation error.
+
+5. Run all tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+## Epic 8: POC Readiness — Sprint 25
+
+### 8A — Fix Phase Counter + Industry Intelligence Contradictions (P1 #6, #9)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/lwc/marginarcDealInsights/marginarcDealInsights.js
+- sfdc/force-app/main/default/lwc/marginarcDealInsights/marginarcDealInsights.html
+
+Two P1 issues from the executive review:
+
+**Issue 1: Phase callout message is contradictory (P1 #6)**
+
+After clicking "Score My Deal", the Phase 1 message shows "You've scored 0 deals. Score 0 more to unlock margin recommendations (50 required)." This was partially addressed in PR #40 but still shows stale data.
+
+Fix:
+1. The deal count in the phase callout should update in real-time after scoring. When the `/api/recommend` response comes back, the `phaseInfo` object contains the current scored deal count and the threshold. Use these values to update the message.
+2. If the user JUST scored a deal, optimistically increment the local counter by 1 (the API response may not reflect the deal that was just scored since recording happens async).
+3. Change the message format to be unambiguous:
+   - "You've scored X of 50 deals needed to unlock margin recommendations." (single clear sentence)
+   - Show a small progress bar or fraction (e.g., "12/50") below the message
+4. If the counter shows 50+ but phase is still 1, show: "Data threshold met! Ask your admin to enable Phase 2 in Setup."
+
+**Issue 2: Industry Intelligence shows contradictory data (P1 #9)**
+
+The Industry Intelligence component (marginarcDealInsights) shows "43 Accounts Analyzed" but "0 Total Deals". These numbers contradict each other — you can't have 43 accounts with 0 deals.
+
+Fix:
+1. Read the component's data source — it likely calls an Apex method that queries Opportunity records and aggregates by account/industry.
+2. The "0 Total Deals" is probably reading from a field that is null/empty for the demo data. Find the getter that computes `totalDeals` and fix it.
+3. If the data is coming from the API, check what the response returns and ensure the component handles missing/zero values gracefully.
+4. If both metrics cannot be populated from available data, hide the one that shows 0 rather than displaying contradictory numbers.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcDealInsights/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/**/*.js
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcDealInsights/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 8B — Dashboard KPI Tooltips + Pipeline Search (P1 #7, P2 #12)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.js
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.html
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.css
+
+Two issues from the executive review:
+
+**Issue 1: Dashboard KPIs lack tooltips (P1 #7)**
+
+The KPI strip shows 5 metrics: Total Pipeline, MarginArc Value, Win Rate, Alignment, Data Quality. The last three are proprietary metrics with no explanation. New users have no idea what "Alignment" or "Data Quality" mean.
+
+Fix:
+1. Add an info icon (ⓘ) next to each KPI label that shows a tooltip on hover/click. Use SLDS `lightning-helptext` component or a custom tooltip.
+2. Tooltip content:
+   - **Total Pipeline**: "Sum of Amount across all open opportunities in your pipeline."
+   - **MarginArc Value**: "Additional gross profit your team would capture if every deal followed MarginArc's margin recommendations. Calculated as the sum of (Recommended Margin - Planned Margin) x Deal Amount across all open deals."
+   - **Win Rate**: "Percentage of deals closed as Won in the last 90 days."
+   - **Alignment**: "Percentage of open deals where the rep's planned margin is within 3 percentage points of MarginArc's recommendation. Higher alignment = more margin-disciplined team."
+   - **Data Quality**: "Average prediction readiness score (0-100) across all open deals. Measures how many deal attributes are filled in — more data means more accurate recommendations."
+3. Style the tooltip consistently with the dark navy theme.
+
+**Issue 2: Pipeline table needs search (P2 #12)**
+
+361 deals across 15 pages with no text search. A manager looking for a specific deal or account must paginate through everything.
+
+Fix:
+1. Add a search input above the pipeline table (between the filter pills and the table header).
+2. Search should filter by: deal name, account name, and rep name (case-insensitive substring match).
+3. The search should work client-side against the already-loaded pipeline data (no additional API calls needed).
+4. Show a "Showing X of Y deals" counter that updates as the user types.
+5. The search should compose with the existing filter pills — e.g., searching "Cisco" while the "Critical" pill is active shows only critical Cisco deals.
+6. Add a clear button (X) to reset the search.
+7. Debounce the search input by 300ms to avoid excessive re-renders.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcManagerDashboard/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcManagerDashboard/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 8C — Password Policy Upgrade + Admin Security (CISO P1 #8)
+
+```
+Read these files:
+- lambda/server/src/licensing/admin.js — search for password validation logic (around line 1264 for the 6-char minimum)
+- lambda/server/src/licensing/auth.js — search for token expiry setting (around line 144)
+
+The CISO review flagged a weak admin password policy (6-character minimum) and several admin auth improvements.
+
+Fix:
+
+1. **Upgrade password policy** in admin.js:
+   - Minimum 12 characters (was 6)
+   - Must contain at least: 1 uppercase, 1 lowercase, 1 digit, 1 special character
+   - Add a validation function:
+     ```javascript
+     function validatePasswordStrength(password) {
+       if (password.length < 12) return 'Password must be at least 12 characters';
+       if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter';
+       if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter';
+       if (!/[0-9]/.test(password)) return 'Password must contain a digit';
+       if (!/[^A-Za-z0-9]/.test(password)) return 'Password must contain a special character';
+       return null; // valid
+     }
+     ```
+   - Apply this validation to: create admin user, update admin password, and any password reset flow
+
+2. **Reduce JWT token expiry** from 4 hours to 1 hour:
+   - In lambda/server/src/licensing/auth.js, find the token expiry setting and change to `expiresIn: '1h'`
+   - The admin SPA should already handle token expiry by redirecting to login — verify this works
+
+3. **Log failed authentication attempts**:
+   - In the `/auth/login` route handler in admin.js, add explicit logging for failed logins:
+     ```javascript
+     console.warn(JSON.stringify({
+       event: 'auth_failure',
+       username: req.body.username,
+       ip: req.ip,
+       userAgent: req.headers['user-agent'],
+       timestamp: new Date().toISOString()
+     }));
+     ```
+   - This enables CloudWatch alerting on brute-force patterns
+
+4. **Remove or deprecate the SSM fallback login** if it exists. The admin.js code may have a fallback path that accepts a shared SSM password — this should be removed or clearly marked as deprecated with a TODO.
+
+5. Run all tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 8D — Add org_id to recorded_deals for Multi-Tenant Isolation (CTO HIGH Risk)
+
+```
+Read these files:
+- lambda/server/src/analytics.js — the deal persistence layer (getAllDeals, getRecordedDeals, insertRecordedDeal, ensureDealsSchema)
+- lambda/server/src/phases.js — phase readiness checks that query recorded_deals
+- lambda/server/index.js — the /api/recommend and /api/deals route handlers (look for how x-org-id header is used)
+
+The CTO review flagged this as the HIGHEST severity architectural risk: `recorded_deals` has no customer/org identifier. All customers' deal data is mixed together. This means:
+- Customer A's proprietary deal data influences Customer B's recommendations
+- Phase readiness is computed across ALL customers' deals (semantically wrong)
+- No way to delete a single customer's data (right to erasure / data sovereignty)
+
+Fix:
+
+1. **Add org_id column to recorded_deals**:
+   In analytics.js's `ensureDealsSchema()` function, add:
+   ```sql
+   ALTER TABLE recorded_deals ADD COLUMN IF NOT EXISTS org_id TEXT DEFAULT 'global';
+   CREATE INDEX IF NOT EXISTS idx_recorded_deals_org_id ON recorded_deals(org_id);
+   ```
+   Use `ALTER TABLE ADD COLUMN IF NOT EXISTS` — do NOT drop and recreate the table (it has production data).
+
+2. **Update insertRecordedDeal()** to accept and store org_id:
+   - Add `orgId` parameter
+   - Include it in the INSERT statement
+   - Default to 'global' if not provided (backwards compatibility)
+
+3. **Update the /api/deals route handler** in index.js to pass the `x-org-id` header to `insertRecordedDeal()`.
+
+4. **Update getRecordedDeals()** and **getAllDeals()** in analytics.js:
+   - Add optional `orgId` parameter
+   - If provided, filter: `WHERE org_id = $1`
+   - If not provided, return all deals (backwards compatible for analytics/admin)
+
+5. **Update phase readiness checks** in phases.js:
+   - `checkPhaseReadiness()` should count deals for the SPECIFIC org, not globally
+   - Change the query to include `WHERE org_id = $1`
+   - Pass the orgId through from the API request
+
+6. **Update the /api/recommend route** in index.js:
+   - Pass orgId to `getAllDeals()` so that kNN only considers the customer's own deals + sample data (not other customers' deals)
+   - The `x-org-id` header is already read from the request — thread it through
+
+7. **Invalidate the deals cache** per-org:
+   - The current cache in analytics.js is global. Change it to a Map keyed by orgId: `const cache = new Map()` with entries like `cache.get(orgId)`
+   - Keep a 'global' cache entry for admin/analytics queries that don't filter by org
+
+8. IMPORTANT: All schema changes must use `ALTER TABLE ADD COLUMN IF NOT EXISTS` — NOT `DROP TABLE`. The table has real data.
+
+9. Run all tests: cd lambda/server && npm test
+   Some tests may need updating if they rely on the global deal pool behavior.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+## Epic 9: Testing + UX Polish — Sprint 26
+
+### 9A — Rules Engine + Win Probability Test Suite (CTO Risk #3)
+
+```
+Read these files:
+- lambda/server/src/rules.js — the 22-rule margin recommendation engine (319 lines, ZERO tests)
+- lambda/server/src/winprob.js — the win probability model (53 lines, ZERO tests)
+- lambda/server/__tests__/knn.test.js — example of existing test patterns (Jest)
+- lambda/server/__tests__/bom-optimizer.test.js — example of comprehensive test coverage
+
+The CTO review identified this as the #3 technical risk: the rules engine is the core IP of the product and has no test coverage. Any regression — a sign flip, a miscalculated clamp — would silently produce bad recommendations.
+
+Create two test files:
+
+**1. lambda/server/__tests__/rules.test.js**
+
+Test `computeRecommendation()` (the main export) and `ruleBasedRecommendation()`:
+
+a. **Base margin by segment**: Verify that Enterprise base is ~14%, MidMarket ~17%, SMB ~20% (from the rule logic at lines 68-71).
+
+b. **Deal registration boost**: Verify PremiumHunting adds ~6pp, StandardApproved adds ~3pp, NotRegistered adds 0 (lines 79-84).
+
+c. **Competition pressure**: Verify 0 competitors is neutral, 1 adds mild pressure, 2 adds more, 3+ adds ~-3.5pp (lines 86-96).
+
+d. **Industry adjustments**: Verify Financial Services gets a positive adjustment, Retail gets negative (INDUSTRY_MARGIN_ADJ map at lines 13-24).
+
+e. **OEM adjustments**: Verify Palo Alto gets +1.5pp, Microsoft gets -1pp (OEM_MARGIN_ADJ map at lines 27-38).
+
+f. **Policy floor enforcement**: Verify that the output never goes below 0.5% for critical competitive Enterprise deals and 3% for everything else (policyFloorFor at lines 4-8).
+
+g. **kNN blending formula**: Test with mock kNN data — verify that alpha increases with neighbor count (alpha = clamp(0.25 + count/40, 0.25, 0.6)) and that confidence reflects rules/kNN agreement.
+
+h. **Full integration**: Test computeRecommendation() with a complete deal object and verify the response shape includes suggestedMarginPct, confidence, explanation fields, and score components.
+
+i. **Edge cases**: Empty/null inputs, all-defaults, extreme values, unknown OEMs, unknown industries.
+
+**2. lambda/server/__tests__/winprob.test.js**
+
+Test `estimateWinProb()`:
+
+a. **Competition base rates**: 0 competitors → ~68%, 1 → ~58%, 2 → ~43%, 3+ → ~32% (line 5).
+
+b. **Deal registration impact**: PremiumHunting adds +12pp, StandardApproved adds +6pp (lines 8-9).
+
+c. **Relationship strength**: Strategic adds +6pp, Good adds +3pp, New subtracts -3pp (lines 15-17).
+
+d. **Margin-based logistic curve**: Verify that higher margins reduce win probability (knee at 18%, slope 0.08, lines 44-48). Test: 10% margin → high WP, 18% margin → medium WP, 30% margin → low WP.
+
+e. **Clamping**: Verify output is always between 5% and 95% (line 48).
+
+f. **Competitor profiles**: Verify that aggressive competitors (priceAggression > 3) reduce WP and passive competitors increase it (lines 37-41).
+
+g. **Combined effects**: Test a "best case" deal (no competitors, PremiumHunting, Strategic relationship, high value-add, low margin) and a "worst case" deal — verify reasonable spread.
+
+Run all tests: cd lambda/server && npm test
+Verify all new tests pass alongside existing 138 tests.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 9B — Add npm test to Lambda CI Pipeline (CTO Gap)
+
+```
+Read .github/workflows/deploy-lambda.yml — the current Lambda CI/CD pipeline.
+
+The CTO review identified that the Lambda pipeline does NOT run `npm test` before deploying. 138 tests pass locally but are never executed in CI — a broken test would not block deployment.
+
+Fix:
+
+1. Add a test step AFTER dependency installation but BEFORE creating the deployment zip:
+
+   ```yaml
+   - name: Install all dependencies (including dev)
+     working-directory: lambda/server
+     run: npm install
+
+   - name: Run tests
+     working-directory: lambda/server
+     run: npm test
+
+   - name: Install production dependencies only
+     working-directory: lambda/server
+     run: npm install --production
+   ```
+
+   Note: Tests require dev dependencies (jest, sinon, etc.), so we need `npm install` (full) for the test step, then `npm install --production` before zipping to keep the deployment package small.
+
+2. The existing pipeline has `npm install --production` at line 32. Change it to this 3-step flow:
+   - `npm install` (full, for testing)
+   - `npm test` (run tests)
+   - `npm install --production` (strip dev deps for deployment)
+
+3. Alternatively, if reinstalling is too slow, you can run tests with full deps and then prune:
+   ```yaml
+   - name: Install dependencies
+     working-directory: lambda/server
+     run: npm install
+
+   - name: Run tests
+     working-directory: lambda/server
+     run: npm test
+
+   - name: Prune dev dependencies
+     working-directory: lambda/server
+     run: npm prune --production
+   ```
+
+4. Make sure the test step fails the pipeline if any test fails (Jest exits with code 1 on failure — this is the default behavior, no extra config needed).
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 9C — Progressive Disclosure on Opportunity Page (UX P1 #3)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+- sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+
+The UX review scored cognitive load at 6/10 and flagged that the Margin Advisor widget tries to do too much in one card. After scoring, it contains 10+ distinct sections creating extensive vertical scroll on the Opportunity page.
+
+Implement progressive disclosure:
+
+1. **Collapsed scored state** (what the rep sees after scoring):
+   - Deal Score circle (the big number + spectrum bar) — KEEP visible
+   - Recommended margin and "Apply Recommendation" button — KEEP visible
+   - One-line summary: "Score: 92/100 | Rec: 18.5% margin | Confidence: High" — ADD this
+   - "Show Details" toggle button — ADD this
+
+2. **Expanded state** (clicking "Show Details"):
+   - Score factor pills breakdown
+   - Data quality indicators
+   - AI-generated explanation
+   - Plan vs Recommendation comparison table
+   - Key drivers section
+   - Recommendation history
+
+3. **Implementation**:
+   - Add a `isDetailExpanded` tracked boolean property, default to `false`
+   - Add a `toggleDetails()` handler
+   - Wrap the detail sections in a `template:if={isDetailExpanded}` block
+   - Animate the expand/collapse with CSS transition (max-height + opacity)
+   - Remember: LWC templates don't allow `!` unary expressions — use `get isDetailCollapsed() { return !this.isDetailExpanded; }`
+
+4. **The summary line** in collapsed state should use the compact format:
+   ```html
+   <div class="marginarc-score-summary">
+     <span class="summary-score">Score: {dealScore}/100</span>
+     <span class="summary-divider">|</span>
+     <span class="summary-margin">Rec: {recommendedMargin}%</span>
+     <span class="summary-divider">|</span>
+     <span class="summary-confidence">{confidenceLabel}</span>
+   </div>
+   ```
+
+5. Keep the "Score My Deal" button and the initial unscored state unchanged — progressive disclosure only applies AFTER scoring.
+
+6. The BOM Builder and Industry Intelligence components below should remain separate — this change only affects the Margin Advisor card height.
+
+Run prettier and eslint:
+  cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/**/*.{js,html}
+  cd sfdc && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/**/*.js
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 9D — BOM Builder Responsive Fix + Accessibility (UX P2 #13, P3 #14)
+
+```
+Read these files:
+- sfdc/force-app/main/default/lwc/marginarcBomBuilder/ — all files
+- sfdc/force-app/main/default/lwc/marginarcBomTable/ — all files (if separate component)
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.html
+- sfdc/force-app/main/default/lwc/marginarcManagerDashboard/marginarcManagerDashboard.js
+
+Two UX issues:
+
+**Issue 1: BOM Builder not responsive below 1024px (P2 #13)**
+
+The BOM table has 9 columns with no responsive breakpoint. On tablets and narrow laptops, it's unusable.
+
+Fix:
+1. Add a horizontal scroll wrapper around the BOM table:
+   ```css
+   .bom-table-wrapper {
+     overflow-x: auto;
+     -webkit-overflow-scrolling: touch;
+   }
+   ```
+2. Add a `@media (max-width: 1024px)` breakpoint that:
+   - Hides the least critical columns (productNumber, vendor, note) on small screens
+   - Reduces column padding
+   - Uses smaller font size for numeric cells
+3. Add a `@media (max-width: 768px)` breakpoint that converts to a card-based layout:
+   - Each BOM line becomes a stacked card
+   - Shows: description, category, quantity, unit cost, margin%, extended price
+   - Hides: product number, vendor, sortOrder
+
+**Issue 2: Accessibility gaps (P3 #14)**
+
+The UX review found several accessibility issues across components:
+
+Fix in marginarcManagerDashboard:
+1. **Section headers** use `onclick` but lack keyboard support:
+   - Add `role="button"` and `tabindex="0"` to all collapsible section header divs
+   - Add `onkeydown={handleSectionKeydown}` handler that triggers toggle on Enter/Space:
+     ```javascript
+     handleSectionKeydown(event) {
+       if (event.key === 'Enter' || event.key === ' ') {
+         event.preventDefault();
+         this.toggleSection(event);
+       }
+     }
+     ```
+   - Add `aria-expanded={isSectionExpanded}` to each header
+
+2. **Filter pills** in the pipeline section need `aria-pressed`:
+   - Add `aria-pressed={isActive}` to each filter pill button where isActive is true for the currently selected filter
+
+3. **Sort column headers** need proper ARIA:
+   - Change sort header divs to use `role="columnheader"`
+   - Add `aria-sort="ascending"` or `aria-sort="descending"` based on current sort state
+   - Add `tabindex="0"` and keyboard handler
+
+Fix in marginarcBomBuilder/marginarcBomTable:
+4. **Table role attributes**: Ensure the BOM table has `role="grid"` with proper `role="row"` and `role="gridcell"` on all rows/cells.
+
+Run prettier and eslint on all modified files.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+## Epic 10: Enterprise Readiness — Sprint 27
+
+### 10A — API Key Rotation Mechanism (CISO/CTO P2 #11)
+
+```
+Read these files:
+- lambda/server/index.js — the API key check (around line 263-271, single `MARGINARC_API_KEY` comparison)
+- lambda/server/src/licensing/auth.js — the JWT dual-key rotation pattern (lines 42-62 show how JWT supports two simultaneous secrets)
+- lambda/server/src/licensing/routes.js — the license validation endpoint
+
+The CISO and CTO both flagged: single shared API key with no rotation mechanism. Changing the key requires simultaneous Lambda + SFDC org updates = downtime risk.
+
+Implement dual-key API rotation (same pattern as JWT secrets):
+
+1. **Lambda side** — Support two simultaneous API keys:
+   - Load two SSM parameters: `/marginarc/api/key-primary` and `/marginarc/api/key-secondary`
+   - Accept requests if the provided key matches EITHER key
+   - Use constant-time comparison (`crypto.timingSafeEqual`) instead of `!==` to prevent timing attacks
+   - Cache both keys with a 5-minute TTL (re-read from SSM periodically to pick up rotations without redeploying)
+
+2. **Admin API** — Add key rotation endpoints:
+   - `POST /admin/api/rotate-api-key` — Generates a new key, stores it as the secondary key in SSM, returns the new key. The old primary key remains valid.
+   - `POST /admin/api/promote-api-key` — Promotes the secondary key to primary, clears the old primary. Now only the new key works.
+   - Both require `super_admin` role.
+
+3. **Rotation flow** (documented in response):
+   - Step 1: Admin calls rotate-api-key → gets new key
+   - Step 2: Admin updates SFDC org's Fulcrum_Config__c.API_Key__c with the new key
+   - Step 3: Admin verifies SFDC can reach Lambda with new key
+   - Step 4: Admin calls promote-api-key → old key stops working
+   - Zero-downtime: both keys work simultaneously between steps 1-4
+
+4. **Per-customer API keys** (stretch goal — only implement if time allows):
+   - Add an `api_key` column to the `customers` table
+   - During license activation, generate a unique API key per customer
+   - The SFDC org receives its unique key in the activation response
+   - The Lambda API key check becomes: match against global key OR any customer's key
+   - This enables per-customer key revocation
+
+5. Update the OpenAPI spec (openapi.yaml) to document the rotation endpoints.
+
+6. Run all tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 10B — MFA on Admin Portal (CISO P1, SOC 2 Requirement)
+
+```
+Read these files:
+- lambda/server/src/licensing/admin.js — admin auth routes (login, create user, password management)
+- lambda/server/src/licensing/auth.js — JWT token generation and verification
+- lambda/server/src/licensing/db.js — database schema and migrations
+
+The CISO review flagged MFA as a SOC 2 blocker. Implement TOTP-based MFA for the admin portal.
+
+1. **Database changes** in db.js:
+   - Add to admin_users table: `ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS mfa_secret TEXT, ADD COLUMN IF NOT EXISTS mfa_enabled BOOLEAN DEFAULT FALSE`
+   - Do NOT use DROP TABLE — existing admin users have data
+
+2. **Install dependency**: Add `otpauth` to package.json for TOTP generation/verification.
+
+3. **MFA setup flow** — new admin endpoints:
+   - `POST /admin/api/mfa/setup` — Generates a TOTP secret, returns the secret + provisioning URI (for Google Authenticator / Authy). Stores the secret (encrypted) on the admin user record. Does NOT enable MFA yet.
+   - `POST /admin/api/mfa/verify` — Takes a TOTP code, verifies it against the stored secret. If valid, sets `mfa_enabled = true` on the admin user. This confirms the user successfully configured their authenticator app.
+   - `POST /admin/api/mfa/disable` — Requires super_admin role. Disables MFA for a specific admin user (emergency recovery).
+
+4. **Login flow change**:
+   - If `mfa_enabled = false`: current behavior (username/password → JWT token)
+   - If `mfa_enabled = true`:
+     - Step 1: username/password → returns `{ mfa_required: true, mfa_token: "<short-lived-token>" }` (the mfa_token is a JWT with 5-minute expiry and `mfa_pending: true` claim)
+     - Step 2: Client sends `{ mfa_token, totp_code }` to `POST /admin/api/mfa/authenticate` → if valid, returns the full admin JWT token
+   - The `requireAuth` middleware should reject tokens with `mfa_pending: true` for all routes except `/admin/api/mfa/authenticate`
+
+5. **Enforce MFA for new admin users**:
+   - When creating a new admin user, generate and return the MFA setup link
+   - Add a flag: after a configurable date (or after first customer onboard), MFA becomes required for all admin users
+
+6. **Admin SPA changes**: The admin React SPA will need a new MFA verification screen. If modifying the admin SPA is out of scope for this prompt, at minimum ensure the API endpoints work correctly and document the flow. The SPA update can be a separate prompt.
+
+7. Run all tests: cd lambda/server && npm test
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 10C — SOC 2 Documentation Prep (CISO Compliance Roadmap)
+
+```
+This is a DOCUMENTATION task, not a code task. Create two documents.
+
+Read these files for context:
+- docs/executive-review-2026-02-17.md — the CISO compliance roadmap section
+- docs/network-design.md — privacy guarantees section
+- lambda/server/src/licensing/db.js — data storage patterns
+- lambda/server/src/licensing/auth.js — authentication patterns
+
+**Document 1: docs/data-processing-agreement.md**
+
+Create a DPA template covering:
+1. **Data processed**: What data MarginArc processes from the customer's Salesforce org:
+   - Opportunity fields: OEM vendor, cost, segment, product category, margin, stage, amount
+   - Account fields: name, industry (used for display only, not stored permanently)
+   - User fields: owner name (for dashboard display only)
+   - What is NOT sent: customer PII, contact records, email addresses, phone numbers
+2. **Data storage**: Where data is stored (AWS us-east-1, RDS PostgreSQL, encrypted at rest via AWS KMS)
+3. **Data retention**: How long deal data is retained (proposal: 36 months, configurable per customer)
+4. **Data deletion**: Process for deleting a customer's data on contract termination
+5. **Sub-processors**: AWS (hosting), Google Cloud (Gemini AI explanations — deal context sent, not customer names)
+6. **Security measures**: Summarize the security controls (SSM secrets, bcrypt, JWT rotation, FLS enforcement, parameterized SQL, rate limiting, HTTPS/TLS)
+7. **Breach notification**: 72-hour notification commitment (GDPR standard)
+8. **Network data sharing** (if applicable): Reference the network-design.md privacy guarantees
+
+**Document 2: docs/security-overview.md**
+
+Create a security overview document suitable for sharing with prospects' InfoSec teams during procurement:
+1. **Architecture**: Two-tier (SFDC package + AWS Lambda), no data leaves Salesforce except anonymized deal attributes for scoring
+2. **Authentication**: SFDC native auth (no separate login), admin portal uses bcrypt + JWT + MFA
+3. **Authorization**: SFDC FLS/CRUD enforcement, with-sharing, permission sets (Admin/Manager/User)
+4. **Encryption**: In transit (TLS 1.2+), at rest (AWS KMS for RDS, AES-256-GCM for OAuth tokens)
+5. **Data handling**: What data is sent to the API, what is stored, what is ephemeral
+6. **Compliance**: SOC 2 Type I in progress, DPA available, GDPR-ready
+7. **Network security**: VPC, security groups, no public DB access
+8. **Monitoring**: CloudWatch logging, admin audit trail, rate limiting
+9. **Vulnerability management**: Dependency scanning, CI/CD gating
+
+These are markdown documents — not code. Keep the tone professional and factual (not marketing).
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+### 10D — Design Partner Onboarding Package
+
+```
+This is a DOCUMENTATION task. Create a playbook for onboarding the first 3-5 design partners.
+
+Read these files for context:
+- docs/executive-review-2026-02-17.md — CRO section on POC success criteria and pricing guidance
+- sfdc/force-app/main/default/classes/MarginArcInstallHandler.cls — what happens on package install
+- sfdc/force-app/main/default/classes/MarginArcDemoDataLoader.cls — demo data loading
+- sfdc/force-app/main/default/lwc/marginarcSetupWizard/ — the setup wizard
+
+Create docs/onboarding-guide.md:
+
+1. **Pre-onboarding checklist** (what the MarginArc team does before the customer call):
+   - Create customer record in admin portal
+   - Generate license key
+   - Prepare scenario data matching the customer's VAR profile
+
+2. **Day 1: Install + Configure (1 hour call)**:
+   - Install the unlocked package
+   - Assign permission sets (Fulcrum_Admin, Fulcrum_User, Fulcrum_Manager)
+   - Activate license
+   - Run connection test
+   - Load demo data (pick the matching VAR scenario)
+
+3. **Day 1-3: Data Quality Assessment**:
+   - Run the Data Quality check in the Setup Wizard
+   - Identify missing fields
+   - Create data cleanup plan
+   - Run Historical Backfill analysis
+
+4. **Week 1: Rep Enablement**:
+   - Training: "How to Score Your Deal"
+   - Target: 50 scored deals in 7 days to unlock Phase 2
+   - Daily adoption monitoring via dashboard
+
+5. **Week 2: Phase 2 Activation**:
+   - Enable Phase 2 via admin portal
+   - Configure OEM Vendors and Competitors with customer-specific data
+   - Updated rep training on margin recommendations
+
+6. **Week 3-4: Measure + Report**:
+   - Dashboard review with sales leadership
+   - Alignment metric baseline
+   - GP Upside calculation
+   - Cohort analysis (aligned vs off-target)
+   - Collect rep testimonials
+
+7. **Day 30: POC Decision Meeting**:
+   - Present CRO success criteria results
+   - Present pricing proposal ($25-75/user/month)
+   - Decision: expand or exit
+
+Keep it practical and actionable — this is the playbook the MarginArc team will use repeatedly.
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
