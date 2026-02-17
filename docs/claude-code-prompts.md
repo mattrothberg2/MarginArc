@@ -1729,7 +1729,7 @@ Key finding: The client-side `computeDealScore()` in the LWC and the server-side
 
 **Execution order:** 11A + 11B in parallel → 11C → 11D → 11E
 
-### 11A — Fix Segment Detection + Auto-Score on Page Load (Founder Issues #5, #1)
+### 11A — Fix Segment Detection + Auto-Score on Page Load (Founder Issues #5, #1) [COMPLETE — PR #66]
 
 ```
 Read these files:
@@ -1772,7 +1772,7 @@ Run prettier and eslint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 11B — Unify Deal Scoring + Natural Language Factor Labels (Founder Issues #3, server-side)
+### 11B — Unify Deal Scoring + Natural Language Factor Labels (Founder Issues #3, server-side) [COMPLETE — PR #65]
 
 ```
 Read these files:
