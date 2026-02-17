@@ -838,7 +838,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 7: P0 Fixes — Sprint 24 (This Week)
 
-### 7A — DB SSL + Security Headers + Gemini Key to SSM (CISO CRITICAL-1 & CRITICAL-2)
+### 7A — DB SSL + Security Headers + Gemini Key to SSM (CISO CRITICAL-1 & CRITICAL-2) [COMPLETE — PR #44]
 
 ```
 Read these files:
@@ -904,7 +904,7 @@ Run all tests: cd lambda/server && npm test
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 7B — Fix ROI Report Tab (P0 — Every Reviewer Flagged)
+### 7B — Fix ROI Report Tab (P0 — Every Reviewer Flagged) [COMPLETE — PR #43]
 
 ```
 Read these files:
@@ -948,7 +948,7 @@ Investigate and fix:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 7C — Promote Demo Org to Phase 2 + Pre-Load OEM/Competitor Data (P0)
+### 7C — Promote Demo Org to Phase 2 + Pre-Load OEM/Competitor Data (P0) [COMPLETE — Org Config]
 
 ```
 This is an ORG CONFIGURATION task, not a code task. You are running Apex anonymous scripts and API calls against the live Salesforce org and Lambda API.
@@ -1034,7 +1034,7 @@ Take screenshots of:
 No code changes needed — this is all org configuration. No branch/PR required.
 ```
 
-### 7D — Make API Fields Optional with Defaults (P1 #5)
+### 7D — Make API Fields Optional with Defaults (P1 #5) [COMPLETE — PR #45]
 
 ```
 Read lambda/server/index.js — specifically the Zod schemas starting around line 289.
