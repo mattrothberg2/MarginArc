@@ -196,13 +196,22 @@
 .kpi-amber {
   color: var(--amber-500);
 }
+.kpi-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
 .kpi-label {
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.5px;
   color: var(--slate-500);
-  margin-top: 4px;
   text-transform: uppercase;
+}
+.kpi-tooltip {
+  --slds-c-icon-color-foreground-default: var(--slate-400);
 }
 .kpi-sub {
   font-size: 12px;
@@ -368,6 +377,74 @@
   background: var(--navy-800);
   border-color: var(--navy-800);
   color: white;
+}
+
+/* ── Search Bar ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 28px 0;
+}
+.search-input-wrapper {
+  position: relative;
+  flex: 1;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--slate-400);
+  pointer-events: none;
+}
+.search-input {
+  width: 100%;
+  padding: 8px 36px 8px 36px;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--navy-900);
+  background: white;
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+.search-input::placeholder {
+  color: var(--slate-400);
+}
+.search-input:focus {
+  border-color: var(--teal-500);
+  box-shadow: 0 0 0 3px rgba(2, 177, 181, 0.1);
+}
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--slate-200);
+  border: none;
+  border-radius: 50%;
+  color: var(--slate-600);
+  font-size: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.search-clear-btn:hover {
+  background: var(--slate-400);
+  color: white;
+}
+.search-results-count {
+  font-size: 12px;
+  color: var(--slate-500);
+  white-space: nowrap;
 }
 
 /* ── Pagination ── */
