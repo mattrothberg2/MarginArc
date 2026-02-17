@@ -27,10 +27,14 @@ import docsAuthRouter from './src/docs/auth.js'
 import { verifyDocToken } from './src/docs/auth.js'
 import docsContentRouter from './src/docs/content.js'
 
+// Deal persistence
+import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, invalidateDealsCache } from './src/analytics.js'
+
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
 ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
+ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -38,8 +42,6 @@ const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME
 const sampleDeals = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'src/data/sample_deals.json'), 'utf-8')
 )
-const recordedDeals = []
-const allDeals = ()=> sampleDeals.concat(recordedDeals)
 const customers = JSON.parse(
   fs.readFileSync(path.join(__dirname, 'src/data/customers.json'), 'utf-8')
 )
@@ -323,7 +325,14 @@ function formatCurrencyDelta(value){
 
 app.get('/health', (req,res)=> res.json({ ok:true }))
 
-app.get('/api/sampledeals', (req,res)=> res.json(allDeals()))
+app.get('/api/sampledeals', async (req,res)=> {
+  try {
+    const deals = await fetchAllDeals(sampleDeals)
+    res.json(deals)
+  } catch (e) {
+    res.json(sampleDeals)
+  }
+})
 
 app.get('/api/industries', (req,res)=> res.json(industries))
 
@@ -354,7 +363,8 @@ app.post('/api/recommend', async (req,res)=> {
     const manualBomLines = Array.isArray(req.body?.bomLines) ? BomLinesInput.parse(req.body.bomLines) : []
     const manualStats = manualBomLines.length ? computeManualBomStats(manualBomLines) : null
 
-    const rec = await computeRecommendation(input, allDeals(), { bomStats: manualStats })
+    const deals = await fetchAllDeals(sampleDeals)
+    const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
     const algorithmMarginPct = rec.suggestedMarginPct
     const algorithmSuggestedPrice = rec.suggestedPrice
 
@@ -451,6 +461,10 @@ app.post('/api/deals', (req,res)=> {
       status,
       oemCost: input.oemCost,
       lossReason: lossReason || '',
+      oem: input.oem || '',
+      servicesAttached: input.servicesAttached ?? null,
+      quarterEnd: input.quarterEnd ?? null,
+      competitorNames: input.competitorNames || [],
       bomLineCount: manualStats?.lineCount || 0,
       bomAvgMarginPct: manualStats?.avgMarginPct ?? null,
       hasManualBom: Boolean(manualStats?.manual)
@@ -468,7 +482,10 @@ app.post('/api/deals', (req,res)=> {
         recommendedMarginPct: line.recommendedMarginPct
       }))
     }
-    recordedDeals.push(deal)
+    // Persist to DB (fire-and-forget — don't block the HTTP response)
+    insertRecordedDeal(deal)
+      .then(() => invalidateDealsCache())
+      .catch(err => console.error('Failed to persist deal:', err.message))
     res.json({ ok:true })
   } catch (e) {
     res.status(400).json({ error: e?.message || 'Invalid input' })
