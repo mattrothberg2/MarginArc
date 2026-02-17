@@ -1523,7 +1523,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 10: Enterprise Readiness — Sprint 27
 
-### 10A — API Key Rotation Mechanism (CISO/CTO P2 #11)
+### 10A — API Key Rotation Mechanism (CISO/CTO P2 #11) [COMPLETE — PR #56]
 
 ```
 Read these files:
@@ -1606,7 +1606,7 @@ The CISO review flagged MFA as a SOC 2 blocker. Implement TOTP-based MFA for the
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 10C — SOC 2 Documentation Prep (CISO Compliance Roadmap)
+### 10C — SOC 2 Documentation Prep (CISO Compliance Roadmap) [COMPLETE — PR #57]
 
 ```
 This is a DOCUMENTATION task, not a code task. Create two documents.
