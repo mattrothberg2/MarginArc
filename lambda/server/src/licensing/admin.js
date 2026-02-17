@@ -5,6 +5,7 @@ import { generateLicenseKey } from './license.js';
 import { verifyToken, generateToken, requireRole } from '../middleware/auth.js';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { makeApiCall } from '../salesforce/oauth.js';
+import { getCustomerPhaseById, setCustomerPhase, checkPhaseReadiness } from '../phases.js';
 
 const router = express.Router();
 
@@ -1515,6 +1516,80 @@ router.delete('/doc-users/:id', async (req, res) => {
     return res.json({ success: true, message: 'Doc user deleted' });
   } catch (error) {
     console.error('Error deleting doc user:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// ===========================
+// CUSTOMER PHASE MANAGEMENT
+// ===========================
+
+/**
+ * GET /customers/:id/phase
+ * Returns the current algorithm phase and readiness for Phase 2/3.
+ */
+router.get('/customers/:id/phase', async (req, res) => {
+  try {
+    // Verify customer exists
+    const customerResult = await query('SELECT id FROM customers WHERE id = $1', [req.params.id]);
+    if (customerResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    const readiness = await checkPhaseReadiness(req.params.id);
+    return res.json(readiness);
+  } catch (error) {
+    console.error('Error getting customer phase:', error);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /customers/:id/phase
+ * Set the algorithm phase for a customer. Validates that requirements are met.
+ */
+router.post('/customers/:id/phase', requireRole('super_admin', 'admin'), async (req, res) => {
+  try {
+    const { phase } = req.body;
+
+    if (![1, 2, 3].includes(phase)) {
+      return res.status(400).json({ message: 'phase must be 1, 2, or 3' });
+    }
+
+    // Verify customer exists
+    const customerResult = await query('SELECT id, name FROM customers WHERE id = $1', [req.params.id]);
+    if (customerResult.rows.length === 0) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    // Check readiness requirements for the requested phase
+    const readiness = await checkPhaseReadiness(req.params.id);
+
+    if (phase === 2 && !readiness.phase2Ready) {
+      return res.status(400).json({
+        message: 'Phase 2 requirements not met',
+        requirements: readiness.phase2Requirements
+      });
+    }
+
+    if (phase === 3 && !readiness.phase3Ready) {
+      return res.status(400).json({
+        message: 'Phase 3 requirements not met',
+        requirements: readiness.phase3Requirements
+      });
+    }
+
+    await setCustomerPhase(req.params.id, phase);
+    await logAudit(req, 'set_phase', 'customers', req.params.id, {
+      phase,
+      customerName: customerResult.rows[0].name
+    });
+
+    // Re-read the updated readiness state
+    const updated = await checkPhaseReadiness(req.params.id);
+    return res.json({ success: true, ...updated });
+  } catch (error) {
+    console.error('Error setting customer phase:', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 });
