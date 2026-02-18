@@ -618,6 +618,18 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     const tips = [];
     let id = 0;
 
+    // Priority 0: Benchmark insights (Phase 1 with industry_benchmark source)
+    const benchmarkInsights = this.recommendation?.benchmarkInsights;
+    if (Array.isArray(benchmarkInsights) && benchmarkInsights.length > 0) {
+      benchmarkInsights.forEach((text, i) => {
+        tips.push({
+          id: `benchmark-${i}`,
+          icon: "utility:trending",
+          text
+        });
+      });
+    }
+
     // 1. Top drivers from API response (strengths / risks)
     const topDriversArr = this.recommendation?.topDrivers;
     if (Array.isArray(topDriversArr)) {
@@ -867,6 +879,140 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     if (amount >= 1000000) return `$${(amount / 1000000).toFixed(1)}M`;
     if (amount >= 1000) return `$${(amount / 1000).toFixed(0)}K`;
     return `$${amount}`;
+  }
+
+  // =========================================================================
+  // ML / Benchmark Source Detection
+  // =========================================================================
+
+  get recommendationSource() {
+    return this.recommendation?.source || "rules_engine";
+  }
+  get isMLRecommendation() {
+    return this.recommendationSource === "ml_model";
+  }
+  get isBenchmarkRecommendation() {
+    return this.recommendationSource === "industry_benchmark";
+  }
+  get isNotBenchmarkRecommendation() {
+    return !this.isBenchmarkRecommendation;
+  }
+  get hasMarginRange() {
+    return this.recommendation?.suggestedMarginRange != null;
+  }
+  get marginRangeLow() {
+    return this.recommendation?.suggestedMarginRange?.low || 0;
+  }
+  get marginRangeHigh() {
+    return this.recommendation?.suggestedMarginRange?.high || 0;
+  }
+  get benchmarkSource() {
+    return this.recommendation?.benchmarkSource || "Industry benchmark";
+  }
+  get hasConservativeMargin() {
+    return this.recommendation?.conservativeMarginPct != null;
+  }
+  get conservativeMarginPct() {
+    return this.recommendation?.conservativeMarginPct?.toFixed(1) || "0.0";
+  }
+  get aggressiveMarginPct() {
+    return this.recommendation?.aggressiveMarginPct?.toFixed(1) || "0.0";
+  }
+  get hasMLKeyDrivers() {
+    return (
+      this.isMLRecommendation &&
+      Array.isArray(this.recommendation?.keyDrivers) &&
+      this.recommendation.keyDrivers.length > 0
+    );
+  }
+  get mlKeyDrivers() {
+    return (this.recommendation?.keyDrivers || []).map((d, i) => ({
+      id: `driver-${i}`,
+      sentence: d.sentence,
+      impact:
+        d.impact > 0 ? `+${d.impact.toFixed(1)}pp` : `${d.impact.toFixed(1)}pp`,
+      isPositive: d.direction === "positive",
+      isNegative: d.direction === "negative",
+      iconName:
+        d.direction === "positive" ? "utility:arrowup" : "utility:arrowdown",
+      impactClass:
+        d.direction === "positive"
+          ? "driver-impact-positive"
+          : "driver-impact-negative"
+    }));
+  }
+  get hasModelMetrics() {
+    return this.recommendation?.modelMetrics != null;
+  }
+  get modelMetricsDisplay() {
+    const m = this.recommendation?.modelMetrics;
+    if (!m) return "";
+    const deals = m.dealCount || 0;
+    const accuracy = m.auc ? Math.round(m.auc * 100) : 0;
+    const trained = m.trainedAt
+      ? new Date(m.trainedAt).toLocaleDateString()
+      : "unknown";
+    return `Model trained on ${deals} deals | Accuracy: ${accuracy}% | Last trained: ${trained}`;
+  }
+
+  // Benchmark range bar computed properties
+  get benchmarkPlannedPosition() {
+    const planned = this.opportunityData?.plannedMargin || 0;
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    if (high <= low) return 50;
+    // Allow some padding outside range (clamp to 0-100)
+    const pct = ((planned - low) / (high - low)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }
+  get benchmarkPlannedStyle() {
+    return `left: ${this.benchmarkPlannedPosition}%`;
+  }
+  get benchmarkMedianPosition() {
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    if (high <= low) return 50;
+    const median = (low + high) / 2;
+    return ((median - low) / (high - low)) * 100;
+  }
+  get benchmarkMedianStyle() {
+    return `left: ${this.benchmarkMedianPosition}%`;
+  }
+  get benchmarkAssessment() {
+    const planned = this.opportunityData?.plannedMargin || 0;
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    if (planned < low) return "Below Benchmark";
+    if (planned > high) return "Above Benchmark";
+    return "In Range";
+  }
+  get benchmarkAssessmentClass() {
+    const assessment = this.benchmarkAssessment;
+    if (assessment === "In Range")
+      return "benchmark-assessment benchmark-assessment-green";
+    if (assessment === "Below Benchmark")
+      return "benchmark-assessment benchmark-assessment-amber";
+    return "benchmark-assessment benchmark-assessment-red";
+  }
+  get benchmarkPlannedDotClass() {
+    const planned = this.opportunityData?.plannedMargin || 0;
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    if (planned < low) return "benchmark-range-planned benchmark-below";
+    if (planned > high) return "benchmark-range-planned benchmark-above";
+    return "benchmark-range-planned benchmark-in-range";
+  }
+
+  // ML three-option margin display
+  get showMLMarginOptions() {
+    return (
+      this.showMarginRecommendation &&
+      this.isMLRecommendation &&
+      this.hasConservativeMargin
+    );
+  }
+  get showSingleMarginCallout() {
+    return this.showMarginRecommendation && !this.showMLMarginOptions;
   }
 
   // Current deal basics for top section
