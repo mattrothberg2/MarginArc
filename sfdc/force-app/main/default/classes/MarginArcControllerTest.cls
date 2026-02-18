@@ -292,6 +292,50 @@ private class MarginArcControllerTest {
     }
   }
 
+  /**
+   * Segment override sanity check: when Fulcrum_Customer_Segment__c = 'SMB'
+   * but Account.AnnualRevenue = $12B (Enterprise), the LWC client-side logic
+   * in marginarcMarginAdvisor.js mapOpportunityData() overrides the segment to
+   * "Enterprise" because the tier gap is >= 2 (SMB=0, Enterprise=2).
+   *
+   * This cannot be tested in Apex because the override is in the LWC JavaScript.
+   * The Apex controller returns raw field values; the LWC applies the sanity check.
+   * Verified via LWC component testing and manual QA.
+   */
+  @isTest
+  static void testSegmentOverrideDataSetup() {
+    // Create Account with Enterprise-level revenue but SMB-tagged Opportunity
+    Account bigAccount = new Account(
+      Name = 'Regeneron Test Account',
+      Industry = 'Healthcare',
+      AnnualRevenue = 12000000000.0
+    );
+    insert bigAccount;
+
+    Opportunity smbOnEnterprise = new Opportunity(
+      Name = 'Regeneron SMB Override Test',
+      AccountId = bigAccount.Id,
+      Amount = 56000,
+      StageName = 'Prospecting',
+      CloseDate = Date.today().addDays(30),
+      Fulcrum_Customer_Segment__c = 'SMB'
+    );
+    insert smbOnEnterprise;
+
+    Test.startTest();
+    Map<String, Object> result = MarginArcController.getOpportunityData(
+      smbOnEnterprise.Id
+    );
+    Test.stopTest();
+
+    // Apex returns the raw field value 'SMB' — the LWC override happens client-side
+    System.assertEquals(
+      'SMB',
+      result.get('customerSegment'),
+      'Apex should return the raw explicit segment; LWC applies the revenue-based override to Enterprise'
+    );
+  }
+
   @isTest
   static void testSegmentMappingFromAmount() {
     // Enterprise: >= 500000

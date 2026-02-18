@@ -442,23 +442,46 @@ global with sharing class MarginArcDemoDataService {
   @TestVisible
   private static List<Account> createAccounts(String size) {
     List<Account> accounts = new List<Account>{
-      new Account(Name = 'Acme Technologies (Demo)', Industry = 'Technology'),
-      new Account(Name = 'Meridian Healthcare (Demo)', Industry = 'Healthcare'),
+      new Account(
+        Name = 'Acme Technologies (Demo)',
+        Industry = 'Technology',
+        AnnualRevenue = 2500000000.0
+      ),
+      new Account(
+        Name = 'Meridian Healthcare (Demo)',
+        Industry = 'Healthcare',
+        AnnualRevenue = 850000000.0
+      ),
       new Account(
         Name = 'Pinnacle Financial Group (Demo)',
-        Industry = 'Finance'
+        Industry = 'Finance',
+        AnnualRevenue = 5200000000.0
       ),
       new Account(
         Name = 'Atlas Manufacturing (Demo)',
-        Industry = 'Manufacturing'
+        Industry = 'Manufacturing',
+        AnnualRevenue = 175000000.0
       ),
-      new Account(Name = 'Horizon Energy (Demo)', Industry = 'Energy'),
+      new Account(
+        Name = 'Horizon Energy (Demo)',
+        Industry = 'Energy',
+        AnnualRevenue = 8000000.0
+      ),
       new Account(
         Name = 'Velocity Logistics (Demo)',
-        Industry = 'Transportation'
+        Industry = 'Transportation',
+        AnnualRevenue = 85000000.0
       ),
-      new Account(Name = 'Crestline Retail (Demo)', Industry = 'Retail'),
-      new Account(Name = 'Spectrum Media (Demo)', Industry = 'Communications')
+      new Account(
+        Name = 'Crestline Retail (Demo)',
+        Industry = 'Retail',
+        AnnualRevenue = 35000000.0
+      ),
+      new Account(
+        Name = 'Spectrum Media (Demo)',
+        Industry = 'Communications',
+        AnnualRevenue = 1500000000.0
+      )
     };
 
     if (size == 'medium') {
@@ -466,62 +489,88 @@ global with sharing class MarginArcDemoDataService {
         new List<Account>{
           new Account(
             Name = 'Nexus Pharmaceuticals (Demo)',
-            Industry = 'Healthcare'
+            Industry = 'Healthcare',
+            AnnualRevenue = 1200000000.0
           ),
-          new Account(Name = 'Ironclad Insurance (Demo)', Industry = 'Finance'),
+          new Account(
+            Name = 'Ironclad Insurance (Demo)',
+            Industry = 'Finance',
+            AnnualRevenue = 3800000000.0
+          ),
           new Account(
             Name = 'Brightpath Education (Demo)',
-            Industry = 'Education'
+            Industry = 'Education',
+            AnnualRevenue = 65000000.0
           ),
           new Account(
             Name = 'Coastal Shipping (Demo)',
-            Industry = 'Transportation'
+            Industry = 'Transportation',
+            AnnualRevenue = 120000000.0
           ),
           new Account(
             Name = 'Summit Consulting (Demo)',
-            Industry = 'Consulting'
+            Industry = 'Consulting',
+            AnnualRevenue = 45000000.0
           ),
           new Account(
             Name = 'Redwood Technologies (Demo)',
-            Industry = 'Technology'
+            Industry = 'Technology',
+            AnnualRevenue = 950000000.0
           ),
           new Account(
             Name = 'Granite Construction (Demo)',
-            Industry = 'Construction'
+            Industry = 'Construction',
+            AnnualRevenue = 200000000.0
           ),
           new Account(
             Name = 'Bluewave Telecom (Demo)',
-            Industry = 'Communications'
+            Industry = 'Communications',
+            AnnualRevenue = 2100000000.0
           ),
-          new Account(Name = 'Apex Defense (Demo)', Industry = 'Government'),
+          new Account(
+            Name = 'Apex Defense (Demo)',
+            Industry = 'Government',
+            AnnualRevenue = 4500000000.0
+          ),
           new Account(
             Name = 'Evergreen Agriculture (Demo)',
-            Industry = 'Agriculture'
+            Industry = 'Agriculture',
+            AnnualRevenue = 7500000.0
           ),
           new Account(
             Name = 'Pacific Biotech (Demo)',
-            Industry = 'Biotechnology'
+            Industry = 'Biotechnology',
+            AnnualRevenue = 55000000.0
           ),
           new Account(
             Name = 'Sterling Hospitality (Demo)',
-            Industry = 'Hospitality'
+            Industry = 'Hospitality',
+            AnnualRevenue = 90000000.0
           ),
           new Account(
             Name = 'Vanguard Aerospace (Demo)',
-            Industry = 'Technology'
+            Industry = 'Technology',
+            AnnualRevenue = 6800000000.0
           ),
           new Account(
             Name = 'Prairie Utilities (Demo)',
-            Industry = 'Utilities'
+            Industry = 'Utilities',
+            AnnualRevenue = 350000000.0
           ),
-          new Account(Name = 'Metro Real Estate (Demo)', Industry = 'Finance'),
+          new Account(
+            Name = 'Metro Real Estate (Demo)',
+            Industry = 'Finance',
+            AnnualRevenue = 75000000.0
+          ),
           new Account(
             Name = 'Falcon Automotive (Demo)',
-            Industry = 'Manufacturing'
+            Industry = 'Manufacturing',
+            AnnualRevenue = 1500000000.0
           ),
           new Account(
             Name = 'Trident Legal (Demo)',
-            Industry = 'Not For Profit'
+            Industry = 'Not For Profit',
+            AnnualRevenue = 3000000.0
           )
         }
       );
