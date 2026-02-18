@@ -2010,3 +2010,286 @@ Run prettier and eslint on modified files.
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
+
+---
+
+## Epic 12: Data Credibility & Trust Fixes (Sprint 30)
+
+**Context:** After shipping 21 fixes (Epics 7-11), the founder tested the live product on a real deal — Regeneron (a $12B pharma company) with a $56K Cisco networking opportunity. Five evaluator agents (VP Product, CTO, Sales Rep, VP Sales, CFO) reviewed the screenshots and identified 9 issues that undermine data credibility and trust. The CFO rated purchase readiness at 4/10: "a wrong number is worse than no number."
+
+**Core problem:** The segment detection fix (PR #66) added AnnualRevenue-based inference, but it is never reached because the `Fulcrum_Customer_Segment__c` field has an explicit "SMB" value on the Opportunity (from demo data). This cascades into every downstream calculation.
+
+### Concurrency Guide
+- **12A** and **12B** can run in **parallel** (different files)
+- **12C** depends on **12A** (both touch marginarcMarginAdvisor.js)
+
+---
+
+### Prompt 12A: Fix Segment Override + Demo Data [SFDC] (Sprint 30)
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The segment detection code was fixed in PR #66 to use Account.AnnualRevenue as a fallback. The code is correct — but it never fires because the `Fulcrum_Customer_Segment__c` picklist field has an EXPLICIT value of "SMB" set on demo Opportunities (from the demo data loader). The explicit field takes priority at line 250 of `marginarcMarginAdvisor.js`, so the AnnualRevenue path at line 252 is never reached.
+
+Regeneron is a $12B pharma company. A $56K deal there should be "Enterprise", not "SMB." The wrong segment cascades everywhere: base margin is 6pp wrong (20% SMB vs 14% Enterprise), deal insights reference "SMB segment pricing", and the deal score drops from ~55 to 36.
+
+## File: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Add segment sanity check
+
+In `mapOpportunityData()` around line 250-269, AFTER the existing segment derivation logic, add a sanity check that overrides the explicit segment when it contradicts Account.AnnualRevenue by 2+ tiers:
+
+```javascript
+// After the existing if/else if/else segment block (around line 269):
+
+// Sanity check: if explicit segment contradicts AnnualRevenue by 2+ tiers, override
+if (!isSegmentInferred && annualRevenue != null && annualRevenue > 0) {
+  const revenueSegment =
+    annualRevenue >= 100000000 ? "Enterprise"
+    : annualRevenue >= 10000000 ? "MidMarket"
+    : "SMB";
+
+  const tiers = { SMB: 0, MidMarket: 1, Enterprise: 2 };
+  const explicitTier = tiers[customerSegment] ?? 1;
+  const revenueTier = tiers[revenueSegment] ?? 1;
+
+  if (Math.abs(explicitTier - revenueTier) >= 2) {
+    // Explicit segment is wildly inconsistent with revenue — override
+    customerSegment = revenueSegment;
+    isSegmentInferred = true; // Mark as inferred since we overrode
+    console.warn(
+      `MarginArc: Overriding explicit segment "${explicitSegment}" with revenue-derived "${revenueSegment}" (AnnualRevenue: $${annualRevenue})`
+    );
+  }
+}
+```
+
+This means: if someone set "SMB" on the Opportunity but Account.AnnualRevenue is $12B (Enterprise), override to Enterprise. But if the explicit segment is "MidMarket" and revenue says "Enterprise" (only 1 tier difference), trust the explicit value.
+
+### Fix 2: Update the demo data loader to populate AnnualRevenue on Accounts
+
+In `sfdc/force-app/main/default/classes/MarginArcDemoDataService.cls`, find the account creation logic and ensure every Account gets an appropriate `AnnualRevenue` value based on the segment assigned to its deals. For example:
+- Enterprise deals → Account.AnnualRevenue = random between 500M and 50B
+- MidMarket deals → Account.AnnualRevenue = random between 50M and 500M
+- SMB deals → Account.AnnualRevenue = random between 1M and 50M
+
+Also in `sfdc/force-app/main/default/classes/MarginArcDemoDataLoader.cls`, update the 30 hardcoded demo Opportunities to ensure their parent Accounts have AnnualRevenue set. The Account creation is at the top of the file.
+
+### Fix 3: Add `Account.AnnualRevenue` to the OPPORTUNITY_FIELDS wire
+
+Verify that `"Opportunity.Account.AnnualRevenue"` is already in the `OPPORTUNITY_FIELDS` array at the top of `marginarcMarginAdvisor.js`. It should have been added by PR #66 — just confirm it is there.
+
+### Fix 4: Update the test class
+
+In `sfdc/force-app/main/default/classes/MarginArcControllerTest.cls`, add a test that verifies the segment override behavior: create an Opportunity with `Fulcrum_Customer_Segment__c = 'SMB'` on an Account with `AnnualRevenue = 12000000000` and verify the widget would derive "Enterprise". Since the override is client-side (LWC), you may need to add a comment noting this is tested via the LWC rather than Apex.
+
+Run prettier and eslint on modified files. Verify tests pass with `cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12B: Fix Win Rate Minimum Sample + Suppress Hardcoded Defaults [SFDC Apex] (Sprint 30)
+
+Can run **in parallel** with 12A (touches different files).
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The Industry Intelligence widget shows "Win rate in Life Sciences & Healthcare: 0%" and "Average margin on won deals: 15.0%" — but there are ZERO Closed Won deals in that industry. The 0% win rate is real data but is catastrophically misleading (all 5 evaluator agents flagged this as trust-destroying). The 15.0% margin is the hardcoded default from line 611, NOT actual data.
+
+The CFO evaluator said: "Presenting '0%' with the same visual weight as a real metric is a fundamental analytics sin."
+
+## File: `sfdc/force-app/main/default/classes/MarginArcCompetitiveController.cls`
+
+### Fix 1: Add minimum sample size threshold for win rate
+
+In the `getSimilarAccountData()` method around line 619-621:
+
+```java
+// Current:
+Decimal winRate = totalDeals > 0 ? (Decimal) wonDeals / totalDeals * 100 : 0;
+
+// Change to:
+Decimal winRate = totalDeals >= 5 ? (Decimal) wonDeals / totalDeals * 100 : null;
+```
+
+When `winRate` is null, the insight at line 684 should change from showing "Win rate in X: 0%" to showing "Not enough data for win rate analysis (need 5+ closed deals)". Update the insight building logic:
+
+```java
+if (winRate != null) {
+  insights.add('Win rate in ' + industry + ': ' + winRate.setScale(0) + '%');
+} else {
+  insights.add('Not enough closed deals in ' + industry + ' for win rate analysis');
+}
+```
+
+### Fix 2: Suppress hardcoded default margin
+
+At line 611: `Decimal avgMargin = 15.0; // Default margin`. When there are no actual won deals with margin data, this default gets displayed as "Average margin on won deals: 15.0%". Fix:
+
+Track how many won deals actually have margin data using a counter variable. Then conditionally display:
+
+```java
+if (marginCount > 0) {
+  insights.add('Average margin on won deals: ' + avgMargin.setScale(1) + '%');
+} else {
+  insights.add('No margin data available for ' + industry + ' deals yet');
+}
+```
+
+Where `marginCount` tracks how many won deals actually had `Fulcrum_GP_Percent__c` populated. Add this counter to the existing SOQL/query logic.
+
+### Fix 3: Add `hasDataConfidence` flag to return map
+
+At line 702-711, the return map includes `'accountsAnalyzed' => accountCount`. Add a confidence flag:
+
+```java
+'hasDataConfidence' => (totalDeals >= 5),
+```
+
+The LWC Competitive Intelligence component can use this to show/hide confidence-dependent metrics.
+
+### Fix 4: Update win rate in the return map
+
+The `avgWinRate` key in the return map at line 706 should handle the null case:
+
+```java
+'avgWinRate' => winRate != null ? winRate.setScale(0) : null,
+```
+
+### Fix 5: Update test class
+
+In `sfdc/force-app/main/default/classes/MarginArcCompetitiveControllerTest.cls`, add tests:
+1. When `totalDeals < 5`, verify win rate insight says "Not enough closed deals..."
+2. When no deals have `Fulcrum_GP_Percent__c`, verify margin insight says "No margin data available..."
+3. When `totalDeals >= 5`, verify the normal win rate display still works
+
+Run prettier on modified Apex files. Verify tests pass.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12C: Deduplicate Insights + BOM Mismatch Warning + Phase 1 REC% [SFDC LWC] (Sprint 30)
+
+**Depends on 12A** (both modify marginarcMarginAdvisor.js). Run AFTER 12A merges.
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+Three remaining UI trust issues from the post-fix review:
+
+1. **Contradictory insights:** "Cisco OEM margin profile" appears as BOTH a thumbs-up ("influencing the recommendation") AND a warning ("Watch out for: Cisco OEM margin profile"). The `phase1Tips` getter at line 594 renders topDrivers and phase1Guidance independently — the same entity can appear in both lists with opposite framing.
+
+2. **BOM/Opportunity Amount mismatch:** BOM totals $52,373 but Opportunity Amount is $56,448 — a 7.2% gap with no warning. The CFO evaluator called this "a material misstatement."
+
+3. **REC% column shows dashes in Phase 1:** All three BOM lines show "—" in the REC% column because per-line recommendations are Phase 3 only. Dead UI real estate that makes the product look broken.
+
+## File 1: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Deduplicate insights in `phase1Tips` getter
+
+In the `phase1Tips` getter (around line 594), add deduplication logic. After building all tips from topDrivers, phase1Guidance, and scoreFactors, deduplicate by extracting key entities and keeping only the first mention:
+
+```javascript
+// At the end of phase1Tips(), before `return tips;`:
+// Deduplicate: if the same key entity appears in both topDrivers and phase1Guidance,
+// keep only the first occurrence
+const seen = new Set();
+const dedupedTips = [];
+for (const tip of tips) {
+  const normalized = tip.text.toLowerCase();
+  const entities = ['cisco', 'hpe', 'dell', 'palo alto', 'fortinet', 'vmware',
+    'microsoft', 'netapp', 'pure storage', 'arista', 'crowdstrike', 'nutanix',
+    'smb', 'midmarket', 'enterprise'];
+  const matchedEntity = entities.find(e => normalized.includes(e));
+  const key = matchedEntity || normalized.substring(0, 40);
+
+  if (!seen.has(key)) {
+    seen.add(key);
+    dedupedTips.push(tip);
+  }
+}
+return dedupedTips;
+```
+
+### Fix 2: Add BOM/Opportunity Amount mismatch warning
+
+Add a computed getter that checks for discrepancy between BOM total and Opportunity Amount:
+
+```javascript
+get bomOppAmountMismatch() {
+  if (!this.savedBomData?.totals?.totalPrice || !this.opportunityData?.amount) {
+    return null;
+  }
+  const bomTotal = this.savedBomData.totals.totalPrice;
+  const oppAmount = this.opportunityData.amount;
+  const delta = Math.abs(bomTotal - oppAmount);
+  const pctDiff = (delta / oppAmount) * 100;
+
+  if (pctDiff > 2) {
+    return {
+      delta: delta.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
+      pctDiff: pctDiff.toFixed(1),
+      bomTotal: bomTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
+      oppAmount: oppAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })
+    };
+  }
+  return null;
+}
+```
+
+In the HTML template (`marginarcMarginAdvisor.html`), add a warning banner inside the BOM summary section (near the BOM totals display in the details panel). Show it only when `bomOppAmountMismatch` is non-null:
+
+```html
+<template lwc:if={bomOppAmountMismatch}>
+  <div class="bom-mismatch-warning">
+    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+    <span>BOM total ({bomOppAmountMismatch.bomTotal}) differs from Opportunity Amount ({bomOppAmountMismatch.oppAmount}) by {bomOppAmountMismatch.delta} ({bomOppAmountMismatch.pctDiff}%)</span>
+  </div>
+</template>
+```
+
+Style the warning banner in the CSS file with a light amber background (#FEF3C7), dark text (#92400E), border-radius 8px, padding 8px 12px, margin 8px 0, font-size 12px, and flex layout with gap. Add the CSS class `.bom-mismatch-warning`.
+
+## File 2: `sfdc/force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js` and `.html`
+
+### Fix 3: Hide REC% column in Phase 1
+
+The BOM Builder should detect whether any line has a recommendation and hide the "Rec%" column when none do. Add a phase-aware check:
+
+1. In `marginarcBomBuilder.js`, add a computed getter:
+```javascript
+get showRecColumn() {
+  return this._bomLines.some(line => line.recMargin != null);
+}
+```
+
+2. In `marginarcBomBuilder.html`, wrap the Rec% column header and the corresponding data cells with `<template lwc:if={showRecColumn}>`. This way the column only appears when there is actual data to show.
+
+3. Also in `marginarcMarginAdvisor.html`, in the BOM summary section inside the details panel, wrap the "Recommended" column header and cells in a similar conditional that checks if any BOM line has a `recommendedMarginDisplay` that is not "—".
+
+Run prettier and eslint on ALL modified files:
+```
+cd sfdc
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.html
+npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+npx eslint force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+```
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
