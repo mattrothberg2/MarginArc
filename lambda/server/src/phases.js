@@ -131,15 +131,15 @@ export async function checkPhaseReadiness(customerId) {
 
   const avgDataQuality = totalDeals > 0 ? Math.round(qualitySum) : 0
 
-  const phase2Ready = totalDeals >= 50 && avgDataQuality > 60
+  const phase2Ready = totalDeals >= 100 && avgDataQuality > 65
   const phase3Ready = currentPhase >= 2 && dealsWithBom >= 20
 
   return {
     currentPhase,
     phase2Ready,
     phase2Requirements: {
-      recordedDeals: { current: totalDeals, required: 50, met: totalDeals >= 50 },
-      avgDataQuality: { current: avgDataQuality, required: 60, met: avgDataQuality > 60 }
+      recordedDeals: { current: totalDeals, required: 100, met: totalDeals >= 100 },
+      avgDataQuality: { current: avgDataQuality, required: 65, met: avgDataQuality > 65 }
     },
     phase3Ready,
     phase3Requirements: {
