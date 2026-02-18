@@ -42,6 +42,9 @@ import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrive
 // ML training pipeline
 import { ensureMLSchema, getModelByOrgId } from './src/ml/train.js'
 
+// Industry benchmarks for Phase 1
+import { generateBenchmarkResponse } from './src/ml/benchmarks.js'
+
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, ensureMfaSchema, query as dbQuery } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
@@ -563,8 +566,9 @@ app.post('/api/recommend', async (req,res)=> {
     // Generate top drivers as plain-English sentences
     const topDrivers = generateTopDrivers(response.drivers)
 
-    // Phase 1: Score Only — return deal score but suppress margin recommendation
+    // Phase 1: Industry benchmark guidance — return deal score + benchmark-based margin recommendation
     if (phase === 1) {
+      const benchmarkData = generateBenchmarkResponse(input)
       const phase1Guidance = generatePhase1Guidance(response.drivers, input)
       return res.json({
         dealScore,
@@ -572,8 +576,11 @@ app.post('/api/recommend', async (req,res)=> {
         topDrivers,
         phase1Guidance,
         dataQuality: predictionQuality,
-        suggestedMarginPct: null,
-        suggestedPrice: null,
+        suggestedMarginPct: benchmarkData.suggestedMarginPct,
+        suggestedMarginRange: benchmarkData.suggestedMarginRange,
+        suggestedPrice: benchmarkData.suggestedPrice,
+        benchmarkSource: benchmarkData.benchmarkSource,
+        benchmarkInsights: benchmarkData.insights,
         winProbability: response.winProbability,
         confidence: response.confidence,
         method: response.method,
@@ -581,9 +588,10 @@ app.post('/api/recommend', async (req,res)=> {
         policyFloor: response.policyFloor,
         phaseInfo: {
           current: 1,
-          message: 'Score your deals to build your data foundation. Margin recommendations unlock at Phase 2.',
+          message: 'Industry benchmark guidance active. ML recommendations unlock after 100 closed deals with outcomes.',
           nextPhaseReady: false // will be enriched client-side via admin API
-        }
+        },
+        source: 'industry_benchmark'
       })
     }
 
