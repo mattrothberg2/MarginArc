@@ -5,51 +5,11 @@ import { TOTP, Secret } from 'otpauth';
 import { query } from './db.js';
 import { generateLicenseKey } from './license.js';
 import { verifyToken, generateToken, generateMfaToken, verifyMfaPendingToken, loadJWTSecret, requireRole } from '../middleware/auth.js';
-import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
 import { rotateApiKey, promoteApiKey } from '../api-keys.js';
 import { makeApiCall } from '../salesforce/oauth.js';
 import { getCustomerPhaseById, setCustomerPhase, checkPhaseReadiness } from '../phases.js';
 
 const router = express.Router();
-
-// ---------------------------------------------------------------------------
-// SSM helpers — DEPRECATED
-// TODO: Remove SSM fallback login entirely once all environments have at least
-// one admin user provisioned in the admin_users DB table. The shared SSM
-// password bypasses per-user audit trails and does not enforce the new password
-// strength policy. Target removal: next major release.
-// ---------------------------------------------------------------------------
-
-// Cached bcrypt hash of the SSM admin password (never store plaintext)
-let ADMIN_PASSWORD_HASH = null;
-let ssmClient = null;
-
-function getSSMClient() {
-  if (!ssmClient) {
-    ssmClient = new SSMClient({ region: process.env.AWS_REGION || 'us-east-1' });
-  }
-  return ssmClient;
-}
-
-/**
- * @deprecated Load the admin password from SSM. This fallback should be removed
- * once all environments have a proper admin user in the admin_users table.
- */
-async function loadAdminPasswordHash() {
-  if (ADMIN_PASSWORD_HASH) return ADMIN_PASSWORD_HASH;
-  console.warn('[DEPRECATED] Loading admin password from SSM — provision a DB admin user to remove this fallback');
-  const client = getSSMClient();
-  const command = new GetParameterCommand({
-    Name: '/marginarc/admin/password',
-    WithDecryption: true
-  });
-  const response = await client.send(command);
-  const plaintext = response.Parameter.Value;
-  // Hash immediately and discard the plaintext
-  ADMIN_PASSWORD_HASH = await bcrypt.hash(plaintext, 12);
-  console.warn('[DEPRECATED] Admin password loaded from SSM and hashed with bcrypt');
-  return ADMIN_PASSWORD_HASH;
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -294,7 +254,7 @@ async function pushLicenseToConnectedOrgs(license) {
 
 /**
  * POST /auth/login
- * Authenticate admin user. Tries admin_users table first (bcrypt), then SSM fallback.
+ * Authenticate admin user against the admin_users table (bcrypt).
  */
 router.post('/auth/login', async (req, res) => {
   try {
@@ -313,8 +273,8 @@ router.post('/auth/login', async (req, res) => {
       );
       dbUser = result.rows[0] || null;
     } catch (err) {
-      // Table may not exist yet; fall through to SSM
-      console.warn('admin_users lookup failed, falling back to SSM:', err.message);
+      // Table may not exist yet — auth will fail below
+      console.warn('admin_users lookup failed:', err.message);
     }
 
     if (dbUser) {
@@ -351,30 +311,6 @@ router.post('/auth/login', async (req, res) => {
           }
         });
       }
-    }
-
-    // --- DEPRECATED: SSM password fallback ---
-    // TODO: Remove this block once all environments have a DB admin user.
-    // The shared SSM password bypasses per-user audit trails and the password
-    // strength policy. Log a deprecation warning on every use.
-    try {
-      const adminHash = await loadAdminPasswordHash();
-      if (username === 'admin' && await bcrypt.compare(password, adminHash)) {
-        console.warn('[DEPRECATED] SSM fallback login used — provision a DB admin user to remove this path');
-        const token = await generateToken(username, 'super_admin');
-        await logAudit(req, 'login', 'admin_users', null, { method: 'ssm_fallback_DEPRECATED' });
-        return res.json({
-          token,
-          user: {
-            id: 0,
-            username: 'admin',
-            fullName: 'Admin (SSM — DEPRECATED)',
-            role: 'super_admin'
-          }
-        });
-      }
-    } catch (ssmErr) {
-      console.error('SSM fallback login failed:', ssmErr.message);
     }
 
     // Log failed authentication attempt for CloudWatch alerting

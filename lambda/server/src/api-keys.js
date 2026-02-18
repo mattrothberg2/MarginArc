@@ -172,7 +172,7 @@ async function matchCustomerKey(provided) {
 export async function validateApiKey(provided) {
   if (!provided) return false;
   const { primary, secondary } = await loadApiKeys();
-  if (!primary) return true; // No keys configured — allow (dev mode)
+  if (!primary) return false; // No keys configured — deny by default (secure)
   const matchesPrimary = safeCompare(provided, primary);
   const matchesSecondary = secondary ? safeCompare(provided, secondary) : false;
   if (matchesPrimary || matchesSecondary) return true;
