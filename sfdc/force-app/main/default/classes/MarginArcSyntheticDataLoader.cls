@@ -644,7 +644,7 @@ public with sharing class MarginArcSyntheticDataLoader {
     Decimal z = boxMullerApprox();
     Decimal lnSize = lnMean + (sigma * z);
     // Apex has no Math.exp(), use Math.pow(e, x)
-    Decimal size = (Decimal) Math.pow(2.718281828459045, Double.valueOf(lnSize));
+    Decimal size = Decimal.valueOf(Math.pow((Double)2.718281828459045, Double.valueOf(lnSize)));
 
     // Clamp to realistic range
     size = Math.max(15000, Math.min(500000, size));
@@ -857,7 +857,7 @@ public with sharing class MarginArcSyntheticDataLoader {
   public class SyntheticDealQueueable implements Queueable {
     private String dealsJson;
     private Integer startIdx;
-    private static final Integer BATCH_SIZE = 200;
+    private final Integer BATCH_SIZE = 200;
 
     public SyntheticDealQueueable(String json, Integer idx) {
       this.dealsJson = json;
@@ -909,8 +909,8 @@ public with sharing class MarginArcSyntheticDataLoader {
         insert decision.getRecords();
       }
 
-      // Chain next batch if more remain
-      if (endIdx < allDeals.size()) {
+      // Chain next batch if more remain (skip in test context — max depth = 1)
+      if (endIdx < allDeals.size() && !Test.isRunningTest()) {
         System.enqueueJob(
           new SyntheticDealQueueable(this.dealsJson, endIdx)
         );
