@@ -182,6 +182,10 @@ export default class MarginarcBomBuilder extends LightningElement {
     }));
   }
 
+  get showRecColumn() {
+    return this.bomLines.some((line) => line.recommendedMarginPct != null);
+  }
+
   get tableRows() {
     return this.bomLines.map((line) => {
       const unitPrice =

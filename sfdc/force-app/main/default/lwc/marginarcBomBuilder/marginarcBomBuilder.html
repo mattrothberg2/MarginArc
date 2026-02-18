@@ -178,7 +178,9 @@
             <span class="th th-num" role="columnheader">Qty</span>
             <span class="th th-num" role="columnheader">Unit Cost</span>
             <span class="th th-num" role="columnheader">Margin%</span>
-            <span class="th th-num" role="columnheader">Rec%</span>
+            <template lwc:if={showRecColumn}>
+              <span class="th th-num" role="columnheader">Rec%</span>
+            </template>
             <span class="th th-num" role="columnheader">Ext Price</span>
             <span class="th th-act" role="columnheader"></span>
           </div>
@@ -262,12 +264,14 @@
                   onchange={handleFieldChange}
                 />
               </span>
-              <span class="td td-num rec-margin" role="gridcell">
-                {row.recMarginDisplay}
-                <template lwc:if={row.hasDelta}>
-                  <span class={row.recDeltaClass}>{row.recDeltaDisplay}</span>
-                </template>
-              </span>
+              <template lwc:if={showRecColumn}>
+                <span class="td td-num rec-margin" role="gridcell">
+                  {row.recMarginDisplay}
+                  <template lwc:if={row.hasDelta}>
+                    <span class={row.recDeltaClass}>{row.recDeltaDisplay}</span>
+                  </template>
+                </span>
+              </template>
               <span class="td td-num" role="gridcell"
                 >{row.extPriceDisplay}</span
               >
@@ -296,7 +300,9 @@
             <span class="td td-num total-val" role="gridcell"
               >{blendedMarginDisplay}</span
             >
-            <span class="td" role="gridcell"></span>
+            <template lwc:if={showRecColumn}>
+              <span class="td" role="gridcell"></span>
+            </template>
             <span class="td td-num total-val total-gp" role="gridcell"
               >{totalPriceDisplay}</span
             >

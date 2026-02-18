@@ -550,13 +550,34 @@
                       <span class="bom-stat-value">{bomBlendedMargin}</span>
                     </div>
                   </div>
+                  <!-- BOM/Opportunity Amount mismatch warning -->
+                  <template lwc:if={bomOppAmountMismatch}>
+                    <div class="bom-mismatch-warning">
+                      <lightning-icon
+                        icon-name="utility:warning"
+                        size="x-small"
+                        variant="warning"
+                      ></lightning-icon>
+                      <span
+                        >BOM total ({bomOppAmountMismatch.bomTotal}) differs
+                        from Opportunity Amount
+                        ({bomOppAmountMismatch.oppAmount}) by
+                        {bomOppAmountMismatch.delta}
+                        ({bomOppAmountMismatch.pctDiff}%)</span
+                      >
+                    </div>
+                  </template>
                   <!-- Phase 3: Per-line BOM margin recommendations -->
                   <template lwc:if={hasBomLineRecommendations}>
                     <div class="marginarc-bom-lines">
                       <div class="marginarc-bom-lines-header">
                         <span class="marginarc-bom-lines-col">Line Item</span>
                         <span class="marginarc-bom-lines-col">Current</span>
-                        <span class="marginarc-bom-lines-col">Recommended</span>
+                        <template lwc:if={showBomRecColumn}>
+                          <span class="marginarc-bom-lines-col"
+                            >Recommended</span
+                          >
+                        </template>
                         <span class="marginarc-bom-lines-col">Gap</span>
                       </div>
                       <template for:each={bomLineItems} for:item="line">
@@ -573,10 +594,12 @@
                           <span class="marginarc-bom-line-value"
                             >{line.currentMarginDisplay}</span
                           >
-                          <span
-                            class="marginarc-bom-line-value marginarc-bom-line-rec"
-                            >{line.recommendedMarginDisplay}</span
-                          >
+                          <template lwc:if={showBomRecColumn}>
+                            <span
+                              class="marginarc-bom-line-value marginarc-bom-line-rec"
+                              >{line.recommendedMarginDisplay}</span
+                            >
+                          </template>
                           <span class={line.gapClass}>{line.gapDisplay}</span>
                         </div>
                       </template>
