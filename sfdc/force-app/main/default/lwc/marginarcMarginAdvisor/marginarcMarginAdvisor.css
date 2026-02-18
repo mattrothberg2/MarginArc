@@ -1746,6 +1746,20 @@
   color: var(--navy-900);
 }
 
+.bom-mismatch-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin: 8px 0;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
 .bom-summary-hint {
   margin: 0;
   font-size: 11px;

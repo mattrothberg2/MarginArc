@@ -689,7 +689,38 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       }
     }
 
-    return tips;
+    // Deduplicate: if the same key entity appears in both topDrivers and phase1Guidance,
+    // keep only the first occurrence
+    const seen = new Set();
+    const dedupedTips = [];
+    for (const tip of tips) {
+      const normalized = tip.text.toLowerCase();
+      const entities = [
+        "cisco",
+        "hpe",
+        "dell",
+        "palo alto",
+        "fortinet",
+        "vmware",
+        "microsoft",
+        "netapp",
+        "pure storage",
+        "arista",
+        "crowdstrike",
+        "nutanix",
+        "smb",
+        "midmarket",
+        "enterprise"
+      ];
+      const matchedEntity = entities.find((e) => normalized.includes(e));
+      const key = matchedEntity || normalized.substring(0, 40);
+
+      if (!seen.has(key)) {
+        seen.add(key);
+        dedupedTips.push(tip);
+      }
+    }
+    return dedupedTips;
   }
 
   get hasPhase1Tips() {
@@ -769,6 +800,12 @@ export default class MarginarcMarginAdvisor extends LightningElement {
           : "\u2014"
       };
     });
+  }
+
+  get showBomRecColumn() {
+    return this.bomLineItems.some(
+      (item) => item.recommendedMarginDisplay !== "\u2014"
+    );
   }
 
   get hasBomLineRecommendations() {
@@ -1416,6 +1453,38 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   // BOM summary getters (compact display — full editing in standalone BOM Builder)
+  get bomOppAmountMismatch() {
+    if (!this.savedBomData?.totals?.price || !this.opportunityData?.amount) {
+      return null;
+    }
+    const bomTotal = this.savedBomData.totals.price;
+    const oppAmount = this.opportunityData.amount;
+    const delta = Math.abs(bomTotal - oppAmount);
+    const pctDiff = (delta / oppAmount) * 100;
+
+    if (pctDiff > 2) {
+      return {
+        delta: delta.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 0
+        }),
+        pctDiff: pctDiff.toFixed(1),
+        bomTotal: bomTotal.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 0
+        }),
+        oppAmount: oppAmount.toLocaleString("en-US", {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 0
+        })
+      };
+    }
+    return null;
+  }
+
   get hasBomSummary() {
     return this.activeBomData?.items?.length > 0;
   }
