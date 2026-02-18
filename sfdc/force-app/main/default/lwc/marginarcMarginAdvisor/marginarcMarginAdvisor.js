@@ -70,6 +70,9 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   @track phaseInfo = null;
   @track isBomOptimizing = false;
   @track isDetailExpanded = false;
+  @track _preApplyValues = null;
+  @track _undoCountdown = 0;
+  _undoTimerId = null;
   hasCalculated = false;
   _hasAutoScored = false;
   _autoScoredRecordId = null;
@@ -1348,6 +1351,15 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return (Number(this.recommendation.winProbability) * 100).toFixed(0);
   }
 
+  get confirmCurrentAmount() {
+    const amount = this.opportunityData?.amount || 0;
+    return this.formatCurrency(amount);
+  }
+
+  get confirmCurrentWinProb() {
+    return this.plannedWinProbability;
+  }
+
   // BOM data getter: returns API BOM if available, else saved BOM from SFDC
   get activeBomData() {
     if (this.recommendation?.bom?.items?.length) {
@@ -1474,6 +1486,111 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     this.showConfirmDialog = false;
   }
 
+  handleCopyRecommendation() {
+    if (!this.recommendation) return;
+    const marginPct = this.recommendedMargin;
+    const sellPrice = this.recommendedSellPrice;
+    const gp = this.recommendedGrossProfit;
+    const text = `MarginArc Recommendation: ${marginPct}% margin (${sellPrice} sell price, ${gp} GP)`;
+    navigator.clipboard.writeText(text).then(
+      () => {
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: "Copied",
+            message: "Recommendation copied to clipboard.",
+            variant: "success"
+          })
+        );
+      },
+      () => {
+        this.dispatchEvent(
+          new ShowToastEvent({
+            title: "Copy Failed",
+            message:
+              "Could not copy to clipboard. Your browser may not support this feature.",
+            variant: "warning"
+          })
+        );
+      }
+    );
+  }
+
+  get showUndoBar() {
+    return this._preApplyValues !== null && this._undoCountdown > 0;
+  }
+
+  get undoCountdown() {
+    return this._undoCountdown;
+  }
+
+  _startUndoTimer() {
+    this._clearUndoTimer();
+    this._undoCountdown = 30;
+    // eslint-disable-next-line @lwc/lwc/no-async-operation
+    this._undoTimerId = setInterval(() => {
+      this._undoCountdown -= 1;
+      if (this._undoCountdown <= 0) {
+        this._clearUndoTimer();
+        this._preApplyValues = null;
+      }
+    }, 1000);
+  }
+
+  _clearUndoTimer() {
+    if (this._undoTimerId) {
+      clearInterval(this._undoTimerId);
+      this._undoTimerId = null;
+    }
+  }
+
+  async handleUndo() {
+    if (!this._preApplyValues || !this.recordId) return;
+
+    this._clearUndoTimer();
+    this.isLoading = true;
+
+    try {
+      const fields = {};
+      fields[ID_FIELD.fieldApiName] = this.recordId;
+      fields[AMOUNT_FIELD.fieldApiName] = this._preApplyValues.amount;
+      fields[PLANNED_MARGIN_FIELD.fieldApiName] =
+        this._preApplyValues.plannedMargin;
+      fields[RECOMMENDED_MARGIN_FIELD.fieldApiName] =
+        this._preApplyValues.recommendedMargin;
+      fields[AI_CONFIDENCE_FIELD.fieldApiName] =
+        this._preApplyValues.aiConfidence;
+      fields[WIN_PROBABILITY_FIELD.fieldApiName] =
+        this._preApplyValues.winProbability;
+      fields[REVENUE_FIELD.fieldApiName] = this._preApplyValues.revenue;
+      fields[GP_PERCENT_FIELD.fieldApiName] = this._preApplyValues.gpPercent;
+
+      await updateRecord({ fields });
+      await refreshApex(this.wiredOpportunityResult);
+
+      this._preApplyValues = null;
+      this._undoCountdown = 0;
+
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "Undone",
+          message: "Opportunity fields restored to previous values.",
+          variant: "success"
+        })
+      );
+    } catch (err) {
+      console.error("Error undoing apply:", err);
+      this.dispatchEvent(
+        new ShowToastEvent({
+          title: "Undo Failed",
+          message: err.body?.message || err.message || "Unknown error",
+          variant: "error"
+        })
+      );
+    } finally {
+      this.isLoading = false;
+    }
+  }
+
   handleConfirmKeydown(event) {
     if (event.key === "Escape") {
       this.handleCancelApply();
@@ -1504,6 +1621,21 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
     this.showConfirmDialog = false;
     this.isLoading = true;
+
+    // Save current values for undo
+    const oppData = this.opportunityData || {};
+    this._preApplyValues = {
+      amount: oppData.amount || 0,
+      plannedMargin: oppData.plannedMargin || 15,
+      recommendedMargin: oppData.recommendedMargin || null,
+      aiConfidence: oppData.aiConfidence || null,
+      winProbability: oppData.winProbability || null,
+      revenue: oppData.amount || 0,
+      gpPercent:
+        oppData.amount > 0
+          ? ((oppData.amount - (oppData.oemCost || 0)) / oppData.amount) * 100
+          : 0
+    };
 
     try {
       const oemCost = Number(this.opportunityData?.oemCost) || 0;
@@ -1647,6 +1779,9 @@ export default class MarginarcMarginAdvisor extends LightningElement {
           variant: "success"
         })
       );
+
+      // Start undo timer (30 seconds)
+      this._startUndoTimer();
 
       // Log recommendation history
       try {

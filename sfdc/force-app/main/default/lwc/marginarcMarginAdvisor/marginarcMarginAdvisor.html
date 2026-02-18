@@ -236,8 +236,8 @@
           <template lwc:if={showApplyButton}>
             <button
               class="btn-primary"
-              onclick={handleApply}
-              aria-label="Apply recommended margin to opportunity"
+              onclick={handleCopyRecommendation}
+              aria-label="Copy recommendation to clipboard"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -245,12 +245,30 @@
                 stroke="currentColor"
                 stroke-width="2"
               >
-                <path d="M5 13l4 4L19 7" />
+                <path
+                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                />
               </svg>
-              Apply Recommendation
+              Copy Recommendation
+            </button>
+            <button
+              class="btn-text"
+              onclick={handleApply}
+              aria-label="Apply recommended margin to opportunity"
+            >
+              Apply to Opportunity
             </button>
           </template>
         </div>
+
+        <!-- Undo Bar (shown for 30s after applying) -->
+        <template lwc:if={showUndoBar}>
+          <div class="marginarc-undo-bar">
+            <span class="undo-text">Recommendation applied.</span>
+            <button class="btn-undo" onclick={handleUndo}>Undo</button>
+            <span class="undo-timer">{undoCountdown}s</span>
+          </div>
+        </template>
 
         <!-- Show/Hide Details Toggle -->
         <div class="details-toggle-bar">
@@ -622,24 +640,59 @@
           Confirm Apply Recommendation
         </div>
         <div class="confirm-body">
-          <p>This will update the following Opportunity fields:</p>
-          <ul class="confirm-changes">
-            <li><strong>Amount:</strong> {confirmNewAmount}</li>
-            <li>
-              <strong>Planned Margin:</strong> {confirmCurrentPlannedMargin}% →
-              {confirmMarginPct}%
-            </li>
-            <li><strong>Recommended Margin:</strong> {confirmMarginPct}%</li>
-            <li><strong>Win Probability:</strong> {confirmWinProb}%</li>
-          </ul>
+          <p>This will update:</p>
+          <div class="confirm-comparison-table">
+            <div class="confirm-table-header">
+              <span class="confirm-table-col confirm-table-col-field"
+                >Field</span
+              >
+              <span class="confirm-table-col confirm-table-col-current"
+                >Current</span
+              >
+              <span class="confirm-table-col confirm-table-col-new">New</span>
+            </div>
+            <div class="confirm-table-row">
+              <span class="confirm-table-col confirm-table-col-field"
+                >Amount</span
+              >
+              <span class="confirm-table-col confirm-table-col-current"
+                >{confirmCurrentAmount}</span
+              >
+              <span class="confirm-table-col confirm-table-col-new"
+                >{confirmNewAmount}</span
+              >
+            </div>
+            <div class="confirm-table-row">
+              <span class="confirm-table-col confirm-table-col-field"
+                >Planned Margin</span
+              >
+              <span class="confirm-table-col confirm-table-col-current"
+                >{confirmCurrentPlannedMargin}%</span
+              >
+              <span class="confirm-table-col confirm-table-col-new"
+                >{confirmMarginPct}%</span
+              >
+            </div>
+            <div class="confirm-table-row">
+              <span class="confirm-table-col confirm-table-col-field"
+                >Win Probability</span
+              >
+              <span class="confirm-table-col confirm-table-col-current"
+                >{confirmCurrentWinProb}%</span
+              >
+              <span class="confirm-table-col confirm-table-col-new"
+                >{confirmWinProb}%</span
+              >
+            </div>
+          </div>
           <template lwc:if={confirmHasBom}>
             <p class="confirm-bom-info">
               {confirmBomLineCount} BOM line items will also be saved to this
               Opportunity.
             </p>
           </template>
-          <p class="confirm-warning">
-            ⚠️ This action cannot be undone from this widget.
+          <p class="confirm-info">
+            You can undo this change for 30 seconds after applying.
           </p>
         </div>
         <div class="confirm-footer">

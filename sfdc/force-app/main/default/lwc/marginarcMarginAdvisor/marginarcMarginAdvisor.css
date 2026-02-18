@@ -2041,3 +2041,132 @@
   width: 16px;
   height: 16px;
 }
+
+/* ── Text Button (demoted Apply) ── */
+.btn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--slate-500);
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.btn-text:hover {
+  color: var(--slate-700);
+  background: var(--slate-100);
+}
+
+/* ── Undo Bar ── */
+.marginarc-undo-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 24px;
+  background: #ecfdf5;
+  border-top: 1px solid #a7f3d0;
+  animation: fadeIn 0.2s ease;
+}
+
+.undo-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #065f46;
+  flex: 1;
+}
+
+.btn-undo {
+  padding: 4px 12px;
+  background: white;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #065f46;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-undo:hover {
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+
+.undo-timer {
+  font-size: 12px;
+  color: #6ee7b7;
+  font-variant-numeric: tabular-nums;
+  min-width: 24px;
+  text-align: right;
+}
+
+/* ── Confirm Comparison Table ── */
+.confirm-comparison-table {
+  background: var(--slate-50);
+  border-radius: 8px;
+  padding: 0;
+  margin: 0 0 16px 0;
+  overflow: hidden;
+  border: 1px solid var(--slate-200);
+}
+
+.confirm-table-header {
+  display: flex;
+  padding: 10px 16px;
+  background: var(--slate-100);
+  border-bottom: 1px solid var(--slate-200);
+}
+
+.confirm-table-header .confirm-table-col {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--slate-500);
+}
+
+.confirm-table-row {
+  display: flex;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.confirm-table-row:last-child {
+  border-bottom: none;
+}
+
+.confirm-table-col-field {
+  flex: 1.2;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-900);
+}
+
+.confirm-table-col-current {
+  flex: 1;
+  font-size: 13px;
+  color: var(--slate-600);
+  text-align: right;
+}
+
+.confirm-table-col-new {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--teal-600);
+  text-align: right;
+}
+
+.confirm-info {
+  font-size: 13px;
+  color: var(--slate-500);
+  margin-bottom: 0 !important;
+}
