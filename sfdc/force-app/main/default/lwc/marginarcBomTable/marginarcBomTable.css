@@ -100,6 +100,9 @@
   padding: 0 24px 16px;
   min-width: 680px;
 }
+.bom-table-wrap > * {
+  min-width: 0;
+}
 .bom-table-header,
 .bom-row {
   display: grid;
@@ -156,6 +159,9 @@
   color: var(--navy-900);
   display: block;
   line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .bom-item-sku {
   font-size: 11px;
@@ -164,6 +170,9 @@
   display: block;
   margin-top: 1px;
   letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .bom-item-note {
   font-size: 11px;

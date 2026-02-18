@@ -23,7 +23,7 @@
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* Header */
@@ -212,13 +212,23 @@
 
 /* Table */
 .table-section {
-  overflow: hidden;
+  overflow: visible;
 }
 .table-scroll {
   overflow-x: auto;
 }
 .bom-table {
+  width: 100%;
   min-width: 760px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.table-header > *,
+div[role="row"] > *,
+.table-totals > * {
+  min-width: 0;
+  overflow: hidden;
 }
 
 .table-header {
@@ -298,6 +308,10 @@
   background: transparent;
   outline: none;
   box-sizing: border-box;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cell-input:hover {
   border-color: var(--border);
@@ -309,9 +323,16 @@
 .cell-num {
   text-align: right;
   width: 70px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cell-desc {
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .cell-margin {
   width: 54px;
