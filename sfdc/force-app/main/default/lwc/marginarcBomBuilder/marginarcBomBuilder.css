@@ -333,6 +333,7 @@ div[role="row"] > *,
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .cell-margin {
   width: 54px;
