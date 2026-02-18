@@ -148,8 +148,8 @@ describe('checkPhaseReadiness', () => {
     mockQuery.mockResolvedValueOnce({ rows: [{ algorithm_phase: 1 }], rowCount: 1 })
     // licenses query (has org)
     mockQuery.mockResolvedValueOnce({ rows: [{ org_id: '00D123' }], rowCount: 1 })
-    // deal count
-    mockQuery.mockResolvedValueOnce({ rows: [{ total: '55' }], rowCount: 1 })
+    // deal count (must be >= 100 to match training pipeline threshold)
+    mockQuery.mockResolvedValueOnce({ rows: [{ total: '105' }], rowCount: 1 })
     // BOM deal count
     mockQuery.mockResolvedValueOnce({ rows: [{ total: '10' }], rowCount: 1 })
     // quality avg (fully filled deals score ~100)
