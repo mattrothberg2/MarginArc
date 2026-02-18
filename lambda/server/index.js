@@ -42,6 +42,9 @@ import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrive
 // ML training pipeline
 import { ensureMLSchema, getModelByOrgId } from './src/ml/train.js'
 
+// ML inference
+import { recommendMargin } from './src/ml/inference.js'
+
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, ensureMfaSchema, query as dbQuery } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
@@ -494,6 +497,50 @@ app.post('/api/recommend', async (req,res)=> {
       structuredLog('warn', 'phase_lookup_failed', { orgId, error: phaseErr?.message })
     }
 
+    // Try to load ML model for this customer
+    let modelPackage = null
+    try {
+      modelPackage = await getModelByOrgId(orgId)
+    } catch (mlErr) {
+      structuredLog('warn', 'ml_model_lookup_failed', { orgId, error: mlErr?.message })
+    }
+
+    // Tier 1 — ML Model (has model with AUC >= 0.55)
+    if (modelPackage && modelPackage.metrics?.auc >= 0.55) {
+      const mlResult = recommendMargin(input, modelPackage)
+      const predictionQuality = assessPredictionQuality(input, { confidence: mlResult.confidence })
+      const { dealScore, scoreFactors } = computeDealScore({
+        plannedMarginPct: planned,
+        suggestedMarginPct: mlResult.suggestedMarginPct,
+        winProbability: mlResult.winProbability,
+        confidence: mlResult.confidence,
+        predictionQuality
+      })
+
+      if (isLambda) {
+        structuredLog('info', 'recommendation', {
+          oem: input.oem || 'unknown',
+          segment: input.customerSegment,
+          marginPct: mlResult.suggestedMarginPct,
+          confidence: mlResult.confidence,
+          method: 'ml_model',
+          phase,
+          dealScore,
+          modelAuc: modelPackage.metrics.auc
+        })
+      }
+
+      return res.json({
+        ...mlResult,
+        dealScore,
+        scoreFactors,
+        topDrivers: mlResult.keyDrivers.map(d => d.sentence),
+        predictionQuality,
+        phaseInfo: { current: phase },
+        source: 'ml_model'
+      })
+    }
+
     const deals = await fetchAllDeals(sampleDeals, orgId)
     const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
     const algorithmMarginPct = rec.suggestedMarginPct
@@ -583,7 +630,8 @@ app.post('/api/recommend', async (req,res)=> {
           current: 1,
           message: 'Score your deals to build your data foundation. Margin recommendations unlock at Phase 2.',
           nextPhaseReady: false // will be enriched client-side via admin API
-        }
+        },
+        source: 'rules_engine'
       })
     }
 
@@ -598,7 +646,8 @@ app.post('/api/recommend', async (req,res)=> {
       dealScore,
       scoreFactors,
       topDrivers,
-      phaseInfo: { current: phase }
+      phaseInfo: { current: phase },
+      source: 'rules_engine'
     }
 
     return res.json(fullResponse)
