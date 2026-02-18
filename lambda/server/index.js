@@ -39,6 +39,9 @@ import { ensureDealsSchema, insertRecordedDeal, getAllDeals as fetchAllDeals, in
 // Phase system
 import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrivers, generatePhase1Guidance } from './src/phases.js'
 
+// ML training pipeline
+import { ensureMLSchema, getModelByOrgId } from './src/ml/train.js'
+
 // Ensure Salesforce DB schema on cold start (idempotent)
 import { ensureSalesforceSchema, ensureDocsSchema, ensureApiKeySchema, ensureMfaSchema, query as dbQuery } from './src/licensing/db.js'
 ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
@@ -47,6 +50,7 @@ ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:',
 ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
 ensureApiKeySchema().catch(err => console.error('Failed to ensure api_key schema:', err.message))
 ensureMfaSchema().catch(err => console.error('Failed to ensure MFA schema:', err.message))
+ensureMLSchema().catch(err => console.error('Failed to ensure ML schema:', err.message))
 
 // Wire up DB query function for per-customer API key lookups
 setQueryFn(dbQuery)
