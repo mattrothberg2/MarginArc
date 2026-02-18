@@ -2740,6 +2740,8 @@ Commit and push.
 
 ---
 
+TODO:
+
 ### Prompt 13B: MOA Analysis Engine [SFDC Apex] (Sprint 31)
 
 **Depends on 13A.**
@@ -2943,34 +2945,146 @@ Can run in **parallel** with 14B.
 ```
 You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
 
-## Context
+## Project Setup
 
-Build the feature engineering pipeline that transforms raw deal data from recorded_deals into numeric vectors for logistic regression.
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- All new files go under lambda/server/src/ml/ (create the ml/ directory)
 
-The recorded_deals table columns include: segment, industry, product_category, deal_reg_type, competitors (VARCHAR '0','1','2','3+'), value_add, relationship_strength, customer_tech_sophistication, solution_complexity, var_strategic_importance, customer_price_sensitivity (1-5), customer_loyalty (1-5), deal_urgency (1-5), is_new_logo (bool), solution_differentiation (1-5), oem_cost (numeric), oem (varchar), services_attached (bool), quarter_end (bool), competitor_names (jsonb), bom_line_count (int), bom_avg_margin_pct (numeric), status ('Won'/'Lost'), achieved_margin (numeric fraction).
+## Context — What This Is For
+
+MarginArc is an AI margin optimizer for IT VARs (Value-Added Resellers). Sales reps enter deal details in Salesforce, and our Lambda API returns a recommended margin percentage. Currently we use a hardcoded rules engine (rules.js) — we're replacing it with real ML.
+
+This module converts raw deal records from our PostgreSQL database into numeric feature vectors for logistic regression training. The model will predict P(win | features, proposed_margin) and sweep margins to find the optimal recommendation.
+
+## Data Schema — recorded_deals Table
+
+Deals are persisted by `src/analytics.js` via `insertRecordedDeal()`. The table schema (from analytics.js lines 6-37):
+
+```sql
+CREATE TABLE IF NOT EXISTS recorded_deals (
+    id SERIAL PRIMARY KEY,
+    segment VARCHAR(50) NOT NULL,              -- 'SMB', 'MidMarket', 'Enterprise'
+    industry VARCHAR(100) NOT NULL,            -- e.g. 'Technology', 'Financial Services'
+    product_category VARCHAR(50) NOT NULL,     -- 'Hardware','Software','Cloud','ProfessionalServices','ManagedServices','ComplexSolution'
+    deal_reg_type VARCHAR(30) NOT NULL,        -- 'NotRegistered','StandardApproved','PremiumHunting','Teaming'
+    competitors VARCHAR(5) NOT NULL,           -- '0','1','2','3+'
+    value_add VARCHAR(10) NOT NULL,            -- 'Low','Medium','High'
+    relationship_strength VARCHAR(20) NOT NULL, -- 'New','Good','Strategic'
+    customer_tech_sophistication VARCHAR(10) NOT NULL, -- 'Low','Medium','High'
+    solution_complexity VARCHAR(10) NOT NULL,   -- 'Low','Medium','High'
+    var_strategic_importance VARCHAR(10) NOT NULL, -- 'Low','Medium','High'
+    customer_price_sensitivity SMALLINT,        -- 1-5, nullable
+    customer_loyalty SMALLINT,                  -- 1-5, nullable
+    deal_urgency SMALLINT,                      -- 1-5, nullable
+    is_new_logo BOOLEAN,                        -- nullable
+    solution_differentiation SMALLINT,          -- 1-5, nullable
+    oem_cost NUMERIC(12,2) NOT NULL,            -- deal cost in dollars (e.g. 150000.00)
+    oem VARCHAR(100),                           -- vendor name: 'Cisco', 'Dell', 'HPE', etc.
+    services_attached BOOLEAN,                  -- nullable
+    quarter_end BOOLEAN,                        -- nullable
+    competitor_names JSONB,                      -- array of strings
+    bom_line_count INTEGER DEFAULT 0,
+    bom_avg_margin_pct NUMERIC(10,4),           -- nullable
+    has_manual_bom BOOLEAN DEFAULT false,
+    achieved_margin NUMERIC(10,4) NOT NULL,     -- decimal fraction (0.185 = 18.5%)
+    status VARCHAR(10) NOT NULL,                -- 'Won' or 'Lost'
+    loss_reason VARCHAR(255) DEFAULT '',
+    bom_lines JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    org_id TEXT DEFAULT 'global'                -- tenant isolation
+);
+```
+
+The `rowToDeal()` function (analytics.js lines 99-130) converts DB rows to JS objects with camelCase keys:
+- `row.segment` → `deal.segment`
+- `row.oem_cost` → `deal.oemCost` (parseFloat)
+- `row.deal_reg_type` → `deal.dealRegType`
+- `row.achieved_margin` → `deal.achievedMargin` (parseFloat, stays as decimal fraction)
+- etc.
 
 ## Create: lambda/server/src/ml/features.js
 
 ### Exports:
 
-1. FEATURE_SPEC — array of feature definitions with name, type (continuous/binary/categorical), source column, transform, and categories for one-hot encoding. Include these features:
-   - Continuous: deal_size_log (from oem_cost, log transform), price_sensitivity, customer_loyalty, deal_urgency, solution_differentiation, bom_line_count, competitor_count (competitors string → number), proposed_margin (injected at inference time)
-   - Binary: is_new_logo, services_attached, quarter_end, has_bom (bom_line_count > 0)
-   - Categorical (one-hot, drop last): segment (SMB/MidMarket/Enterprise), deal_reg (PremiumHunting/StandardApproved/NotRegistered), complexity (Low/Medium/High), relationship (New/Developing/Good/Strategic), oem_top (Cisco/Dell/HPE/Microsoft/Palo Alto/CrowdStrike/Other), product_cat (Hardware/Software/Services/Mixed)
+1. **FEATURE_SPEC** — Array of feature definition objects. Each has:
+   - `name`: feature name in output vector
+   - `type`: 'continuous' | 'binary' | 'categorical'
+   - `source`: function(deal) that extracts raw value from a camelCase deal object
+   - `transform`: optional function for continuous features (e.g. Math.log)
+   - `categories`: for categorical features, array of possible values (one-hot, drop-last)
 
-2. featurize(deal, normStats) — takes raw deal + normalization stats, returns { features: number[], featureNames: string[] }. Z-score normalize continuous features, one-hot encode categoricals (drop last to avoid multicollinearity), impute missing with mean.
+   Features to include:
 
-3. computeNormStats(deals) — compute mean and std for each continuous feature across an array of deals. Returns { means: {}, stds: {} }.
+   **Continuous (8):**
+   - `deal_size_log`: from `deal.oemCost`, apply `Math.log(x + 1)` to compress range ($5K-$5M → 8.5-15.4)
+   - `price_sensitivity`: from `deal.customerPriceSensitivity` (1-5, nullable → impute with 3)
+   - `customer_loyalty`: from `deal.customerLoyalty` (1-5, nullable → impute with 3)
+   - `deal_urgency`: from `deal.dealUrgency` (1-5, nullable → impute with 3)
+   - `solution_differentiation`: from `deal.solutionDifferentiation` (1-5, nullable → impute with 3)
+   - `bom_line_count`: from `deal.bomLineCount` (integer, default 0)
+   - `competitor_count`: from `deal.competitors` string → number ('0'→0, '1'→1, '2'→2, '3+'→4)
+   - `proposed_margin`: injected at inference time (decimal fraction 0-1), not from DB. Training uses `deal.achievedMargin`.
 
-4. FEATURE_DISPLAY_NAMES — map from feature names (including one-hot like 'oem_top_Cisco') to human-readable labels for the UI.
+   **Binary (4):**
+   - `is_new_logo`: from `deal.isNewLogo` (nullable bool → default false → 0/1)
+   - `services_attached`: from `deal.servicesAttached` (nullable bool → default false → 0/1)
+   - `quarter_end`: from `deal.quarterEnd` (nullable bool → default false → 0/1)
+   - `has_bom`: derived from `deal.bomLineCount > 0` (0/1)
 
-5. Helper: competitorToNum(str) — '0'→0, '1'→1, '2'→2, '3+'→4
+   **Categorical — one-hot encode, drop last category to avoid multicollinearity (6 groups):**
+   - `segment`: categories ['SMB', 'MidMarket', 'Enterprise'] → 2 features (drop Enterprise)
+   - `deal_reg`: from `deal.dealRegType`, categories ['NotRegistered', 'StandardApproved', 'PremiumHunting'] → 2 features (drop PremiumHunting). Map 'Teaming' → 'StandardApproved'.
+   - `complexity`: from `deal.solutionComplexity`, categories ['Low', 'Medium', 'High'] → 2 features
+   - `relationship`: from `deal.relationshipStrength`, categories ['New', 'Good', 'Strategic'] → 2 features
+   - `oem_top`: from `deal.oem`, categories ['Cisco', 'Dell', 'HPE', 'Microsoft', 'Palo Alto', 'CrowdStrike', 'Other'] → 6 features. Map any OEM not in the list to 'Other'.
+   - `product_cat`: from `deal.productCategory`, categories ['Hardware', 'Software', 'Services', 'Other'] → 3 features. Map 'ProfessionalServices'/'ManagedServices' → 'Services', 'Cloud' → 'Software', 'ComplexSolution' → 'Other'.
+
+   **Total feature vector length:** 8 continuous + 4 binary + 2+2+2+2+6+3 one-hot = **29 features**
+
+2. **featurize(deal, normStats, options)** — Transform a single deal object into a feature vector.
+   - `deal`: camelCase deal object (from rowToDeal or API input)
+   - `normStats`: { means: {name→number}, stds: {name→number} } for z-score normalization
+   - `options`: { proposedMargin?: number } — override for proposed_margin at inference time
+   - Returns: `{ features: number[], featureNames: string[] }`
+   - Continuous features: z-score normalize using `(value - mean) / (std || 1)`. If value is null/undefined, use the mean (equivalent to imputing 0 after normalization).
+   - Binary: 0 or 1 (null/undefined → 0)
+   - Categorical: one-hot encode, unknown category → all zeros (treated as dropped category)
+
+3. **computeNormStats(deals)** — Compute normalization statistics across an array of deal objects.
+   - Only processes continuous features from FEATURE_SPEC
+   - Returns: `{ means: { deal_size_log: 11.2, ... }, stds: { deal_size_log: 1.8, ... } }`
+   - Standard deviation: use population std (not sample). If std is 0 (all same value), store 1 to avoid division by zero.
+
+4. **FEATURE_DISPLAY_NAMES** — Object mapping feature names (including one-hot names like 'oem_top_Cisco') to human-readable labels. Examples:
+   - `deal_size_log` → 'Deal Size'
+   - `price_sensitivity` → 'Price Sensitivity'
+   - `segment_SMB` → 'SMB Segment'
+   - `oem_top_Cisco` → 'Cisco (OEM)'
+   - `proposed_margin` → 'Proposed Margin'
+
+5. **competitorToNum(str)** — Helper: '0'→0, '1'→1, '2'→2, '3+'→4
+
+6. **getFeatureCount()** — Returns the expected feature vector length (29)
 
 ## Create: lambda/server/src/ml/features.test.js
 
-Tests: featurize complete deal → correct vector length; missing fields → imputed; computeNormStats correct; one-hot encoding correct; log transform correct.
+Use `import { describe, it, expect } from '@jest/globals'` (ES module style).
 
-Create branch feat/ml-features, commit, push. Open a PR.
+Tests:
+1. `featurize()` with a complete deal → returns vector of length 29 with correct feature names
+2. `featurize()` with missing nullable fields → imputes correctly (continuous to mean, binary to 0)
+3. `computeNormStats()` → correct mean and std for continuous features across 10 synthetic deals
+4. One-hot encoding: 'Cisco' OEM → oem_top_Cisco=1, others=0; unknown OEM → all zeros
+5. Log transform: oem_cost of 100000 → deal_size_log ≈ 11.51
+6. Competitor string conversion: '3+' → 4
+7. `proposedMargin` override works in featurize options
+8. Product category mapping: 'ProfessionalServices' → 'Services', 'Cloud' → 'Software'
+9. DealReg mapping: 'Teaming' → 'StandardApproved'
+10. Edge case: all-same values in computeNormStats → std returns 1 (not 0)
+
+Create branch feat/ml-features, commit, push. Open a PR from the GitHub UI.
 ```
 
 ---
@@ -2982,270 +3096,1174 @@ Can run in **parallel** with 14A.
 ```
 You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
 
-## Context
+## Project Setup
 
-Implement logistic regression from scratch in pure Node.js. No external ML libraries. This predicts P(win) given deal features + proposed margin.
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- All new files go under lambda/server/src/ml/ (create the ml/ directory if not exists)
+- No external ML libraries — pure Node.js math only
+
+## Context — Why From Scratch
+
+MarginArc runs as an AWS Lambda function. Adding Python/TensorFlow/scikit-learn would balloon the deployment package from 15MB to 500MB+ and add cold-start latency. Logistic regression is simple enough to implement in ~200 lines of JavaScript, and it's the right model for our problem:
+- Binary classification (Win/Loss)
+- Need P(win) as a calibrated probability (not just a class label)
+- Need interpretable feature weights (to explain "why" to sales reps)
+- Dataset size: 100-10,000 deals per customer (not big data)
+- Margin is a feature — by sweeping it, we find the profit-maximizing price point
 
 ## Create: lambda/server/src/ml/logistic-regression.js
 
 ### Exports:
 
-1. train(X, y, options) — Mini-batch gradient descent with L2 regularization.
-   - X: 2D array [n_samples][n_features], y: array of 0/1 labels
-   - options: { learningRate: 0.01, lambda: 0.01, epochs: 500, batchSize: 32, validationSplit: 0.2, earlyStoppingPatience: 20 }
-   - Algorithm: shuffle data, split train/val, init weights=0, for each epoch: mini-batch SGD with gradient = (1/batch) * sum((sigmoid(Wx+b) - y) * x) + lambda*w. Track val loss, early stop if no improvement in patience epochs.
-   - Returns: { weights: number[], bias: number, featureCount, epochsRun, trainLoss, valLoss, trainedAt: ISO string }
+1. **train(X, y, options)** — Mini-batch stochastic gradient descent with L2 regularization.
+   - `X`: 2D array `[n_samples][n_features]` — numeric feature matrix
+   - `y`: 1D array of 0/1 labels (0=Lost, 1=Won)
+   - `options` (all optional with defaults):
+     - `learningRate`: 0.01
+     - `lambda`: 0.01 (L2 regularization strength — prevents overfitting on small datasets)
+     - `epochs`: 500 (max iterations through the dataset)
+     - `batchSize`: 32
+     - `validationSplit`: 0.2 (hold out 20% for early stopping)
+     - `earlyStoppingPatience`: 20 (stop if val loss hasn't improved in 20 epochs)
+     - `seed`: null (optional seed for reproducible shuffling — use a simple LCG or Fisher-Yates with seed)
+   - Algorithm:
+     1. Validate inputs: X.length === y.length, X[0].length > 0, y contains only 0s and 1s
+     2. Shuffle data (seeded if seed provided)
+     3. Split into train (80%) and validation (20%) sets
+     4. Initialize: weights = new Array(n_features).fill(0), bias = 0
+     5. For each epoch:
+        a. Shuffle training set
+        b. Process mini-batches of size `batchSize`:
+           - For each sample in batch: z = dot(weights, x) + bias, pred = sigmoid(z)
+           - Gradient for weights: (1/batch_size) * Σ((pred - y) * x) + lambda * weights
+           - Gradient for bias: (1/batch_size) * Σ(pred - y)
+           - Update: weights -= learningRate * grad_w, bias -= learningRate * grad_b
+        c. Compute training loss (log loss on full training set)
+        d. Compute validation loss (log loss on validation set)
+        e. If val loss is best so far, save weights snapshot
+        f. If no improvement for `patience` epochs, stop and restore best weights
+     6. Return model object
+   - Returns: `{ weights: number[], bias: number, featureCount: number, epochsRun: number, trainLoss: number, valLoss: number, trainedAt: new Date().toISOString() }`
 
-2. predict(model, features) — sigmoid(dot(weights, features) + bias). Clip z to [-500, 500] to prevent overflow.
+2. **predict(model, features)** — Single prediction.
+   - Compute z = dot(model.weights, features) + model.bias
+   - Clip z to [-500, 500] to prevent Math.exp overflow (exp(-501) = 0, exp(501) = Infinity)
+   - Return sigmoid(z) = 1 / (1 + Math.exp(-z))
+   - Validate: features.length === model.featureCount, throw if mismatch
 
-3. predictBatch(model, X) — predict for each row.
+3. **predictBatch(model, X)** — Predict for each row. Returns array of probabilities.
 
-4. evaluate(model, X, y) — Returns { auc, logLoss, accuracy, calibration: [{bucket, predicted, actual}], n }.
-   - AUC: sort predictions desc, sweep threshold, trapezoidal integration of ROC curve.
-   - Calibration: 10 bins, mean predicted vs actual win rate per bin.
+4. **evaluate(model, X, y)** — Comprehensive model evaluation.
+   - Returns `{ auc, logLoss, accuracy, calibration, n }`
+   - **AUC** (Area Under ROC Curve):
+     1. Get predictions for all samples
+     2. Create array of { pred, label } sorted by pred descending
+     3. Walk through sorted list tracking true positive rate and false positive rate
+     4. Compute AUC via trapezoidal integration
+     5. Handle edge cases: all same label → AUC = 0.5
+   - **Log Loss**: -(1/n) * Σ(y*log(p) + (1-y)*log(1-p)). Clip p to [1e-15, 1-1e-15] to avoid log(0).
+   - **Accuracy**: threshold at 0.5
+   - **Calibration**: 10 equal-width bins from 0 to 1. For each bin: `{ bucket: '0.0-0.1', predicted: mean_pred, actual: mean_label, count }`. Skip empty bins.
 
-5. getFeatureImportance(model, featureNames) — Sort features by |weight|, return [{ name, weight, absWeight, direction }].
+5. **getFeatureImportance(model, featureNames)** — Feature impact ranking.
+   - Returns array sorted by |weight| descending: `[{ name: string, weight: number, absWeight: number, direction: 'positive'|'negative' }]`
+   - `direction`: 'positive' if weight > 0 (increases win probability), 'negative' if weight < 0
+   - featureNames must have same length as model.weights
 
-6. serializeModel(model) / deserializeModel(json) — JSON round-trip.
+6. **serializeModel(model)** → JSON string
+   **deserializeModel(json)** → model object. Validate required fields exist.
+
+### Internal helpers (not exported):
+- `sigmoid(z)` — 1 / (1 + Math.exp(-clip(z, -500, 500)))
+- `dot(a, b)` — inner product of two arrays
+- `logLoss(y, p)` — single-sample log loss with clipping
+- `shuffle(arr, seed?)` — Fisher-Yates shuffle, optionally seeded
 
 ## Create: lambda/server/src/ml/logistic-regression.test.js
 
-Tests:
-1. Linearly separable data → AUC > 0.95
-2. Random data → AUC near 0.5
-3. Higher lambda → smaller weight magnitudes
-4. Early stopping fires before max epochs on easy data
-5. Serialization round-trip preserves predictions
-6. Feature importance ranks the generating feature highest
+Use `import { describe, it, expect } from '@jest/globals'`.
 
-Create branch feat/ml-logistic-regression, commit, push. Open a PR.
+Tests:
+1. **Linearly separable data → AUC > 0.95**: Generate 200 points where x[0] > 0 → y=1, x[0] <= 0 → y=0. Train. Evaluate. The model should nearly perfectly separate.
+2. **Random data → AUC near 0.5**: Generate 200 points with random features and random labels. AUC should be between 0.35 and 0.65.
+3. **L2 regularization effect**: Train same data with lambda=0 and lambda=1. Higher lambda should produce smaller max(|weight|).
+4. **Early stopping fires**: On linearly separable data, training should stop well before `epochs` limit (e.g. within 100 epochs for easy data with patience=20).
+5. **Serialization round-trip**: Train a model, serialize, deserialize, predict on same data — predictions should be identical (within floating point tolerance 1e-10).
+6. **Feature importance correctness**: Generate data where only feature 2 (out of 5) determines the label. After training, feature 2 should have the highest |weight|.
+7. **Calibration sanity**: After training on well-separable data, high-confidence predictions (>0.8) should have actual win rate > 0.6.
+8. **predict() validates feature length**: Passing wrong-length feature vector should throw.
+9. **Edge case: single feature**: Train with 1 feature, verify it works.
+10. **Gradient math check**: For a simple case (2 features, 4 samples), manually compute one gradient step and verify weights update correctly.
+
+Create branch feat/ml-logistic-regression, commit, push. Open a PR from the GitHub UI.
 ```
 
 ---
 
 ### Prompt 14C: Training Pipeline + Model Storage [Lambda Node.js] (Sprint 33)
 
-**Depends on 14A + 14B.**
+**Depends on 14A + 14B.** Make sure both PRs are merged into main before starting.
 
 ```
 You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
 
-## Context
+## Project Setup
 
-Build the pipeline that pulls deals from recorded_deals, trains the win probability model, evaluates it, stores it, and auto-promotes customers to Phase 2.
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- Database: PostgreSQL via `src/licensing/db.js` which exports `query(text, params)` and `getSSMParameter(name)`
+- DB queries use $1, $2 parameterized syntax (pg library)
+
+## Existing Code You Need to Know
+
+### Database query helper (src/licensing/db.js):
+```js
+export async function query(text, params) { /* returns { rows, rowCount } */ }
+```
+
+### Recorded deals (src/analytics.js):
+```js
+export async function getRecordedDeals(orgId)  // returns array of camelCase deal objects
+```
+The `rowToDeal()` function (analytics.js:99-130) converts DB snake_case to camelCase JS objects. The deal objects have fields like: `segment`, `industry`, `productCategory`, `dealRegType`, `competitors`, `oemCost`, `achievedMargin` (decimal fraction like 0.185), `status` ('Won'/'Lost'), etc.
+
+### Phase management (src/phases.js):
+```js
+export async function getCustomerPhaseById(customerId)  // returns 1, 2, or 3
+export async function setCustomerPhase(customerId, phase) // upserts, validates phase in [1,2,3]
+```
+
+### Customer → Org resolution (via licenses table):
+```sql
+SELECT org_id FROM licenses WHERE customer_id = $1 AND status = 'active' AND org_id IS NOT NULL
+```
+
+### Schema migration pattern (src/licensing/db.js lines 214-229):
+```js
+export async function ensureApiKeySchema() {
+  const pool = await getPool();
+  try {
+    await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS api_key VARCHAR(50) UNIQUE`);
+    console.log('customers.api_key column ensured');
+  } catch (err) {
+    if (err.message && err.message.includes('already exists')) {
+      console.log('customers.api_key column already exists');
+    } else {
+      console.error('Failed to add api_key column:', err.message);
+    }
+  }
+}
+```
+
+### Cold-start init (index.js lines 44-49):
+```js
+ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
+ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
+ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
+ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
+ensureApiKeySchema().catch(err => console.error('Failed to ensure api_key schema:', err.message))
+ensureMfaSchema().catch(err => console.error('Failed to ensure MFA schema:', err.message))
+```
+
+### customer_config table (current columns):
+```
+customer_id UUID (PK, FK→customers.id), gemini_api_key VARCHAR(255),
+fulcrum_api_url VARCHAR(500), phone_home_interval_days INTEGER,
+features JSONB, settings JSONB, updated_at TIMESTAMP, algorithm_phase INTEGER
+```
+
+### Admin auth (src/middleware/auth.js):
+The admin routes are protected by `verifyToken` middleware (JWT-based). The admin router is at `src/licensing/admin.js`. New admin routes should be added to that router before the `router.use(verifyToken)` line (for unauthed routes) or after it (for authed routes). All ML admin routes should be AFTER verifyToken (authed).
+
+The admin router is mounted in index.js at: `app.use('/admin/api', adminRoutes)`
+
+### ML modules from 14A and 14B:
+```js
+import { featurize, computeNormStats, FEATURE_SPEC, getFeatureCount } from './ml/features.js'
+import { train, evaluate, getFeatureImportance, serializeModel, deserializeModel } from './ml/logistic-regression.js'
+```
 
 ## Create: lambda/server/src/ml/train.js
 
-### Main export: trainCustomerModel(customerId)
+### Export: ensureMLSchema()
 
-Steps:
-1. Get org_ids for customer (from licenses table)
-2. Pull training data: SELECT * FROM recorded_deals WHERE org_id IN (...) AND status IN ('Won','Lost')
-3. Validate: need 100+ deals, 20+ won, 20+ lost. If not, return { success: false, reason }
-4. Create training samples:
-   - Each Won deal: label=1, proposed_margin=achieved_margin
-   - Each Lost deal: label=0, proposed_margin=achieved_margin
-   - Synthetic augmentation for margin sensitivity: for Won deals, create a sample at achieved_margin+0.10 with label=0 (teaches model that higher margin = lower win prob). For Lost deals, create sample at achieved_margin-0.05 with label=1.
-5. computeNormStats on training data
-6. Featurize all samples
-7. Train logistic regression (lr=0.01, lambda=0.01, epochs=500, batch=32, valSplit=0.2, patience=20)
-8. Evaluate on original (non-synthetic) deals only
-9. Get feature importance
-10. Store model package (model params + normStats + featureNames + metrics + importance) as JSON in customer_config.ml_model column
-11. Auto-promote: if AUC >= 0.60 AND deals >= 100 AND current phase < 2 → setCustomerPhase(customerId, 2)
-12. Return { success, metrics, dealCount, topFeatures, phase }
+Add `ml_model JSONB` column to customer_config. Follow the exact pattern from ensureApiKeySchema():
+```js
+import { query } from '../licensing/db.js'
 
-### Schema migration: ensureMLSchema()
+export async function ensureMLSchema() {
+  try {
+    await query('ALTER TABLE customer_config ADD COLUMN IF NOT EXISTS ml_model JSONB')
+    console.log('customer_config.ml_model column ensured')
+  } catch (err) {
+    if (err.message?.includes('already exists')) {
+      console.log('customer_config.ml_model column already exists')
+    } else {
+      console.error('Failed to add ml_model column:', err.message)
+    }
+  }
+}
+```
 
-ALTER TABLE customer_config ADD COLUMN IF NOT EXISTS ml_model JSONB
+### Export: trainCustomerModel(customerId)
 
-Call this from Lambda cold-start init in index.js alongside other ensureSchema calls.
+This is the main training function. Steps:
 
-### Export: getModel(customerId) — load model package from customer_config.ml_model
+1. **Get org_ids** for this customer from the licenses table:
+   ```js
+   const orgResult = await query(
+     'SELECT org_id FROM licenses WHERE customer_id = $1 AND status = \'active\' AND org_id IS NOT NULL',
+     [customerId]
+   )
+   const orgIds = orgResult.rows.map(r => r.org_id).filter(Boolean)
+   ```
+   If no org_ids, return `{ success: false, reason: 'No active licenses with org_id found' }`
 
-### Admin API endpoints (add to index.js):
+2. **Pull training data** from recorded_deals — all closed deals for this customer's orgs:
+   ```sql
+   SELECT * FROM recorded_deals WHERE org_id IN ($1, $2, ...) AND status IN ('Won', 'Lost')
+   ```
+   Convert rows with the same field mapping as `rowToDeal()` in analytics.js.
 
-POST /api/admin/ml/train/:customerId — trigger training, return results
-GET /api/admin/ml/model/:customerId — return model info (metrics, deal count, top features, phase) without exposing weights
+3. **Validate minimum data requirements**:
+   - Total deals >= 100 (statistical minimum for meaningful logistic regression)
+   - Won deals >= 20 (need positive examples)
+   - Lost deals >= 20 (need negative examples)
+   - If not met, return `{ success: false, reason: 'Need X more deals (Y won, Z lost currently)', dealCount: total, wonCount, lostCount }`
 
-Both behind adminAuth middleware.
+4. **Create training samples** — the key insight is teaching margin sensitivity:
+   - Each Won deal: `{ ...deal, proposedMargin: deal.achievedMargin, label: 1 }`
+   - Each Lost deal: `{ ...deal, proposedMargin: deal.achievedMargin, label: 0 }`
+   - **Synthetic augmentation** (teaches model that margin affects win probability):
+     - For each Won deal: add a synthetic sample at `achievedMargin + 0.10` with `label: 0` (if you'd asked for 10pp more, you likely would have lost)
+     - For each Lost deal: add a synthetic sample at `achievedMargin - 0.05` with `label: 1` (if you'd priced 5pp lower, you might have won)
+     - Cap synthetic margins to [0.01, 0.55] range
+
+5. **Compute normalization stats** from all training samples (including synthetic): `computeNormStats(allSamples)`
+
+6. **Featurize all samples**: For each sample, call `featurize(deal, normStats, { proposedMargin: sample.proposedMargin })`. Collect into X (2D array) and y (labels array).
+
+7. **Train the model**:
+   ```js
+   const model = train(X, y, {
+     learningRate: 0.01,
+     lambda: 0.01,
+     epochs: 500,
+     batchSize: 32,
+     validationSplit: 0.2,
+     earlyStoppingPatience: 20
+   })
+   ```
+
+8. **Evaluate on ORIGINAL deals only** (not synthetic) — this gives honest metrics:
+   - Re-featurize only the real Won/Lost deals
+   - Call `evaluate(model, X_real, y_real)`
+
+9. **Get feature importance**: `getFeatureImportance(model, featureNames)`
+
+10. **Store model package** as JSON in customer_config.ml_model:
+    ```js
+    const modelPackage = {
+      model: serializeModel(model),    // { weights, bias, featureCount, ... }
+      normStats,                        // { means, stds }
+      featureNames,                     // from featurize output
+      metrics: evaluationResult,        // { auc, logLoss, accuracy, calibration, n }
+      importance: topFeatures,          // from getFeatureImportance
+      dealCount: realDeals.length,
+      trainedAt: new Date().toISOString(),
+      version: 1                        // for future schema migrations
+    }
+    await query(
+      'UPDATE customer_config SET ml_model = $1 WHERE customer_id = $2',
+      [JSON.stringify(modelPackage), customerId]
+    )
+    ```
+
+11. **Auto-promote to Phase 2** if model is good enough:
+    ```js
+    const currentPhase = await getCustomerPhaseById(customerId)
+    if (evaluationResult.auc >= 0.60 && realDeals.length >= 100 && currentPhase < 2) {
+      await setCustomerPhase(customerId, 2)
+    }
+    ```
+
+12. **Return result**:
+    ```js
+    return {
+      success: true,
+      metrics: { auc, logLoss, accuracy, n: realDeals.length },
+      dealCount: realDeals.length,
+      syntheticCount: allSamples.length - realDeals.length,
+      topFeatures: topFeatures.slice(0, 10),
+      phase: await getCustomerPhaseById(customerId),
+      epochsRun: model.epochsRun
+    }
+    ```
+
+### Export: getModel(customerId)
+
+Load the model package from customer_config:
+```js
+export async function getModel(customerId) {
+  const result = await query('SELECT ml_model FROM customer_config WHERE customer_id = $1', [customerId])
+  if (result.rows.length === 0 || !result.rows[0].ml_model) return null
+  return result.rows[0].ml_model  // PostgreSQL auto-parses JSONB
+}
+```
+
+### Export: getModelByOrgId(orgId)
+
+Resolve org_id → customer_id → model (needed by /api/recommend):
+```js
+export async function getModelByOrgId(orgId) {
+  if (!orgId) return null
+  const result = await query(
+    `SELECT cc.ml_model FROM customer_config cc
+     JOIN licenses l ON l.customer_id = cc.customer_id
+     WHERE l.org_id = $1 AND l.status = 'active'
+     LIMIT 1`,
+    [orgId]
+  )
+  return result.rows.length > 0 ? result.rows[0].ml_model : null
+}
+```
+
+## Modify: lambda/server/index.js
+
+### Add to imports (near line 40):
+```js
+import { ensureMLSchema, getModelByOrgId } from './src/ml/train.js'
+```
+
+### Add to cold-start init (after line 49):
+```js
+ensureMLSchema().catch(err => console.error('Failed to ensure ML schema:', err.message))
+```
+
+### Add admin routes to src/licensing/admin.js
+
+Add these routes AFTER the `router.use(verifyToken)` line:
+
+```js
+// ML training endpoints
+router.post('/ml/train/:customerId', async (req, res) => {
+  try {
+    const { trainCustomerModel } = await import('../ml/train.js')
+    const result = await trainCustomerModel(req.params.customerId)
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.get('/ml/model/:customerId', async (req, res) => {
+  try {
+    const { getModel } = await import('../ml/train.js')
+    const modelPkg = await getModel(req.params.customerId)
+    if (!modelPkg) return res.status(404).json({ error: 'No trained model' })
+    // Don't expose raw weights — just metadata
+    res.json({
+      metrics: modelPkg.metrics,
+      dealCount: modelPkg.dealCount,
+      topFeatures: modelPkg.importance?.slice(0, 10),
+      trainedAt: modelPkg.trainedAt,
+      version: modelPkg.version
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+```
 
 ## Testing: lambda/server/src/ml/train.test.js
 
-Mock query() to return 150 synthetic recorded_deals rows (80 Won, 70 Lost with varying features and margins). Verify training completes, AUC > 0.5, model stored.
+Use `import { describe, it, expect, jest } from '@jest/globals'`.
 
-Create branch feat/ml-training-pipeline, commit, push. Open a PR.
+**Mock the database** — do NOT connect to real PostgreSQL. Mock `../licensing/db.js`:
+```js
+jest.unstable_mockModule('../licensing/db.js', () => ({
+  query: jest.fn(),
+  getSSMParameter: jest.fn()
+}))
+```
+Then dynamically import after mocking:
+```js
+const { query } = await import('../licensing/db.js')
+const { trainCustomerModel, getModel } = await import('./train.js')
+```
+
+Set up query mock to return:
+- For `SELECT org_id FROM licenses...`: return `{ rows: [{ org_id: 'test_org' }] }`
+- For `SELECT * FROM recorded_deals...`: return 150 synthetic deal rows (80 Won, 70 Lost) with varying features and margins
+- For `SELECT algorithm_phase FROM customer_config...`: return `{ rows: [{ algorithm_phase: 1 }] }`
+- For `UPDATE customer_config SET ml_model...`: return `{ rowCount: 1 }`
+- For `INSERT INTO customer_config...`: return `{ rowCount: 1 }`
+
+Generate synthetic deals: randomize segment, competitors, oemCost ($10K-$500K), achievedMargin (0.08-0.30), with Won deals tending to have lower margins and stronger deal structure (creates a learnable signal).
+
+Tests:
+1. Training completes successfully with 150 deals → returns `{ success: true }`
+2. AUC > 0.5 (model learned something from the data)
+3. Returns correct dealCount and topFeatures
+4. Rejects when < 100 deals → returns `{ success: false, reason: ... }`
+5. Rejects when < 20 Won or < 20 Lost deals
+6. Model is stored via UPDATE query with valid JSON
+7. Auto-promotes to Phase 2 when AUC >= 0.60
+8. getModel returns null when no model exists
+
+Create branch feat/ml-training-pipeline, commit, push. Open a PR from the GitHub UI.
 ```
 
 ---
 
 ### Prompt 14D: ML Inference — Replace Rules Engine [Lambda Node.js] (Sprint 33)
 
-**Depends on 14C.**
+**Depends on 14C.** Make sure PR is merged into main before starting.
 
 ```
 You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
 
-## Context
+## Project Setup
 
-Replace the rules engine in /api/recommend with real ML inference. When a customer has a trained model, sweep margins to find the optimal recommendation. Keep rules.js as fallback.
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+
+## Business Context
+
+When a sales rep opens an Opportunity in Salesforce and clicks "Get Recommendation," the LWC calls our Apex controller which calls POST /api/recommend on this Lambda. Currently, we use a hardcoded rules engine. Now, if a customer has a trained ML model, we use it instead. The rules engine stays as a fallback.
+
+The key insight: the ML model predicts P(win | features, proposed_margin). By sweeping `proposed_margin` from 5% to 35%, we find the margin that maximizes Expected GP = margin × deal_value × P(win). This gives the rep three options: conservative (safe), optimal (max ROI), and aggressive (max margin).
+
+## Existing /api/recommend Handler (index.js lines 474-608)
+
+Here is the CURRENT flow — you'll modify it, not replace it:
+
+```js
+app.post('/api/recommend', async (req, res) => {
+  try {
+    const input = DealInput.parse(req.body?.input)
+    const planned = typeof req.body?.plannedMarginPct === 'number' ? req.body.plannedMarginPct : null
+    const manualBomLines = Array.isArray(req.body?.bomLines) ? BomLinesInput.parse(req.body.bomLines) : []
+    const manualStats = manualBomLines.length ? computeManualBomStats(manualBomLines) : null
+
+    const orgId = req.headers['x-org-id'] || null
+    let phase = 1
+    try { phase = await getCustomerPhase(orgId) } catch (phaseErr) { /* ... */ }
+
+    const deals = await fetchAllDeals(sampleDeals, orgId)
+    const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
+    // ... (BOM override, Gemini AI, deal score computation)
+
+    // Phase 1: Returns dealScore but suggestedMarginPct: null
+    if (phase === 1) {
+      return res.json({
+        dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+        suggestedMarginPct: null,  // <-- THIS IS THE PROBLEM (no value!)
+        suggestedPrice: null,
+        winProbability: rec.winProbability, confidence: rec.confidence,
+        method: rec.method, drivers: rec.drivers, policyFloor: rec.policyFloor,
+        phaseInfo: { current: 1, message: '...', nextPhaseReady: false }
+      })
+    }
+
+    // Phase 2/3: Full recommendation
+    return res.json({ ...response, explanation, qualitativeSummary, metrics, bom, ... })
+  } catch (e) { ... }
+})
+```
+
+### Current imports at top of index.js (relevant ones):
+```js
+import { computeRecommendation } from './src/rules.js'               // line 14
+import { assessPredictionQuality } from './src/quality.js'            // line 18
+import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrivers, generatePhase1Guidance } from './src/phases.js'  // line 40
+```
+
+### ML modules available from 14A-14C:
+```js
+// These are the new imports you'll add:
+import { getModelByOrgId } from './src/ml/train.js'
+import { recommendMargin } from './src/ml/inference.js'  // the file you create below
+import { generateBenchmarkResponse } from './src/ml/benchmarks.js'  // from 14E (may not exist yet, guard it)
+```
 
 ## Create: lambda/server/src/ml/inference.js
 
-### Export: recommendMargin(deal, modelPackage)
+### Export: recommendMargin(dealInput, modelPackage)
 
-1. Deserialize model, load normStats
-2. Sweep margins from 5% to 35% in 0.5% steps:
-   - For each margin: featurize deal with proposed_margin=margin, predict P(win), compute expectedGP = margin * (oem_cost / (1-margin)) * pWin
-3. Find optimal (max expectedGP), conservative (max margin where pWin > 0.70), aggressive (max margin where pWin > 0.45)
-4. Generate key drivers from feature importance + feature values: top 5 features with human-readable sentences using FEATURE_DISPLAY_NAMES, quantified impact in pp
-5. Return: { suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, winProbability, expectedGP, confidence, keyDrivers, expectedGPCurve (every other point for chart), modelMetrics: { auc, dealCount, trainedAt }, source: 'ml_model' }
+Parameters:
+- `dealInput`: the DealInput object from the API request (camelCase, from Zod validation)
+- `modelPackage`: the JSONB object from customer_config.ml_model containing { model (serialized), normStats, featureNames, metrics, importance }
 
-### Export: computeConfidence(modelPackage, deal)
+Algorithm:
+1. Deserialize the model: `deserializeModel(modelPackage.model)`
+2. Load normStats from modelPackage
+3. **Margin sweep**: iterate `proposedMargin` from 0.05 to 0.35 in 0.005 steps (61 points):
+   - For each margin value:
+     a. Create deal with proposed margin: `const featureResult = featurize(dealInput, normStats, { proposedMargin: margin })`
+     b. Predict: `const pWin = predict(model, featureResult.features)`
+     c. Compute expected GP: `const sellPrice = dealInput.oemCost / (1 - margin)`, `const gp = sellPrice - dealInput.oemCost`, `const expectedGP = gp * pWin`
+     d. Store: `{ margin, pWin, expectedGP, sellPrice, gp }`
 
-Base = (auc - 0.5) * 2, multiply by min(1, dealCount/500). Returns 0-1.
+4. **Find three margin options**:
+   - `optimal`: the margin with highest `expectedGP` (best risk-adjusted return)
+   - `conservative`: the HIGHEST margin where `pWin >= 0.70` (safe bet)
+   - `aggressive`: the HIGHEST margin where `pWin >= 0.45` (push the envelope)
+   - If no margin meets conservative threshold, use the margin with highest pWin
+   - If no margin meets aggressive threshold, use optimal
+
+5. **Generate key drivers** from feature importance + deal's actual feature values:
+   - Take top 5 features from `modelPackage.importance`
+   - For each: look up the feature's actual value in the deal, compute its contribution to the prediction (weight × normalized_value), generate a human-readable sentence using FEATURE_DISPLAY_NAMES
+   - Each driver: `{ name: string, sentence: string, impact: number (in percentage points), direction: 'positive'|'negative' }`
+
+6. **Compute confidence**: `computeConfidence(modelPackage, dealInput)`
+
+7. **Build GP curve** for frontend chart: every 3rd point from the sweep → `[{ margin: 5.0, pWin: 82, expectedGP: 12500 }, ...]`
+
+8. **Return**:
+   ```js
+   {
+     suggestedMarginPct: optimal.margin * 100,      // e.g. 18.5
+     conservativeMarginPct: conservative.margin * 100,
+     aggressiveMarginPct: aggressive.margin * 100,
+     winProbability: optimal.pWin,                    // 0-1
+     expectedGP: optimal.expectedGP,                  // dollar amount
+     confidence: confidence,                           // 0-1
+     keyDrivers: drivers,                              // array of 5 driver objects
+     expectedGPCurve: curvePoints,                     // for chart
+     modelMetrics: {
+       auc: modelPackage.metrics.auc,
+       dealCount: modelPackage.dealCount,
+       trainedAt: modelPackage.trainedAt
+     },
+     source: 'ml_model'
+   }
+   ```
+
+### Export: computeConfidence(modelPackage, dealInput)
+
+Confidence is a 0-1 score reflecting how much we trust this specific prediction:
+- Base = (AUC - 0.5) × 2 — maps AUC 0.5→0, AUC 1.0→1
+- Data factor = min(1, dealCount / 500) — more training data = more confident
+- Return: clamp(base × dataFactor, 0.1, 0.95)
 
 ## Modify: lambda/server/index.js — /api/recommend handler
 
-IMPORTANT: Do NOT delete rules.js. Keep it as final fallback.
+**IMPORTANT: Do NOT delete rules.js or change computeRecommendation. Keep the existing code as fallback.**
 
-New flow:
-1. Parse input as before
-2. Resolve customer → get phase and ML model
-3. If modelPackage exists AND metrics.auc >= 0.55:
-   - Use ML inference: recommendMargin(dealInput, modelPackage)
-   - Include in response: suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, expectedGPCurve, keyDrivers (learned), modelMetrics, source='ml_model'
-4. Else if Phase 1:
-   - Use industry benchmarks (import from benchmarks.js, built in 14E)
-   - Include: suggestedMarginPct (benchmark median), suggestedMarginRange { low, high }, source='industry_benchmark'
-5. Else (fallback):
-   - Use existing rules engine
-   - source='rules_engine'
+### Add imports at the top (after existing imports, around line 40):
+```js
+import { getModelByOrgId } from './src/ml/train.js'
+import { recommendMargin } from './src/ml/inference.js'
+```
 
-Add source field to ALL responses so the LWC can render differently per source.
+### Modify the handler — new flow (insert AFTER phase lookup, BEFORE the existing rules engine call):
 
-## Testing
+After line 491 (where `phase` is determined), add ML model lookup:
+```js
+    // Try to load ML model for this customer
+    let modelPackage = null
+    try {
+      modelPackage = await getModelByOrgId(orgId)
+    } catch (mlErr) {
+      structuredLog('warn', 'ml_model_lookup_failed', { orgId, error: mlErr?.message })
+    }
+```
 
-1. Mock model, verify recommendMargin produces monotonically decreasing pWin as margin increases
-2. Verify optimal margin maximizes expectedGP (not just margin or pWin)
-3. Integration: mock DB, call /api/recommend, verify response has new fields + source
+Then restructure the response logic into 3 tiers:
 
-Create branch feat/ml-inference, commit, push. Open a PR.
+**Tier 1 — ML Model (Phase 2+, has model with AUC >= 0.55):**
+```js
+    if (modelPackage && modelPackage.metrics?.auc >= 0.55) {
+      // ML inference
+      const mlResult = recommendMargin(input, modelPackage)
+      // Still compute deal score using ML's values
+      const predictionQuality = assessPredictionQuality(input, { confidence: mlResult.confidence })
+      const { dealScore, scoreFactors } = computeDealScore({
+        plannedMarginPct: planned,
+        suggestedMarginPct: mlResult.suggestedMarginPct,
+        winProbability: mlResult.winProbability,
+        confidence: mlResult.confidence,
+        predictionQuality
+      })
+      return res.json({
+        ...mlResult,                  // suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, etc.
+        dealScore, scoreFactors,
+        topDrivers: mlResult.keyDrivers.map(d => d.sentence),
+        predictionQuality,
+        phaseInfo: { current: phase },
+        source: 'ml_model'
+      })
+    }
+```
+
+**Tier 2 — Phase 1 (keep existing Phase 1 code, but add `source: 'rules_engine'`):**
+The existing Phase 1 block (lines 563-584) stays mostly the same. Just add `source: 'rules_engine'` to the response object.
+
+**NOTE: If 14E (benchmarks) has been merged, replace the Phase 1 block with benchmark-based response. But if 14E hasn't been merged yet, just add the source field. 14E will handle its own integration.**
+
+**Tier 3 — Rules Engine fallback (existing Phase 2/3 code):**
+Add `source: 'rules_engine'` to the Phase 2/3 response object.
+
+### Summary of changes to /api/recommend:
+1. Add `getModelByOrgId` import and `recommendMargin` import
+2. After phase lookup, try to load ML model
+3. If model exists and AUC >= 0.55, use ML inference (new code)
+4. If Phase 1, use existing Phase 1 code + `source` field
+5. If Phase 2/3 without model, use existing rules engine + `source` field
+6. `source` field is present in ALL code paths
+
+## Testing: lambda/server/src/ml/inference.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'`.
+
+Create a mock model package with known weights (don't train — just set weights directly so tests are deterministic):
+- 29 features (matching getFeatureCount())
+- Set the proposed_margin weight to a large negative value (e.g. -5.0) so higher margin → lower pWin
+- Set a few other weights to known values
+
+Tests:
+1. **Monotonic pWin decrease**: As margin increases from 5% to 35%, pWin should strictly decrease (because proposed_margin weight is negative)
+2. **Optimal margin maximizes expectedGP**: The optimal margin should NOT be the lowest margin (0% GP) or the highest margin (0% win prob), but somewhere in the middle
+3. **Conservative has higher pWin than aggressive**: conservative.pWin should be >= aggressive.pWin
+4. **Three options are in correct order**: conservativeMarginPct <= suggestedMarginPct <= aggressiveMarginPct
+5. **Confidence calculation**: AUC=0.75, dealCount=200 → confidence should be between 0.1 and 0.95
+6. **Key drivers are generated**: result.keyDrivers should have 5 items with name, sentence, impact, direction
+7. **GP curve has points**: result.expectedGPCurve should be a non-empty array
+8. **Source is 'ml_model'**: result.source === 'ml_model'
+
+Create branch feat/ml-inference, commit, push. Open a PR from the GitHub UI.
 ```
 
 ---
 
 ### Prompt 14E: Industry Benchmarks for Phase 1 [Lambda Node.js] (Sprint 33)
 
-Can run in **parallel** with 14C/14D.
+Can run in **parallel** with 14C/14D (standalone module, no dependencies on ML training).
 
 ```
 You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
 
-## Context
+## Project Setup
 
-Phase 1 customers see suggestedMarginPct: null today. Replace with curated industry benchmarks — a margin RANGE from publicly available data. Useful from day 1.
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- New file goes under lambda/server/src/ml/ directory
+
+## Business Context — Why This Matters
+
+Phase 1 customers currently see `suggestedMarginPct: null` — the UI shows "Score your deals to build your data foundation" with no actual margin guidance. This is terrible for adoption because:
+- A VAR sales rep opens an Opportunity, clicks "Get Recommendation," and gets... nothing useful
+- They need to score 50+ deals before getting any margin guidance
+- Most will churn before reaching that threshold
+
+**Fix:** Return industry-standard margin benchmarks based on OEM, customer segment, and deal size. Not ML — just curated data from public earnings reports, distributor surveys, and industry knowledge. Still useful from Day 1.
+
+## Current Phase 1 Response (index.js lines 563-584)
+
+```js
+if (phase === 1) {
+  return res.json({
+    dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+    suggestedMarginPct: null,        // <-- REPLACE THIS
+    suggestedPrice: null,            // <-- REPLACE THIS
+    winProbability: response.winProbability,
+    confidence: response.confidence,
+    method: response.method,
+    drivers: response.drivers,
+    policyFloor: response.policyFloor,
+    phaseInfo: {
+      current: 1,
+      message: 'Score your deals to build your data foundation. Margin recommendations unlock at Phase 2.',
+      nextPhaseReady: false
+    }
+  })
+}
+```
+
+## OEM Margin Context from Current Rules Engine (rules.js)
+
+The rules engine already has OEM-specific adjustments (rules.js lines 27-38):
+```js
+const OEM_MARGIN_ADJ = {
+  Cisco: 0.01, 'Palo Alto': 0.015, Fortinet: 0.005, HPE: 0,
+  Dell: -0.005, VMware: 0.01, Microsoft: -0.01, 'Pure Storage': 0.015,
+  NetApp: 0.005, Arista: 0.01
+}
+```
+
+These are adjustments around a ~17% midpoint, but they're too granular. The benchmarks module should use broader, more defensible ranges.
+
+## DealInput Fields Available (from Zod schema in index.js)
+
+The `input` object has these fields you can use for benchmark lookup:
+- `input.oem` (string, optional) — OEM vendor name like 'Cisco', 'Dell', 'HPE'
+- `input.customerSegment` (enum: 'SMB', 'MidMarket', 'Enterprise')
+- `input.oemCost` (number, required) — deal cost in dollars, use as deal size proxy
+- `input.dealRegType` (enum: 'NotRegistered', 'StandardApproved', 'PremiumHunting', 'Teaming')
+- `input.competitors` (enum: '0', '1', '2', '3+')
+- `input.servicesAttached` (boolean, optional)
+- `input.productCategory` (enum: 'Hardware', 'Software', 'Cloud', 'ProfessionalServices', 'ManagedServices', 'ComplexSolution')
 
 ## Create: lambda/server/src/ml/benchmarks.js
 
 ### BENCHMARKS constant
 
-Nested object: OEM → Segment → SizeBucket → { p25, median, p75, source }
+Nested object structure: `OEM → Segment → SizeBucket → { p25, median, p75, source }`
 
-Include at minimum these OEMs with all segment/size combos:
-- Cisco (tight margins on networking: Enterprise 10-17%, SMB 18-28%)
-- Dell (moderate: Enterprise 12-20%, SMB 20-30%)
-- HPE (slightly higher than Dell: +1-2pp)
-- Microsoft (software/cloud: higher margins 18-30%)
-- Palo Alto (security: higher margins 15-28%)
-- CrowdStrike (SaaS security: 20-35%)
-- Fortinet (security: 15-25%)
-- _default fallback: 12-22% general IT VAR benchmark
+The margins are percentage points (e.g. 15 means 15%). Source is a string describing where the benchmark comes from (for display in UI).
 
-Size buckets: <$25K, $25K-100K, $100K-500K, $500K-1M, $1M+
-Larger deals = tighter margins (2-4pp compression per tier)
+Include these OEMs with realistic IT VAR margins (based on typical distributor margins, public data from Tech Data/Ingram reports, and VAR industry knowledge):
 
-### getBenchmark(oem, segment, dealSize)
+| OEM | Enterprise Large | Enterprise Small | MidMarket | SMB |
+|-----|-----------------|-----------------|-----------|-----|
+| Cisco | 10-14-17% | 12-16-20% | 15-19-24% | 18-23-28% |
+| Dell | 8-12-16% | 10-14-18% | 14-18-23% | 18-22-27% |
+| HPE | 9-13-17% | 11-15-19% | 15-19-24% | 19-23-28% |
+| Microsoft | 12-16-22% | 14-18-24% | 18-22-28% | 22-26-32% |
+| Palo Alto | 12-16-20% | 14-18-23% | 18-22-27% | 22-26-32% |
+| CrowdStrike | 18-22-28% | 20-24-30% | 22-26-32% | 25-30-35% |
+| Fortinet | 12-15-20% | 14-18-22% | 16-20-25% | 20-24-28% |
+| VMware | 10-14-18% | 12-16-20% | 16-20-25% | 20-24-30% |
+| Pure Storage | 12-16-22% | 14-18-24% | 18-22-28% | 22-26-32% |
+| _default | 10-14-18% | 12-16-20% | 14-18-23% | 18-22-27% |
 
-Cascading lookup: exact → OEM default → general default. Returns { low, median, high, source, specificity }.
+Size buckets (based on `oemCost`):
+- `<$25K` → use SMB margins even for larger segments (small deals have more margin room)
+- `$25K-$100K` → use segment-appropriate margins
+- `$100K-$500K` → use segment-appropriate margins
+- `$500K-$1M` → compress 2pp from base (big deals = price pressure)
+- `$1M+` → compress 4pp from base (mega deals = significant compression)
 
-### getSizeBucket(amount) — <$25K, $25K-100K, etc.
+### getSizeBucket(oemCost)
+
+Returns string: '<$25K', '$25K-$100K', '$100K-$500K', '$500K-$1M', '$1M+'
+
+### getBenchmark(oem, segment, oemCost)
+
+Cascading lookup:
+1. Try exact OEM + segment + size-adjusted
+2. Fall back to OEM + segment (ignore size)
+3. Fall back to `_default` + segment
+4. Final fallback: `{ p25: 12, median: 16, p75: 22, source: 'General IT VAR benchmark' }`
+
+Apply size compression:
+- For $500K-$1M: subtract 2 from each (p25, median, p75), floor at 5
+- For $1M+: subtract 4 from each, floor at 5
+
+Returns: `{ low: p25, median, high: p75, source: string, specificity: 'oem_segment'|'oem_default'|'general' }`
 
 ### generateBenchmarkResponse(dealInput)
 
-Returns { suggestedMarginRange: { low, high }, suggestedMarginPct: median, benchmarkSource, insights: [contextual tips], source: 'industry_benchmark' }
+Takes the validated DealInput object and returns a response object:
 
-Insights: if deal reg → "Registration typically adds 2-4pp", if 3+ competitors → "Multiple competitors compress 2-3pp", if services → "Services-attached deals achieve 3-5pp higher".
+```js
+{
+  suggestedMarginPct: benchmark.median,           // e.g. 18.0
+  suggestedMarginRange: { low: benchmark.low, high: benchmark.high },  // e.g. { low: 14, high: 23 }
+  suggestedPrice: dealInput.oemCost / (1 - benchmark.median / 100),   // sell price at median margin
+  benchmarkSource: benchmark.source,               // e.g. 'Cisco Enterprise benchmark'
+  benchmarkSpecificity: benchmark.specificity,      // how precise the lookup was
+  insights: generateInsights(dealInput, benchmark), // contextual tips
+  source: 'industry_benchmark'                      // tells LWC to render benchmark UI
+}
+```
 
-### Wire into /api/recommend
+### generateInsights(dealInput, benchmark) — internal helper
 
-In the Phase 1 branch of /api/recommend (index.js), replace the current suggestedMarginPct: null with generateBenchmarkResponse(input). The response now has a real margin range even for Phase 1.
+Returns array of 2-4 contextual strings based on deal attributes:
+- If `dealRegType` !== 'NotRegistered': "Deal registration typically supports 2-4pp above median"
+- If `competitors` === '3+': "3+ competitors typically compress margins 2-3pp below median"
+- If `servicesAttached`: "Services-attached deals achieve 3-5pp higher blended margins"
+- If `productCategory` includes 'Services' or 'Managed': "Services/managed categories support premium margins"
+- If deal size > $500K: "Large deal sizes ($500K+) create 2-4pp margin compression"
+- Always include: "These ranges are industry benchmarks — your ML model will personalize after 100 closed deals"
 
-## Testing
+Limit to 4 insights max.
 
-Verify Cisco Enterprise $250K → returns Cisco-specific range. Verify unknown OEM → falls back to default. Verify insights generated correctly.
+## Modify: lambda/server/index.js — Wire benchmarks into Phase 1
 
-Create branch feat/ml-benchmarks, commit, push. Open a PR.
+### Add import (near other ML imports):
+```js
+import { generateBenchmarkResponse } from './src/ml/benchmarks.js'
+```
+
+### Replace the Phase 1 response block (lines 563-584):
+
+```js
+if (phase === 1) {
+  // Generate benchmark-based recommendation for Phase 1
+  const benchmarkData = generateBenchmarkResponse(input)
+  const phase1Guidance = generatePhase1Guidance(response.drivers, input)
+
+  return res.json({
+    dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+    suggestedMarginPct: benchmarkData.suggestedMarginPct,     // NOW HAS A VALUE!
+    suggestedMarginRange: benchmarkData.suggestedMarginRange, // NEW: { low, high }
+    suggestedPrice: benchmarkData.suggestedPrice,             // NOW HAS A VALUE!
+    benchmarkSource: benchmarkData.benchmarkSource,           // NEW
+    benchmarkInsights: benchmarkData.insights,                // NEW
+    winProbability: response.winProbability,
+    confidence: response.confidence,
+    method: response.method,
+    drivers: response.drivers,
+    policyFloor: response.policyFloor,
+    phaseInfo: {
+      current: 1,
+      message: 'Industry benchmark guidance active. ML recommendations unlock after 100 closed deals with outcomes.',
+      nextPhaseReady: false
+    },
+    source: 'industry_benchmark'                               // NEW
+  })
+}
+```
+
+## Testing: lambda/server/src/ml/benchmarks.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'`.
+
+Tests:
+1. Cisco + Enterprise + $250K deal → returns Cisco-specific range (not default)
+2. Unknown OEM ('Juniper') → falls back to _default range
+3. $1M+ deal → margins are compressed 4pp vs base
+4. SMB + $10K deal → returns SMB-level margins (higher than Enterprise)
+5. Deal with 3+ competitors → insights include competition warning
+6. Deal with services attached → insights include services uplift mention
+7. Always includes "ML model will personalize" caveat in insights
+8. generateBenchmarkResponse returns all required fields including `source: 'industry_benchmark'`
+9. getSizeBucket correctly categorizes: $5K → '<$25K', $50K → '$25K-$100K', $750K → '$500K-$1M'
+10. Margin floors: even $5M deal shouldn't go below 5% benchmark
+
+Create branch feat/ml-benchmarks, commit, push. Open a PR from the GitHub UI.
 ```
 
 ---
 
 ### Prompt 14F: LWC Updates — ML Recommendations Display [SFDC LWC] (Sprint 34)
 
-**Depends on 14D + 14E.**
+**Depends on 14D + 14E.** Make sure both PRs are merged into main before starting.
 
 ```
 You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo, under sfdc/.
 
-## Context
+## Context — What Changed in the API
 
-The Lambda API now returns richer data. Phase 1: suggestedMarginPct is a benchmark median (not null!) with suggestedMarginRange and source='industry_benchmark'. Phase 2: ML-optimized with conservativeMarginPct, aggressiveMarginPct, expectedGPCurve, learned keyDrivers, source='ml_model'.
+The Lambda API now returns different response shapes based on `source`:
+
+### Phase 1 Response (source: 'industry_benchmark'):
+```json
+{
+  "dealScore": 52,
+  "scoreFactors": { "marginAlignment": {...}, "winProbability": {...}, ... },
+  "suggestedMarginPct": 18.0,
+  "suggestedMarginRange": { "low": 14, "high": 23 },
+  "suggestedPrice": 182926.83,
+  "benchmarkSource": "Cisco Enterprise benchmark",
+  "benchmarkInsights": ["Deal registration typically supports 2-4pp above median", ...],
+  "winProbability": 0.62,
+  "confidence": 0.45,
+  "source": "industry_benchmark",
+  "phaseInfo": { "current": 1, "message": "..." }
+}
+```
+
+### Phase 2+ Response with ML (source: 'ml_model'):
+```json
+{
+  "suggestedMarginPct": 18.5,
+  "conservativeMarginPct": 15.2,
+  "aggressiveMarginPct": 22.0,
+  "winProbability": 0.68,
+  "expectedGP": 27750,
+  "confidence": 0.72,
+  "keyDrivers": [
+    { "name": "proposed_margin", "sentence": "Margin level is the strongest factor in win probability", "impact": -3.2, "direction": "negative" },
+    { "name": "deal_reg", "sentence": "Premium deal registration adds margin protection", "impact": 2.1, "direction": "positive" }
+  ],
+  "expectedGPCurve": [{ "margin": 5.0, "pWin": 92, "expectedGP": 7500 }, ...],
+  "modelMetrics": { "auc": 0.71, "dealCount": 312, "trainedAt": "2026-02-15T..." },
+  "dealScore": 68,
+  "scoreFactors": { ... },
+  "source": "ml_model",
+  "phaseInfo": { "current": 2 }
+}
+```
+
+### Phase 2+ Response without ML (source: 'rules_engine') — unchanged from current.
 
 ## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
 
-### Change 1: Source detection getters
+**This file is 2671 lines long.** Key locations:
 
-get recommendationSource() — returns this.recommendation?.source || 'rules_engine'
-get isMLRecommendation() — source === 'ml_model'
-get isBenchmarkRecommendation() — source === 'industry_benchmark'
-get hasMarginRange() — suggestedMarginRange != null
-get marginRangeLow/High() — from suggestedMarginRange
+- **Tracked properties**: Lines 56-81 (recordId, isLoading, recommendation, opportunityData, etc.)
+- **phase1Tips getter**: Lines 594-654 — builds array of insight objects from topDrivers, phase1Guidance, scoreFactors
+- **fetchRecommendation()**: Lines 1908-2042 — main API call flow. Assigns `this.recommendation = recommendation` at line 2010.
+- **dealScoreData getter**: Lines 2315-2350 — extracts score from API response
+- **dealScoreFactors getter**: Lines 2372-2419 — **BUG: expects array but API returns object** (this is the crash from prompt 12D — check if it's been fixed. If `scoreFactors` is still an object, convert to array first with `Object.entries()`)
+- **recommendedMargin getter**: Line 842 — `this.recommendation?.suggestedMarginPct?.toFixed(1) || '0.0'`
+- **toggleDetails()**: Lines 423-435 — expands/collapses detail panel
 
-### Change 2: Phase 1 — Benchmark Range Display
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
 
-When isBenchmarkRecommendation, replace the "1 of 50 deals needed" empty state with:
-- A visual range bar showing low-median-high with the rep's planned margin as a marker
-- Context text: "Based on [source] for similar [OEM] [segment] deals"
-- Position assessment: planned margin in range / below / above
-- Caveat: "Personalized ML recommendations unlock after 100 closed deals"
+**This file is 709 lines.** Key sections:
 
-### Change 3: Phase 2 — Three Margin Options
+- **Deal Score Hero**: Lines 30-109 — dark navy card with score, spectrum bar, phase1 tips
+- **Score Summary Line**: Lines 112-127 — `lwc:if={isPhaseOne}` shows label; `lwc:if={isNotPhaseOne}` shows margin
+- **Phase 1 Callout**: Lines 156-187 — progress bar toward threshold
+- **Recommended Margin Callout**: Lines 202-215 — `lwc:if={showMarginRecommendation}` (phase >= 2)
+- **Expandable Details Panel**: Lines 287-619 — comparison table, drivers, AI summary, history, BOM
 
-When isMLRecommendation, show a 3-column card layout:
-- Conservative: {conservativeMarginPct}%, Win prob: X%
-- Recommended (highlighted, green border): {suggestedMarginPct}%, Max GP: $X, "Best ROI" badge
-- Aggressive: {aggressiveMarginPct}%, Win prob: X%
-Clicking an option updates the comparison table values.
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
 
-### Change 4: ML Key Drivers (replace template insights)
+**This file is 2173 lines.** Key design tokens:
 
-When isMLRecommendation, show learned drivers from recommendation.keyDrivers:
-- Each driver: arrow icon (up/down), sentence, impact in pp
-- "Key Drivers (learned from your data)" header
-- Replace the current phase1Tips / topDrivers with these when available
+```css
+:host {
+  --navy-900: #0a1a2f; --navy-800: #0f2744; --navy-700: #1a3a5c;
+  --teal-500: #02b1b5; --teal-400: #14c8cc; --teal-600: #019a9e;
+  --slate-50: #f8fafc; --slate-200: #e2e8f0; --slate-500: #64748b;
+  --red-500: #ef4444; --green-500: #22c55e;
+}
+```
 
-### Change 5: Model Transparency
+## Changes to Make
 
-In the expanded details panel, show: "Model trained on X deals | Accuracy: Y% | Last trained: date"
+### Change 1: Source Detection Getters (add after line ~870 in JS)
 
-### Styling
+```js
+get recommendationSource() {
+  return this.recommendation?.source || 'rules_engine';
+}
+get isMLRecommendation() {
+  return this.recommendationSource === 'ml_model';
+}
+get isBenchmarkRecommendation() {
+  return this.recommendationSource === 'industry_benchmark';
+}
+get hasMarginRange() {
+  return this.recommendation?.suggestedMarginRange != null;
+}
+get marginRangeLow() {
+  return this.recommendation?.suggestedMarginRange?.low || 0;
+}
+get marginRangeHigh() {
+  return this.recommendation?.suggestedMarginRange?.high || 0;
+}
+get benchmarkSource() {
+  return this.recommendation?.benchmarkSource || 'Industry benchmark';
+}
+get hasConservativeMargin() {
+  return this.recommendation?.conservativeMarginPct != null;
+}
+get conservativeMarginPct() {
+  return this.recommendation?.conservativeMarginPct?.toFixed(1) || '0.0';
+}
+get aggressiveMarginPct() {
+  return this.recommendation?.aggressiveMarginPct?.toFixed(1) || '0.0';
+}
+get hasMLKeyDrivers() {
+  return this.isMLRecommendation && Array.isArray(this.recommendation?.keyDrivers) && this.recommendation.keyDrivers.length > 0;
+}
+get mlKeyDrivers() {
+  return (this.recommendation?.keyDrivers || []).map((d, i) => ({
+    id: `driver-${i}`,
+    sentence: d.sentence,
+    impact: d.impact > 0 ? `+${d.impact.toFixed(1)}pp` : `${d.impact.toFixed(1)}pp`,
+    isPositive: d.direction === 'positive',
+    isNegative: d.direction === 'negative',
+    iconName: d.direction === 'positive' ? 'utility:arrowup' : 'utility:arrowdown',
+    impactClass: d.direction === 'positive' ? 'driver-impact-positive' : 'driver-impact-negative'
+  }));
+}
+get hasModelMetrics() {
+  return this.recommendation?.modelMetrics != null;
+}
+get modelMetricsDisplay() {
+  const m = this.recommendation?.modelMetrics;
+  if (!m) return '';
+  const deals = m.dealCount || 0;
+  const accuracy = m.auc ? Math.round(m.auc * 100) : 0;
+  const trained = m.trainedAt ? new Date(m.trainedAt).toLocaleDateString() : 'unknown';
+  return `Model trained on ${deals} deals | Accuracy: ${accuracy}% | Last trained: ${trained}`;
+}
+```
 
-- Benchmark card: #F0FDF4 background, green border, range bar with gradient fill and planned margin indicator
-- Margin options: 3-column grid, selected option gets green border+shadow
-- Drivers: positive=green text, negative=red text, impact badges
-- Model info: subtle gray text, small font, in details panel
+### Change 2: Update phase1Tips Getter (lines 594-654)
 
-Run prettier + eslint on modified files.
+Add benchmark insights as a new source at the TOP of the priority chain. Before the existing topDrivers check (line 598), add:
 
-Create branch feat/ml-lwc-display, commit, push. Open a PR.
+```js
+// Priority 0: Benchmark insights (Phase 1 with industry_benchmark source)
+const benchmarkInsights = this.recommendation?.benchmarkInsights;
+if (Array.isArray(benchmarkInsights) && benchmarkInsights.length > 0) {
+  benchmarkInsights.forEach((text, i) => {
+    tips.push({ id: `benchmark-${i}`, icon: 'utility:trending', text });
+  });
+}
+```
+
+### Change 3: Phase 1 Benchmark Range Display (HTML)
+
+Replace the **Phase 1 Callout** section (lines 156-187) with a benchmark-aware version. When `isBenchmarkRecommendation`:
+
+- Show a visual margin range bar (horizontal bar from `marginRangeLow` to `marginRangeHigh` with the median marked and the rep's planned margin as a colored indicator)
+- Show text: "Based on {benchmarkSource}" (e.g. "Based on Cisco Enterprise benchmark")
+- Position assessment: if planned margin is within range → green "In Range"; below → amber "Below Benchmark"; above → red "Above Benchmark"
+- Caveat text: "Personalized ML recommendations unlock after 100 closed deals"
+
+When NOT `isBenchmarkRecommendation` (old behavior), keep the existing progress-bar-toward-threshold UI.
+
+### Change 4: Phase 2 Three Margin Options (HTML)
+
+When `isMLRecommendation` AND `hasConservativeMargin`, replace the single "Recommended Margin" callout (lines 202-215) with a 3-column card layout:
+
+```html
+<div class="margin-options-grid">
+  <div class="margin-option margin-option-conservative">
+    <div class="margin-option-label">Conservative</div>
+    <div class="margin-option-value">{conservativeMarginPct}%</div>
+    <div class="margin-option-detail">Higher win probability</div>
+  </div>
+  <div class="margin-option margin-option-optimal">
+    <div class="margin-option-badge">Best ROI</div>
+    <div class="margin-option-label">Recommended</div>
+    <div class="margin-option-value">{recommendedMargin}%</div>
+    <div class="margin-option-detail">Max expected GP</div>
+  </div>
+  <div class="margin-option margin-option-aggressive">
+    <div class="margin-option-label">Aggressive</div>
+    <div class="margin-option-value">{aggressiveMarginPct}%</div>
+    <div class="margin-option-detail">Higher margin</div>
+  </div>
+</div>
+```
+
+When NOT ML but still Phase 2+ (rules engine), keep the existing single margin callout.
+
+### Change 5: ML Key Drivers Section (HTML)
+
+In the expandable details panel, when `hasMLKeyDrivers`, show a "Key Drivers (learned from your data)" section ABOVE the existing drivers section:
+
+```html
+<template lwc:if={hasMLKeyDrivers}>
+  <div class="ml-drivers-section">
+    <div class="section-header">Key Drivers <span class="ml-badge">Learned from your data</span></div>
+    <template for:each={mlKeyDrivers} for:item="driver">
+      <div key={driver.id} class="ml-driver-row">
+        <lightning-icon icon-name={driver.iconName} size="x-small" class={driver.impactClass}></lightning-icon>
+        <span class="ml-driver-text">{driver.sentence}</span>
+        <span class={driver.impactClass}>{driver.impact}</span>
+      </div>
+    </template>
+  </div>
+</template>
+```
+
+### Change 6: Model Transparency (HTML)
+
+In the expanded details panel (at the bottom, before the Collapse All button at line 610), add:
+
+```html
+<template lwc:if={hasModelMetrics}>
+  <div class="model-transparency">
+    <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+    <span class="model-transparency-text">{modelMetricsDisplay}</span>
+  </div>
+</template>
+```
+
+### Change 7: CSS Additions
+
+Add to the CSS file:
+
+```css
+/* Benchmark Range Bar */
+.benchmark-range-container { padding: 16px 0; }
+.benchmark-range-bar {
+  position: relative; height: 24px; border-radius: 12px;
+  background: linear-gradient(90deg, #fef3c7 0%, #d1fae5 50%, #fef3c7 100%);
+  margin: 8px 0;
+}
+.benchmark-range-marker {
+  position: absolute; top: -4px; width: 4px; height: 32px;
+  background: var(--teal-600); border-radius: 2px;
+}
+.benchmark-range-planned {
+  position: absolute; top: -6px; width: 12px; height: 12px;
+  border-radius: 50%; border: 3px solid var(--navy-900);
+  transform: translateX(-50%);
+}
+.benchmark-in-range { background: var(--green-500); }
+.benchmark-below { background: #f59e0b; }
+.benchmark-above { background: var(--red-500); }
+.benchmark-source-text {
+  font-size: 12px; color: var(--slate-500); margin-top: 4px;
+}
+.benchmark-caveat {
+  font-size: 11px; color: var(--slate-500); font-style: italic; margin-top: 8px;
+}
+
+/* Three Margin Options */
+.margin-options-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  padding: 16px 0;
+}
+.margin-option {
+  padding: 16px; border-radius: 12px; text-align: center;
+  border: 2px solid var(--slate-200); background: white;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.margin-option:hover { border-color: var(--teal-400); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.margin-option-optimal {
+  border-color: var(--teal-500); background: #f0fdfa;
+  box-shadow: 0 2px 12px rgba(2,177,181,0.15);
+}
+.margin-option-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  background: var(--teal-500); color: white; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.margin-option-label { font-size: 12px; color: var(--slate-500); font-weight: 600; text-transform: uppercase; }
+.margin-option-value { font-size: 28px; font-weight: 800; color: var(--navy-900); margin: 4px 0; }
+.margin-option-detail { font-size: 11px; color: var(--slate-500); }
+
+/* ML Key Drivers */
+.ml-drivers-section { padding: 16px 0; border-bottom: 1px solid var(--slate-200); }
+.ml-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 8px;
+  background: #ede9fe; color: #7c3aed; font-size: 10px; font-weight: 600;
+  margin-left: 8px; vertical-align: middle;
+}
+.ml-driver-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--slate-50);
+}
+.ml-driver-text { flex: 1; font-size: 13px; color: var(--slate-700); }
+.driver-impact-positive { color: var(--green-500); font-weight: 600; font-size: 12px; }
+.driver-impact-negative { color: var(--red-500); font-weight: 600; font-size: 12px; }
+
+/* Model Transparency */
+.model-transparency {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px; margin-top: 12px;
+  background: var(--slate-50); border-radius: 8px;
+}
+.model-transparency-text { font-size: 11px; color: var(--slate-500); }
+```
+
+## Important Notes
+
+- LWC templates do NOT support `!` unary operator in expressions. Use computed getters for negation: `get isNotBenchmark() { return !this.isBenchmarkRecommendation; }`
+- For the benchmark range bar positioning, compute left% using: `((value - low) / (high - low)) * 100`
+- Ensure the 3-column grid degrades gracefully on narrow screens (Salesforce utility panel is ~380px wide) — consider `@media` or min-width fallback
+- Run prettier and eslint on all modified files before committing
+
+Create branch feat/ml-lwc-display, commit, push. Open a PR from the GitHub UI.
 ```
