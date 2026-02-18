@@ -3,6 +3,7 @@ import {
   getSizeBucket,
   getBenchmark,
   generateBenchmarkResponse,
+  getBenchmarkIQR,
 } from './benchmarks.js'
 
 // ── Test helpers ─────────────────────────────────────────────────
@@ -142,5 +143,35 @@ describe('insights', () => {
       oemCost: 750_000,
     }))
     expect(result.insights.length).toBeLessThanOrEqual(4)
+  })
+})
+
+// ── getBenchmarkIQR ──────────────────────────────────────────────
+
+describe('getBenchmarkIQR', () => {
+  it('returns correct IQR for Cisco Enterprise (17 - 10 = 7)', () => {
+    expect(getBenchmarkIQR('Cisco', 'Enterprise')).toBe(7)
+  })
+
+  it('returns correct IQR for CrowdStrike SMB (35 - 25 = 10)', () => {
+    expect(getBenchmarkIQR('CrowdStrike', 'SMB')).toBe(10)
+  })
+
+  it('returns correct IQR for Dell MidMarket (23 - 14 = 9)', () => {
+    expect(getBenchmarkIQR('Dell', 'MidMarket')).toBe(9)
+  })
+
+  it('falls back to _default for unknown OEM', () => {
+    // _default MidMarket: p75=23, p25=14 => IQR=9
+    expect(getBenchmarkIQR('Juniper', 'MidMarket')).toBe(9)
+  })
+
+  it('falls back to MidMarket when segment is null', () => {
+    // Cisco MidMarket: p75=24, p25=15 => IQR=9
+    expect(getBenchmarkIQR('Cisco', null)).toBe(9)
+  })
+
+  it('returns DEFAULT_IQR (10) for completely unknown OEM + segment', () => {
+    expect(getBenchmarkIQR('UnknownVendor', 'UnknownSegment')).toBe(10)
   })
 })

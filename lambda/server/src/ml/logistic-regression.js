@@ -81,7 +81,25 @@ export function train(X, y, options = {}) {
     validationSplit = 0.2,
     earlyStoppingPatience = 20,
     seed = null,
+    sampleWeights = null,
   } = options;
+
+  // Validate sampleWeights if provided
+  if (sampleWeights != null) {
+    if (!Array.isArray(sampleWeights)) {
+      throw new Error('sampleWeights must be an array');
+    }
+    if (sampleWeights.length !== X.length) {
+      throw new Error(
+        `sampleWeights.length (${sampleWeights.length}) !== X.length (${X.length})`
+      );
+    }
+    for (let i = 0; i < sampleWeights.length; i++) {
+      if (typeof sampleWeights[i] !== 'number' || sampleWeights[i] < 0) {
+        throw new Error(`sampleWeights[${i}] = ${sampleWeights[i]}, expected non-negative number`);
+      }
+    }
+  }
 
   const nFeatures = X[0].length;
 
@@ -106,15 +124,18 @@ export function train(X, y, options = {}) {
   let patienceCounter = 0;
   let epochsRun = 0;
 
-  // Helper to compute mean log loss over a set of indices
+  // Helper to compute weighted mean log loss over a set of indices
   function computeLoss(idxArr) {
     let total = 0;
+    let wSum = 0;
     for (const idx of idxArr) {
       const z = dot(weights, X[idx]) + bias;
       const p = sigmoid(z);
-      total += logLoss(y[idx], p);
+      const w_i = sampleWeights ? sampleWeights[idx] : 1;
+      total += logLoss(y[idx], p) * w_i;
+      wSum += w_i;
     }
-    return total / idxArr.length;
+    return total / wSum;
   }
 
   // Use seed + offset for per-epoch shuffles so they differ from initial shuffle
@@ -135,27 +156,31 @@ export function train(X, y, options = {}) {
       // Accumulate gradients
       const gradW = new Array(nFeatures).fill(0);
       let gradB = 0;
+      let weightSum = 0;
 
       for (let b = start; b < end; b++) {
         const idx = shuffledTrain[b];
         const xi = X[idx];
         const yi = y[idx];
+        const w_i = sampleWeights ? sampleWeights[idx] : 1;
         const z = dot(weights, xi) + bias;
         const pred = sigmoid(z);
-        const err = pred - yi;
+        const err = (pred - yi) * w_i;
 
         for (let f = 0; f < nFeatures; f++) {
           gradW[f] += err * xi[f];
         }
         gradB += err;
+        weightSum += w_i;
       }
 
-      // Average gradients + L2 regularization on weights
+      // Average gradients (by weight sum if weighted) + L2 regularization
+      const divisor = sampleWeights ? weightSum : batchLen;
       for (let f = 0; f < nFeatures; f++) {
-        gradW[f] = gradW[f] / batchLen + lambda * weights[f];
+        gradW[f] = gradW[f] / divisor + lambda * weights[f];
         weights[f] -= learningRate * gradW[f];
       }
-      bias -= learningRate * (gradB / batchLen);
+      bias -= learningRate * (gradB / divisor);
     }
 
     // Compute losses

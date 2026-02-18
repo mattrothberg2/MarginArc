@@ -286,7 +286,7 @@ describe('trainCustomerModel', () => {
     expect(parsed.importance).toBeDefined()
     expect(parsed.dealCount).toBe(150)
     expect(parsed.trainedAt).toBeDefined()
-    expect(parsed.version).toBe(1)
+    expect(parsed.version).toBe(2)
   })
 
   it('auto-promotes to Phase 2 when AUC >= 0.60', async () => {
@@ -313,6 +313,28 @@ describe('trainCustomerModel', () => {
 
     // Should not call setCustomerPhase since currentPhase (2) is NOT < 2
     expect(setCustomerPhase).not.toHaveBeenCalled()
+  })
+
+  it('trains with segment/OEM-aware synthetic shifts', async () => {
+    const dealRows = generateDealRows(80, 70)
+    // Override some Won deals to Cisco Enterprise and some Lost deals to CrowdStrike SMB
+    for (let i = 0; i < 40; i++) {
+      dealRows[i].oem = 'Cisco'
+      dealRows[i].segment = 'Enterprise'
+    }
+    for (let i = 80; i < 115; i++) {
+      dealRows[i].oem = 'CrowdStrike'
+      dealRows[i].segment = 'SMB'
+    }
+    setupQueryMock(dealRows, { phase: 1 })
+    getCustomerPhaseById.mockResolvedValue(1)
+    setCustomerPhase.mockResolvedValue(undefined)
+
+    const result = await trainCustomerModel('cust-123')
+
+    expect(result.success).toBe(true)
+    expect(result.syntheticCount).toBe(150) // 1:1 ratio preserved
+    expect(result.metrics.auc).toBeGreaterThan(0)
   })
 
   it('returns failure when no active licenses with org_id', async () => {

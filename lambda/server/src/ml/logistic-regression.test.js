@@ -281,4 +281,82 @@ describe('logistic-regression', () => {
     // Feature 1 has no correlation with label → weight should be near 0
     expect(Math.abs(model2.weights[1])).toBeLessThan(Math.abs(model2.weights[0]));
   });
+
+  // 11. Sample weights — weighted training converges
+  it('trains successfully with sample weights', () => {
+    const rng = makeRng(42);
+    const X = [];
+    const y = [];
+    const sampleWeights = [];
+    for (let i = 0; i < 200; i++) {
+      const x0 = (rng() - 0.5) * 10;
+      const x1 = (rng() - 0.5) * 2;
+      X.push([x0, x1]);
+      y.push(x0 > 0 ? 1 : 0);
+      sampleWeights.push(i < 100 ? 1.0 : 0.5);
+    }
+
+    const model = train(X, y, {
+      seed: 123,
+      epochs: 300,
+      learningRate: 0.05,
+      sampleWeights,
+    });
+    const result = evaluate(model, X, y);
+
+    expect(result.auc).toBeGreaterThan(0.90);
+  });
+
+  // 12. Higher-weighted samples have more influence on the model
+  it('gives more influence to higher-weighted samples', () => {
+    // Group A says x > 0 => label 1 (weight 5.0)
+    // Group B says x > 0 => label 0 (weight 1.0)
+    // Model should follow group A.
+    const X = [];
+    const y = [];
+    const sampleWeights = [];
+
+    const rng = makeRng(55);
+    // Group A: 100 samples, x>0 => label=1 (weight=5.0)
+    for (let i = 0; i < 100; i++) {
+      const x0 = (rng() - 0.5) * 10;
+      X.push([x0]);
+      y.push(x0 > 0 ? 1 : 0);
+      sampleWeights.push(5.0);
+    }
+    // Group B: 100 samples, x>0 => label=0 (REVERSED, weight=1.0)
+    for (let i = 0; i < 100; i++) {
+      const x0 = (rng() - 0.5) * 10;
+      X.push([x0]);
+      y.push(x0 > 0 ? 0 : 1);
+      sampleWeights.push(1.0);
+    }
+
+    const model = train(X, y, {
+      seed: 300,
+      epochs: 200,
+      learningRate: 0.05,
+      sampleWeights,
+    });
+
+    // Model should follow group A (weight 5.0) — positive weight for feature 0
+    expect(model.weights[0]).toBeGreaterThan(0);
+  });
+
+  // 13. sampleWeights validation
+  it('throws when sampleWeights length mismatches X', () => {
+    const X = [[1], [2], [3]];
+    const y = [1, 0, 1];
+    const sampleWeights = [1.0, 0.5];
+
+    expect(() => train(X, y, { sampleWeights })).toThrow('sampleWeights.length');
+  });
+
+  it('throws when sampleWeights contains negative values', () => {
+    const X = [[1], [2], [3]];
+    const y = [1, 0, 1];
+    const sampleWeights = [1.0, -0.5, 1.0];
+
+    expect(() => train(X, y, { sampleWeights })).toThrow('sampleWeights[1]');
+  });
 });

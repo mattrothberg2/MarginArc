@@ -6,6 +6,7 @@ import { query } from '../licensing/db.js'
 import { featurize, computeNormStats } from './features.js'
 import { train, evaluate, getFeatureImportance, serializeModel } from './logistic-regression.js'
 import { getCustomerPhaseById, setCustomerPhase } from '../phases.js'
+import { getBenchmarkIQR } from './benchmarks.js'
 
 // ── Schema migration (idempotent) ───────────────────────────────
 
@@ -57,6 +58,32 @@ function rowToDeal(row) {
   }
 }
 
+// ── Synthetic margin shift (segment/OEM-aware) ──────────────────
+
+const WON_SHIFT_FRACTION = 0.75   // wonShift = 75% of IQR
+const LOST_SHIFT_RATIO = 0.50     // lostShift = 50% of wonShift
+const MAX_MARGIN = 0.55
+const MIN_MARGIN = 0.01
+const REAL_WEIGHT = 1.0
+const SYNTHETIC_WEIGHT = 0.5
+
+/**
+ * Compute per-deal synthetic margin shifts based on OEM/segment IQR.
+ *
+ * For Won deals: shift up by ~75% of IQR (e.g., Cisco Enterprise IQR=7pp -> shift=5.25pp)
+ * For Lost deals: shift down by ~37.5% of IQR (half the Won shift)
+ * Falls back to legacy ~7.5pp/3.75pp for unknown OEM/segment combos (IQR=10).
+ */
+function getSyntheticShift(segment, oem) {
+  const iqrPP = getBenchmarkIQR(oem, segment)
+  const wonShiftPP = iqrPP * WON_SHIFT_FRACTION
+  const lostShiftPP = wonShiftPP * LOST_SHIFT_RATIO
+  return {
+    wonShift: wonShiftPP / 100,
+    lostShift: lostShiftPP / 100
+  }
+}
+
 // ── Main training function ──────────────────────────────────────
 
 export async function trainCustomerModel(customerId) {
@@ -94,22 +121,31 @@ export async function trainCustomerModel(customerId) {
   }
 
   // 4. Create training samples with synthetic augmentation
+  //    Shifts vary by segment/OEM (derived from benchmark IQR).
+  //    Real samples weighted 1.0, synthetic weighted 0.5.
   const allSamples = []
+  const sampleWeights = []
 
   for (const deal of wonDeals) {
     // Real Won → label 1
     allSamples.push({ ...deal, proposedMargin: deal.achievedMargin, label: 1 })
-    // Synthetic: margin + 10pp → label 0 (would have lost at higher price)
-    const syntheticMargin = Math.min(deal.achievedMargin + 0.10, 0.55)
-    allSamples.push({ ...deal, proposedMargin: Math.max(syntheticMargin, 0.01), label: 0 })
+    sampleWeights.push(REAL_WEIGHT)
+    // Synthetic: margin + wonShift → label 0 (would have lost at higher price)
+    const { wonShift } = getSyntheticShift(deal.segment, deal.oem)
+    const syntheticMargin = Math.min(deal.achievedMargin + wonShift, MAX_MARGIN)
+    allSamples.push({ ...deal, proposedMargin: Math.max(syntheticMargin, MIN_MARGIN), label: 0 })
+    sampleWeights.push(SYNTHETIC_WEIGHT)
   }
 
   for (const deal of lostDeals) {
     // Real Lost → label 0
     allSamples.push({ ...deal, proposedMargin: deal.achievedMargin, label: 0 })
-    // Synthetic: margin - 5pp → label 1 (might have won at lower price)
-    const syntheticMargin = Math.max(deal.achievedMargin - 0.05, 0.01)
-    allSamples.push({ ...deal, proposedMargin: Math.min(syntheticMargin, 0.55), label: 1 })
+    sampleWeights.push(REAL_WEIGHT)
+    // Synthetic: margin - lostShift → label 1 (might have won at lower price)
+    const { lostShift } = getSyntheticShift(deal.segment, deal.oem)
+    const syntheticMargin = Math.max(deal.achievedMargin - lostShift, MIN_MARGIN)
+    allSamples.push({ ...deal, proposedMargin: Math.min(syntheticMargin, MAX_MARGIN), label: 1 })
+    sampleWeights.push(SYNTHETIC_WEIGHT)
   }
 
   // 5. Compute normalization stats from all training samples
@@ -127,14 +163,15 @@ export async function trainCustomerModel(customerId) {
     if (!featureNames) featureNames = result.featureNames
   }
 
-  // 7. Train the model
+  // 7. Train the model (real samples weighted 2x vs synthetic)
   const model = train(X, y, {
     learningRate: 0.01,
     lambda: 0.01,
     epochs: 500,
     batchSize: 32,
     validationSplit: 0.2,
-    earlyStoppingPatience: 20
+    earlyStoppingPatience: 20,
+    sampleWeights,
   })
 
   // 8. Evaluate on original deals only (honest metrics)
@@ -160,7 +197,7 @@ export async function trainCustomerModel(customerId) {
     importance: topFeatures,
     dealCount: realDeals.length,
     trainedAt: new Date().toISOString(),
-    version: 1
+    version: 2
   }
   await query(
     'UPDATE customer_config SET ml_model = $1 WHERE customer_id = $2',

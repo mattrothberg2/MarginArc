@@ -170,3 +170,27 @@ export function generateBenchmarkResponse(dealInput) {
     source: 'industry_benchmark',
   }
 }
+
+// ── IQR Lookup (used by ML training for segment-aware synthetic shifts) ──
+
+/**
+ * Get the IQR (p75 - p25) for a given OEM/segment combination.
+ * Returns values in percentage points (e.g., 7 means 7pp).
+ * Falls back to _default OEM, then to a hardcoded 10pp if nothing matches.
+ */
+export function getBenchmarkIQR(oem, segment) {
+  const DEFAULT_IQR = 10
+  const effectiveSegment = segment || 'MidMarket'
+
+  if (oem && BENCHMARKS[oem] && BENCHMARKS[oem][effectiveSegment]) {
+    const entry = BENCHMARKS[oem][effectiveSegment]
+    return entry.p75 - entry.p25
+  }
+
+  if (BENCHMARKS._default[effectiveSegment]) {
+    const entry = BENCHMARKS._default[effectiveSegment]
+    return entry.p75 - entry.p25
+  }
+
+  return DEFAULT_IQR
+}
