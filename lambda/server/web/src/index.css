@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Ensure the admin portal fills the viewport */
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}

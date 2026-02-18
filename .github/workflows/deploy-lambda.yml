@@ -39,6 +39,14 @@ jobs:
         working-directory: lambda/server
         run: npm prune --production
 
+      - name: Install admin portal dependencies
+        working-directory: lambda/server/web
+        run: npm install
+
+      - name: Build admin portal SPA
+        working-directory: lambda/server/web
+        run: npm run build
+
       - name: Create deployment zip
         working-directory: lambda/server
         run: zip -r /tmp/lambda-deploy.zip . -x "*.git*" "jest.config.js" "__tests__/*" "web/node_modules/*" "web-docs/node_modules/*"
