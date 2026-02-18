@@ -95,9 +95,9 @@ describe('api-keys', () => {
       expect(await validateApiKey('wrong')).toBe(false);
     });
 
-    it('allows all requests when no keys are configured (dev mode)', async () => {
+    it('denies all requests when no keys are configured (secure default)', async () => {
       setupSSMKeys(null, null);
-      expect(await validateApiKey('anything')).toBe(true);
+      expect(await validateApiKey('anything')).toBe(false);
     });
 
     it('caches SSM results within TTL', async () => {
