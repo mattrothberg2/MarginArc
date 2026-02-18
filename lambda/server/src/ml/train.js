@@ -112,8 +112,8 @@ export async function trainCustomerModel(customerId) {
     allSamples.push({ ...deal, proposedMargin: Math.min(syntheticMargin, 0.55), label: 1 })
   }
 
-  // 5. Compute normalization stats from all training samples
-  const normStats = computeNormStats(allSamples)
+  // 5. Compute normalization stats from real deals only (avoids synthetic bias)
+  const normStats = computeNormStats(realDeals)
 
   // 6. Featurize all samples
   const X = []
