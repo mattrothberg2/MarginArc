@@ -613,142 +613,109 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return this.phaseScoredDeals < this.phaseThreshold;
   }
 
-  // Phase 1 Deal Insights — consume API phase1Guidance, topDrivers, and scoreFactors
+  // Phase 1 Deal Insights — deal-specific insights using actual deal data
   get phase1Tips() {
     const tips = [];
-    let id = 0;
+    const planned = this.effectivePlannedMargin;
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    const median = (low + high) / 2;
+    const oem = this.detectedOem || 'Unknown';
+    const segment = this.detectedSegment || 'Unknown';
+    const competitors = this.opportunityData?.competitors || '0';
+    const competitorCount = competitors === '3+' ? 4 : parseInt(competitors || '0', 10);
+    const dealReg = this.opportunityData?.dealRegType || 'NotRegistered';
+    const services = this.opportunityData?.servicesAttached || false;
+    const oemCost = this.opportunityData?.oemCost || this.opportunityData?.amount || 0;
 
-    // Priority 0: Benchmark insights (Phase 1 with industry_benchmark source)
-    const benchmarkInsights = this.recommendation?.benchmarkInsights;
-    if (Array.isArray(benchmarkInsights) && benchmarkInsights.length > 0) {
-      benchmarkInsights.forEach((text, i) => {
+    // 1. Margin position insight — THE most important insight
+    if (low > 0 && high > 0) {
+      if (planned < low) {
+        const gap = (low - planned).toFixed(1);
         tips.push({
-          id: `benchmark-${i}`,
-          icon: "utility:trending",
-          text
+          id: 'margin-pos',
+          icon: 'utility:warning',
+          text: `Your ${planned.toFixed(1)}% margin is ${gap}pp below the ${oem} ${segment} floor (${low}%). Benchmark median is ${median.toFixed(0)}%.`
         });
+      } else if (planned > high) {
+        tips.push({
+          id: 'margin-pos',
+          icon: 'utility:like',
+          text: `Your ${planned.toFixed(1)}% margin is above the ${oem} ${segment} ceiling (${high}%) — strong positioning.`
+        });
+      } else {
+        const distFromMedian = (planned - median).toFixed(1);
+        const side = planned >= median ? 'above' : 'below';
+        tips.push({
+          id: 'margin-pos',
+          icon: 'utility:like',
+          text: `Your ${planned.toFixed(1)}% margin is within range (${distFromMedian}pp ${side} median) for ${oem} ${segment}.`
+        });
+      }
+    }
+
+    // 2. Competitive position
+    if (competitorCount === 0) {
+      tips.push({
+        id: 'comp',
+        icon: 'utility:like',
+        text: 'No competitors listed — sole-source deals typically support margins at the high end of the range.'
+      });
+    } else if (competitorCount >= 3) {
+      tips.push({
+        id: 'comp',
+        icon: 'utility:warning',
+        text: `${competitorCount}+ competitors creates significant price pressure. Focus on value differentiation to protect margin.`
+      });
+    } else {
+      tips.push({
+        id: 'comp',
+        icon: 'utility:info',
+        text: `${competitorCount} competitor${competitorCount > 1 ? 's' : ''} — balanced competitive pressure. Deal registration can help protect margin.`
       });
     }
 
-    // 1. Top drivers from API response (strengths / risks)
-    const topDriversArr = this.recommendation?.topDrivers;
-    if (Array.isArray(topDriversArr)) {
-      for (const d of topDriversArr) {
-        const text = typeof d === "string" ? d : d.text || d.label || "";
-        if (!text) continue;
-        const isRisk =
-          text.toLowerCase().includes("risk") ||
-          text.toLowerCase().includes("pressure") ||
-          text.toLowerCase().includes("aggressive");
+    // 3. Deal registration
+    if (dealReg === 'NotRegistered') {
+      tips.push({
+        id: 'reg',
+        icon: 'utility:warning',
+        text: 'Deal is not registered. Registration typically adds 2-4pp margin protection — consider registering.'
+      });
+    } else if (dealReg === 'PremiumHunting') {
+      tips.push({
+        id: 'reg',
+        icon: 'utility:like',
+        text: 'Premium/Hunting deal registration is protecting your margin — supports pricing at or above median.'
+      });
+    }
+
+    // 4. Services attached
+    if (services) {
+      tips.push({
+        id: 'svc',
+        icon: 'utility:like',
+        text: 'Services attached — blended margins on services deals are typically 3-5pp higher.'
+      });
+    }
+
+    // 5. GP opportunity (only if below benchmark and we have cost data)
+    if (planned < low && oemCost > 0) {
+      const current = planned / 100;
+      const target = low / 100;
+      const currentGP = oemCost * current / (1 - current);
+      const targetGP = oemCost * target / (1 - target);
+      const delta = Math.round(targetGP - currentGP);
+      if (delta > 0) {
         tips.push({
-          id: `driver-${id++}`,
-          icon: isRisk ? "utility:warning" : "utility:like",
-          text
+          id: 'gp',
+          icon: 'utility:trending',
+          text: `Raising margin to the ${low}% floor adds ~$${delta.toLocaleString()} GP on this deal.`
         });
       }
     }
 
-    // 2. phase1Guidance tips from API
-    const guidance = this.recommendation?.phase1Guidance;
-    if (Array.isArray(guidance)) {
-      for (const tip of guidance) {
-        const text =
-          typeof tip === "string" ? tip : tip.text || tip.label || "";
-        if (!text) continue;
-        tips.push({
-          id: `guide-${id++}`,
-          icon: "utility:info",
-          text
-        });
-      }
-    }
-
-    // 3. scoreFactors with human-readable labels
-    const rawFactors = this.recommendation?.scoreFactors;
-    let factors;
-    if (
-      rawFactors &&
-      typeof rawFactors === "object" &&
-      !Array.isArray(rawFactors)
-    ) {
-      factors = Object.entries(rawFactors).map(([key, val]) => ({
-        name: key,
-        score: val.score,
-        max: val.max,
-        label: val.label,
-        direction: val.direction
-      }));
-    } else if (Array.isArray(rawFactors)) {
-      factors = rawFactors;
-    }
-    if (Array.isArray(factors) && tips.length === 0) {
-      for (const f of factors) {
-        const label = f.label || f.name || "";
-        if (!label) continue;
-        const ratio =
-          f.max > 0 ? f.score / f.max : f.direction === "positive" ? 0.7 : 0.3;
-        const icon =
-          ratio >= 0.66
-            ? "utility:like"
-            : ratio < 0.33
-              ? "utility:warning"
-              : "utility:info";
-        tips.push({
-          id: `factor-${id++}`,
-          icon,
-          text: label
-        });
-      }
-    }
-
-    // Deduplicate across ALL insight sources (topDrivers, phase1Guidance,
-    // benchmarkInsights, scoreFactors). Two passes:
-    //   1. Exact text match (case-insensitive) — catches identical sentences
-    //      from different source arrays
-    //   2. Entity match — if two different sentences reference the same key
-    //      entity (vendor, segment, or topic), keep only the first
-    const seenTexts = new Set();
-    const seenEntities = new Set();
-    const dedupedTips = [];
-    const entities = [
-      "cisco",
-      "hpe",
-      "dell",
-      "palo alto",
-      "fortinet",
-      "vmware",
-      "microsoft",
-      "netapp",
-      "pure storage",
-      "arista",
-      "crowdstrike",
-      "nutanix",
-      "smb",
-      "midmarket",
-      "enterprise",
-      "services",
-      "deal size",
-      "displacement",
-      "quarter-end",
-      "registration"
-    ];
-    for (const tip of tips) {
-      const normalized = tip.text.toLowerCase().trim();
-
-      // Pass 1: exact text dedup
-      if (seenTexts.has(normalized)) continue;
-      seenTexts.add(normalized);
-
-      // Pass 2: entity-based dedup — keep first mention of each entity
-      const matchedEntity = entities.find((e) => normalized.includes(e));
-      if (matchedEntity) {
-        if (seenEntities.has(matchedEntity)) continue;
-        seenEntities.add(matchedEntity);
-      }
-
-      dedupedTips.push(tip);
-    }
-    return dedupedTips;
+    return tips.slice(0, 4); // Max 4 insights
   }
 
   get hasPhase1Tips() {
@@ -1017,6 +984,118 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     if (planned < low) return "benchmark-range-planned benchmark-below";
     if (planned > high) return "benchmark-range-planned benchmark-above";
     return "benchmark-range-planned benchmark-in-range";
+  }
+
+  // =========================================================================
+  // Phase 1 Redesigned Benchmark Bar — computed getters
+  // =========================================================================
+
+  get benchmarkMedianValue() {
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    return ((low + high) / 2).toFixed(0);
+  }
+
+  get isBelowBenchmark() {
+    return this.effectivePlannedMargin < this.marginRangeLow;
+  }
+
+  get isAboveBenchmark() {
+    return this.effectivePlannedMargin > this.marginRangeHigh;
+  }
+
+  get isInBenchmarkRange() {
+    return !this.isBelowBenchmark && !this.isAboveBenchmark;
+  }
+
+  get benchmarkGapPp() {
+    const planned = this.effectivePlannedMargin;
+    const low = this.marginRangeLow;
+    const high = this.marginRangeHigh;
+    if (planned < low) return (low - planned).toFixed(1);
+    if (planned > high) return (planned - high).toFixed(1);
+    return '0';
+  }
+
+  get benchmarkGapDollars() {
+    // GP delta = oemCost * (targetMargin/(1-targetMargin) - currentMargin/(1-currentMargin))
+    const oemCost = this.opportunityData?.oemCost || this.opportunityData?.amount || 0;
+    const current = this.effectivePlannedMargin / 100;
+    const target = this.marginRangeLow / 100;
+    if (current >= target || oemCost <= 0) return '0';
+    const currentGP = oemCost * current / (1 - current);
+    const targetGP = oemCost * target / (1 - target);
+    return Math.round(targetGP - currentGP).toLocaleString();
+  }
+
+  // For the extended bar — show 5pp padding on each side so out-of-range positions are visible
+  get extendedRangeLow() {
+    return Math.min(this.marginRangeLow - 5, this.effectivePlannedMargin - 2);
+  }
+  get extendedRangeHigh() {
+    return Math.max(this.marginRangeHigh + 5, this.effectivePlannedMargin + 2);
+  }
+
+  get benchmarkZoneStyle() {
+    const extLow = this.extendedRangeLow;
+    const extHigh = this.extendedRangeHigh;
+    const extRange = extHigh - extLow;
+    if (extRange <= 0) return 'left: 0; width: 100%';
+    const left = ((this.marginRangeLow - extLow) / extRange) * 100;
+    const width = ((this.marginRangeHigh - this.marginRangeLow) / extRange) * 100;
+    return `left: ${left}%; width: ${width}%`;
+  }
+
+  get benchmarkMedianBarStyle() {
+    const extLow = this.extendedRangeLow;
+    const extRange = this.extendedRangeHigh - extLow;
+    if (extRange <= 0) return 'left: 50%';
+    const median = (this.marginRangeLow + this.marginRangeHigh) / 2;
+    const pct = ((median - extLow) / extRange) * 100;
+    return `left: ${pct}%`;
+  }
+
+  get plannedMarkerStyle() {
+    const extLow = this.extendedRangeLow;
+    const extRange = this.extendedRangeHigh - extLow;
+    if (extRange <= 0) return 'left: 50%';
+    const pct = ((this.effectivePlannedMargin - extLow) / extRange) * 100;
+    return `left: ${Math.max(2, Math.min(98, pct))}%`;
+  }
+
+  get plannedMarkerClass() {
+    const base = 'planned-marker';
+    if (this.isBelowBenchmark) return base + ' planned-marker-below';
+    if (this.isAboveBenchmark) return base + ' planned-marker-above';
+    return base + ' planned-marker-inrange';
+  }
+
+  get benchmarkDeltaClass() {
+    const base = 'benchmark-delta';
+    if (this.isBelowBenchmark) return base + ' benchmark-delta-warning';
+    if (this.isAboveBenchmark) return base + ' benchmark-delta-success';
+    return base + ' benchmark-delta-neutral';
+  }
+
+  // Label positioning — these position the p25/median/p75 labels above the bar
+  get benchmarkLowLabelStyle() {
+    const extLow = this.extendedRangeLow;
+    const extRange = this.extendedRangeHigh - extLow;
+    const pct = ((this.marginRangeLow - extLow) / extRange) * 100;
+    return `left: ${pct}%`;
+  }
+  get benchmarkMedianLabelStyle() {
+    const extLow = this.extendedRangeLow;
+    const extRange = this.extendedRangeHigh - extLow;
+    const median = (this.marginRangeLow + this.marginRangeHigh) / 2;
+    const pct = ((median - extLow) / extRange) * 100;
+    return `left: ${pct}%`;
+  }
+  get benchmarkHighLabelStyle() {
+    const extLow = this.extendedRangeLow;
+    const extRange = this.extendedRangeHigh - extLow;
+    const pct = ((this.marginRangeHigh - extLow) / extRange) * 100;
+    return `left: ${pct}%`;
   }
 
   // ML three-option margin display
