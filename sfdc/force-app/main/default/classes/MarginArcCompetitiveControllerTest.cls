@@ -388,4 +388,178 @@ private class MarginArcCompetitiveControllerTest {
     System.assert(firstDeal.containsKey('outcome'), 'Deal should have outcome');
     System.assert(firstDeal.containsKey('insight'), 'Deal should have insight');
   }
+
+  @isTest
+  static void testSimilarAccountsLowSampleWinRate() {
+    // Healthcare has 0 closed deals in test data → totalDeals < 5
+    Account acc = [SELECT Id FROM Account WHERE Name = 'NewCo Inc' LIMIT 1];
+    User u = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+    System.runAs(u) {
+      Test.startTest();
+      Map<String, Object> result = MarginArcCompetitiveController.getAccountIntelligence(
+        acc.Id,
+        'Healthcare'
+      );
+      Test.stopTest();
+
+      Map<String, Object> similar = (Map<String, Object>) result.get(
+        'similarAccounts'
+      );
+      System.assertNotEquals(null, similar, 'Should have similarAccounts');
+
+      // Win rate should be null (< 5 deals)
+      System.assertEquals(
+        null,
+        similar.get('avgWinRate'),
+        'Win rate should be null with < 5 deals'
+      );
+
+      // hasDataConfidence should be false
+      System.assertEquals(
+        false,
+        similar.get('hasDataConfidence'),
+        'hasDataConfidence should be false with < 5 deals'
+      );
+
+      // Insights should contain the low-sample message
+      List<Object> insights = (List<Object>) similar.get('keyInsights');
+      Boolean foundLowSampleMsg = false;
+      for (Object insight : insights) {
+        if (((String) insight).contains('Not enough closed deals')) {
+          foundLowSampleMsg = true;
+          break;
+        }
+      }
+      System.assert(
+        foundLowSampleMsg,
+        'Should show "Not enough closed deals" message when < 5 deals'
+      );
+    }
+  }
+
+  @isTest
+  static void testSimilarAccountsNoMarginData() {
+    // Create deals in Manufacturing industry with no GP% data
+    Account mfgAccount = new Account(
+      Name = 'MfgCo',
+      Industry = 'Manufacturing'
+    );
+    Account mfgNoHistory = new Account(
+      Name = 'MfgNew',
+      Industry = 'Manufacturing'
+    );
+    insert new List<Account>{ mfgAccount, mfgNoHistory };
+
+    List<Opportunity> mfgOpps = new List<Opportunity>();
+    // Create 6 closed deals (enough for sample size) but none with GP%
+    for (Integer i = 0; i < 4; i++) {
+      mfgOpps.add(
+        new Opportunity(
+          Name = 'Mfg Won ' + i,
+          AccountId = mfgAccount.Id,
+          Amount = 100000,
+          StageName = 'Closed Won',
+          CloseDate = Date.today().addDays(-10 * (i + 1)),
+          Fulcrum_GP_Percent__c = null
+        )
+      );
+    }
+    for (Integer i = 0; i < 2; i++) {
+      mfgOpps.add(
+        new Opportunity(
+          Name = 'Mfg Lost ' + i,
+          AccountId = mfgAccount.Id,
+          Amount = 50000,
+          StageName = 'Closed Lost',
+          CloseDate = Date.today().addDays(-20 * (i + 1))
+        )
+      );
+    }
+    insert mfgOpps;
+
+    User u = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+    System.runAs(u) {
+      Test.startTest();
+      Map<String, Object> result = MarginArcCompetitiveController.getAccountIntelligence(
+        mfgNoHistory.Id,
+        'Manufacturing'
+      );
+      Test.stopTest();
+
+      Map<String, Object> similar = (Map<String, Object>) result.get(
+        'similarAccounts'
+      );
+      System.assertNotEquals(null, similar, 'Should have similarAccounts');
+
+      // Insights should contain the no margin data message
+      List<Object> insights = (List<Object>) similar.get('keyInsights');
+      Boolean foundNoMarginMsg = false;
+      for (Object insight : insights) {
+        if (((String) insight).contains('No margin data available')) {
+          foundNoMarginMsg = true;
+          break;
+        }
+      }
+      System.assert(
+        foundNoMarginMsg,
+        'Should show "No margin data available" when no deals have GP%'
+      );
+    }
+  }
+
+  @isTest
+  static void testSimilarAccountsSufficientSample() {
+    // Technology has 8 total deals (5 won + 3 lost) >= 5 with margin data
+    Account acc = [SELECT Id FROM Account WHERE Name = 'NewCo Inc' LIMIT 1];
+    User u = [SELECT Id FROM User WHERE Id = :UserInfo.getUserId()];
+    System.runAs(u) {
+      Test.startTest();
+      Map<String, Object> result = MarginArcCompetitiveController.getAccountIntelligence(
+        acc.Id,
+        'Technology'
+      );
+      Test.stopTest();
+
+      Map<String, Object> similar = (Map<String, Object>) result.get(
+        'similarAccounts'
+      );
+      System.assertNotEquals(null, similar, 'Should have similarAccounts');
+
+      // Win rate should not be null (>= 5 deals)
+      System.assertNotEquals(
+        null,
+        similar.get('avgWinRate'),
+        'Win rate should not be null with >= 5 deals'
+      );
+
+      // hasDataConfidence should be true
+      System.assertEquals(
+        true,
+        similar.get('hasDataConfidence'),
+        'hasDataConfidence should be true with >= 5 deals'
+      );
+
+      // Insights should contain normal win rate and margin messages
+      List<Object> insights = (List<Object>) similar.get('keyInsights');
+      Boolean foundWinRateMsg = false;
+      Boolean foundMarginMsg = false;
+      for (Object insight : insights) {
+        String insightStr = (String) insight;
+        if (insightStr.contains('Win rate in Technology:')) {
+          foundWinRateMsg = true;
+        }
+        if (insightStr.contains('Average margin on won deals:')) {
+          foundMarginMsg = true;
+        }
+      }
+      System.assert(
+        foundWinRateMsg,
+        'Should show normal win rate when >= 5 deals'
+      );
+      System.assert(
+        foundMarginMsg,
+        'Should show normal margin when margin data exists'
+      );
+    }
+  }
 }

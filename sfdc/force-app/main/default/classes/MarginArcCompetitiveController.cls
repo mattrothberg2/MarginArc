@@ -589,7 +589,7 @@ public with sharing class MarginArcCompetitiveController {
 
       // Query aggregate data for accounts in this industry
       String marginQuery = hasMarginField
-        ? 'SELECT COUNT(Id) totalDeals, SUM(Amount) totalAmount, AVG(Fulcrum_GP_Percent__c) avgMargin FROM Opportunity WHERE Account.Industry = :industry AND StageName = \'Closed Won\' WITH SECURITY_ENFORCED'
+        ? 'SELECT COUNT(Id) totalDeals, SUM(Amount) totalAmount, AVG(Fulcrum_GP_Percent__c) avgMargin, COUNT(Fulcrum_GP_Percent__c) marginCount FROM Opportunity WHERE Account.Industry = :industry AND StageName = \'Closed Won\' WITH SECURITY_ENFORCED'
         : 'SELECT COUNT(Id) totalDeals, SUM(Amount) totalAmount FROM Opportunity WHERE Account.Industry = :industry AND StageName = \'Closed Won\' WITH SECURITY_ENFORCED';
 
       List<AggregateResult> results = Database.query(marginQuery);
@@ -608,17 +608,19 @@ public with sharing class MarginArcCompetitiveController {
         ? 0
         : Integer.valueOf(lostResults[0].get('lostDeals'));
       Integer totalDeals = wonDeals + lostDeals;
+      Integer marginCount = 0;
       Decimal avgMargin = 15.0; // Default margin
-      if (
-        hasMarginField &&
-        !results.isEmpty() &&
-        results[0].get('avgMargin') != null
-      ) {
-        avgMargin = (Decimal) results[0].get('avgMargin');
+      if (hasMarginField && !results.isEmpty()) {
+        if (results[0].get('marginCount') != null) {
+          marginCount = Integer.valueOf(results[0].get('marginCount'));
+        }
+        if (results[0].get('avgMargin') != null) {
+          avgMargin = (Decimal) results[0].get('avgMargin');
+        }
       }
-      Decimal winRate = totalDeals > 0
+      Decimal winRate = totalDeals >= 5
         ? (Decimal) wonDeals / totalDeals * 100
-        : 0;
+        : null;
 
       // Count accounts in industry
       Integer accountCount = [
@@ -681,12 +683,22 @@ public with sharing class MarginArcCompetitiveController {
 
       // Build insights
       List<String> insights = new List<String>();
-      insights.add(
-        'Win rate in ' + industry + ': ' + winRate.setScale(0) + '%'
-      );
-      insights.add(
-        'Average margin on won deals: ' + avgMargin.setScale(1) + '%'
-      );
+      if (winRate != null) {
+        insights.add(
+          'Win rate in ' + industry + ': ' + winRate.setScale(0) + '%'
+        );
+      } else {
+        insights.add(
+          'Not enough closed deals in ' + industry + ' for win rate analysis'
+        );
+      }
+      if (marginCount > 0) {
+        insights.add(
+          'Average margin on won deals: ' + avgMargin.setScale(1) + '%'
+        );
+      } else {
+        insights.add('No margin data available for ' + industry + ' deals yet');
+      }
       insights.add('Services-attached deals typically win more often');
       insights.add('Deal registration is critical for margin protection');
 
@@ -703,11 +715,12 @@ public with sharing class MarginArcCompetitiveController {
         'industry' => industry,
         'accountsAnalyzed' => accountCount,
         'totalDeals' => totalDeals,
-        'avgWinRate' => winRate.setScale(0),
+        'avgWinRate' => winRate != null ? winRate.setScale(0) : null,
         'avgMargin' => avgMargin.setScale(1),
         'topCompetitors' => topCompetitors,
         'keyInsights' => insights,
-        'recommendedStrategy' => strategy
+        'recommendedStrategy' => strategy,
+        'hasDataConfidence' => (totalDeals >= 5)
       };
     } catch (Exception e) {
       System.debug('Error in getSimilarAccountData: ' + e.getMessage());
@@ -716,13 +729,14 @@ public with sharing class MarginArcCompetitiveController {
         'industry' => industry,
         'accountsAnalyzed' => 0,
         'totalDeals' => 0,
-        'avgWinRate' => 0,
+        'avgWinRate' => null,
         'avgMargin' => 15.0,
         'topCompetitors' => new List<String>(),
         'keyInsights' => new List<String>{
           'No historical data available for this industry.'
         },
-        'recommendedStrategy' => 'Focus on building relationships and understanding customer needs.'
+        'recommendedStrategy' => 'Focus on building relationships and understanding customer needs.',
+        'hasDataConfidence' => false
       };
     }
   }
