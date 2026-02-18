@@ -1842,7 +1842,7 @@ Fix:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 11C — Phase 1 Actionable Guidance + Fix "Rec: 0.0%" (Founder Issue #6)
+### 11C — Phase 1 Actionable Guidance + Fix "Rec: 0.0%" (Founder Issue #6) [COMPLETE — PR #67]
 
 ```
 Read these files:
@@ -1913,7 +1913,7 @@ Run prettier and eslint:
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
 
-### 11D — Details Panel Accordion + Multi-Vendor Badge (Founder Issues #2, #4)
+### 11D — Details Panel Accordion + Multi-Vendor Badge (Founder Issues #2, #4) [COMPLETE — PR #68]
 
 ```
 Read these files:
@@ -1980,7 +1980,7 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 
 ## Epic 12: UX Quick Wins — Sprint 29
 
-### 11E — "Apply Recommendation" Safety + Copy Button (Sales Rep Feedback)
+### 11E — "Apply Recommendation" Safety + Copy Button (Sales Rep Feedback) [COMPLETE — PR #69]
 
 ```
 Read these files:
