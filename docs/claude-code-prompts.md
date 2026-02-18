@@ -2010,3 +2010,2260 @@ Run prettier and eslint on modified files.
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
+
+---
+
+## Epic 12: Data Credibility & Trust Fixes (Sprint 30)
+
+**Context:** After shipping 21 fixes (Epics 7-11), the founder tested the live product on a real deal — Regeneron (a $12B pharma company) with a $56K Cisco networking opportunity. Five evaluator agents (VP Product, CTO, Sales Rep, VP Sales, CFO) reviewed the screenshots and identified 9 issues that undermine data credibility and trust. The CFO rated purchase readiness at 4/10: "a wrong number is worse than no number."
+
+**Core problem:** The segment detection fix (PR #66) added AnnualRevenue-based inference, but it is never reached because the `Fulcrum_Customer_Segment__c` field has an explicit "SMB" value on the Opportunity (from demo data). This cascades into every downstream calculation.
+
+### Concurrency Guide
+- **12A**, **12B**, and **12E** can run in **parallel** (all touch different files)
+- **12D** depends on **12A** (both touch marginarcMarginAdvisor.js) — run AFTER 12A merges
+- **12C** depends on **12D** (both touch marginarcMarginAdvisor.js) — run AFTER 12D merges
+
+---
+
+### Prompt 12A: Fix Segment Override + Demo Data [SFDC] (Sprint 30)
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The segment detection code was fixed in PR #66 to use Account.AnnualRevenue as a fallback. The code is correct — but it never fires because the `Fulcrum_Customer_Segment__c` picklist field has an EXPLICIT value of "SMB" set on demo Opportunities (from the demo data loader). The explicit field takes priority at line 250 of `marginarcMarginAdvisor.js`, so the AnnualRevenue path at line 252 is never reached.
+
+Regeneron is a $12B pharma company. A $56K deal there should be "Enterprise", not "SMB." The wrong segment cascades everywhere: base margin is 6pp wrong (20% SMB vs 14% Enterprise), deal insights reference "SMB segment pricing", and the deal score drops from ~55 to 36.
+
+## File: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Add segment sanity check
+
+In `mapOpportunityData()` around line 250-269, AFTER the existing segment derivation logic, add a sanity check that overrides the explicit segment when it contradicts Account.AnnualRevenue by 2+ tiers:
+
+```javascript
+// After the existing if/else if/else segment block (around line 269):
+
+// Sanity check: if explicit segment contradicts AnnualRevenue by 2+ tiers, override
+if (!isSegmentInferred && annualRevenue != null && annualRevenue > 0) {
+  const revenueSegment =
+    annualRevenue >= 100000000 ? "Enterprise"
+    : annualRevenue >= 10000000 ? "MidMarket"
+    : "SMB";
+
+  const tiers = { SMB: 0, MidMarket: 1, Enterprise: 2 };
+  const explicitTier = tiers[customerSegment] ?? 1;
+  const revenueTier = tiers[revenueSegment] ?? 1;
+
+  if (Math.abs(explicitTier - revenueTier) >= 2) {
+    // Explicit segment is wildly inconsistent with revenue — override
+    customerSegment = revenueSegment;
+    isSegmentInferred = true; // Mark as inferred since we overrode
+    console.warn(
+      `MarginArc: Overriding explicit segment "${explicitSegment}" with revenue-derived "${revenueSegment}" (AnnualRevenue: $${annualRevenue})`
+    );
+  }
+}
+```
+
+This means: if someone set "SMB" on the Opportunity but Account.AnnualRevenue is $12B (Enterprise), override to Enterprise. But if the explicit segment is "MidMarket" and revenue says "Enterprise" (only 1 tier difference), trust the explicit value.
+
+### Fix 2: Update the demo data loader to populate AnnualRevenue on Accounts
+
+In `sfdc/force-app/main/default/classes/MarginArcDemoDataService.cls`, find the account creation logic and ensure every Account gets an appropriate `AnnualRevenue` value based on the segment assigned to its deals. For example:
+- Enterprise deals → Account.AnnualRevenue = random between 500M and 50B
+- MidMarket deals → Account.AnnualRevenue = random between 50M and 500M
+- SMB deals → Account.AnnualRevenue = random between 1M and 50M
+
+Also in `sfdc/force-app/main/default/classes/MarginArcDemoDataLoader.cls`, update the 30 hardcoded demo Opportunities to ensure their parent Accounts have AnnualRevenue set. The Account creation is at the top of the file.
+
+### Fix 3: Add `Account.AnnualRevenue` to the OPPORTUNITY_FIELDS wire
+
+Verify that `"Opportunity.Account.AnnualRevenue"` is already in the `OPPORTUNITY_FIELDS` array at the top of `marginarcMarginAdvisor.js`. It should have been added by PR #66 — just confirm it is there.
+
+### Fix 4: Update the test class
+
+In `sfdc/force-app/main/default/classes/MarginArcControllerTest.cls`, add a test that verifies the segment override behavior: create an Opportunity with `Fulcrum_Customer_Segment__c = 'SMB'` on an Account with `AnnualRevenue = 12000000000` and verify the widget would derive "Enterprise". Since the override is client-side (LWC), you may need to add a comment noting this is tested via the LWC rather than Apex.
+
+Run prettier and eslint on modified files. Verify tests pass with `cd sfdc && npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js && npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12B: Fix Win Rate Minimum Sample + Suppress Hardcoded Defaults [SFDC Apex] (Sprint 30)
+
+Can run **in parallel** with 12A (touches different files).
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The Industry Intelligence widget shows "Win rate in Life Sciences & Healthcare: 0%" and "Average margin on won deals: 15.0%" — but there are ZERO Closed Won deals in that industry. The 0% win rate is real data but is catastrophically misleading (all 5 evaluator agents flagged this as trust-destroying). The 15.0% margin is the hardcoded default from line 611, NOT actual data.
+
+The CFO evaluator said: "Presenting '0%' with the same visual weight as a real metric is a fundamental analytics sin."
+
+## File: `sfdc/force-app/main/default/classes/MarginArcCompetitiveController.cls`
+
+### Fix 1: Add minimum sample size threshold for win rate
+
+In the `getSimilarAccountData()` method around line 619-621:
+
+```java
+// Current:
+Decimal winRate = totalDeals > 0 ? (Decimal) wonDeals / totalDeals * 100 : 0;
+
+// Change to:
+Decimal winRate = totalDeals >= 5 ? (Decimal) wonDeals / totalDeals * 100 : null;
+```
+
+When `winRate` is null, the insight at line 684 should change from showing "Win rate in X: 0%" to showing "Not enough data for win rate analysis (need 5+ closed deals)". Update the insight building logic:
+
+```java
+if (winRate != null) {
+  insights.add('Win rate in ' + industry + ': ' + winRate.setScale(0) + '%');
+} else {
+  insights.add('Not enough closed deals in ' + industry + ' for win rate analysis');
+}
+```
+
+### Fix 2: Suppress hardcoded default margin
+
+At line 611: `Decimal avgMargin = 15.0; // Default margin`. When there are no actual won deals with margin data, this default gets displayed as "Average margin on won deals: 15.0%". Fix:
+
+Track how many won deals actually have margin data using a counter variable. Then conditionally display:
+
+```java
+if (marginCount > 0) {
+  insights.add('Average margin on won deals: ' + avgMargin.setScale(1) + '%');
+} else {
+  insights.add('No margin data available for ' + industry + ' deals yet');
+}
+```
+
+Where `marginCount` tracks how many won deals actually had `Fulcrum_GP_Percent__c` populated. Add this counter to the existing SOQL/query logic.
+
+### Fix 3: Add `hasDataConfidence` flag to return map
+
+At line 702-711, the return map includes `'accountsAnalyzed' => accountCount`. Add a confidence flag:
+
+```java
+'hasDataConfidence' => (totalDeals >= 5),
+```
+
+The LWC Competitive Intelligence component can use this to show/hide confidence-dependent metrics.
+
+### Fix 4: Update win rate in the return map
+
+The `avgWinRate` key in the return map at line 706 should handle the null case:
+
+```java
+'avgWinRate' => winRate != null ? winRate.setScale(0) : null,
+```
+
+### Fix 5: Update test class
+
+In `sfdc/force-app/main/default/classes/MarginArcCompetitiveControllerTest.cls`, add tests:
+1. When `totalDeals < 5`, verify win rate insight says "Not enough closed deals..."
+2. When no deals have `Fulcrum_GP_Percent__c`, verify margin insight says "No margin data available..."
+3. When `totalDeals >= 5`, verify the normal win rate display still works
+
+Run prettier on modified Apex files. Verify tests pass.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12C: Deduplicate Insights + BOM Mismatch Warning + Phase 1 REC% [SFDC LWC] (Sprint 30)
+
+**Depends on 12A** (both modify marginarcMarginAdvisor.js). Run AFTER 12A merges.
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+Three remaining UI trust issues from the post-fix review:
+
+1. **Contradictory insights:** "Cisco OEM margin profile" appears as BOTH a thumbs-up ("influencing the recommendation") AND a warning ("Watch out for: Cisco OEM margin profile"). The `phase1Tips` getter at line 594 renders topDrivers and phase1Guidance independently — the same entity can appear in both lists with opposite framing.
+
+2. **BOM/Opportunity Amount mismatch:** BOM totals $52,373 but Opportunity Amount is $56,448 — a 7.2% gap with no warning. The CFO evaluator called this "a material misstatement."
+
+3. **REC% column shows dashes in Phase 1:** All three BOM lines show "—" in the REC% column because per-line recommendations are Phase 3 only. Dead UI real estate that makes the product look broken.
+
+## File 1: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Deduplicate insights in `phase1Tips` getter
+
+In the `phase1Tips` getter (around line 594), add deduplication logic. After building all tips from topDrivers, phase1Guidance, and scoreFactors, deduplicate by extracting key entities and keeping only the first mention:
+
+```javascript
+// At the end of phase1Tips(), before `return tips;`:
+// Deduplicate: if the same key entity appears in both topDrivers and phase1Guidance,
+// keep only the first occurrence
+const seen = new Set();
+const dedupedTips = [];
+for (const tip of tips) {
+  const normalized = tip.text.toLowerCase();
+  const entities = ['cisco', 'hpe', 'dell', 'palo alto', 'fortinet', 'vmware',
+    'microsoft', 'netapp', 'pure storage', 'arista', 'crowdstrike', 'nutanix',
+    'smb', 'midmarket', 'enterprise'];
+  const matchedEntity = entities.find(e => normalized.includes(e));
+  const key = matchedEntity || normalized.substring(0, 40);
+
+  if (!seen.has(key)) {
+    seen.add(key);
+    dedupedTips.push(tip);
+  }
+}
+return dedupedTips;
+```
+
+### Fix 2: Add BOM/Opportunity Amount mismatch warning
+
+Add a computed getter that checks for discrepancy between BOM total and Opportunity Amount:
+
+```javascript
+get bomOppAmountMismatch() {
+  if (!this.savedBomData?.totals?.totalPrice || !this.opportunityData?.amount) {
+    return null;
+  }
+  const bomTotal = this.savedBomData.totals.totalPrice;
+  const oppAmount = this.opportunityData.amount;
+  const delta = Math.abs(bomTotal - oppAmount);
+  const pctDiff = (delta / oppAmount) * 100;
+
+  if (pctDiff > 2) {
+    return {
+      delta: delta.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
+      pctDiff: pctDiff.toFixed(1),
+      bomTotal: bomTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }),
+      oppAmount: oppAmount.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 })
+    };
+  }
+  return null;
+}
+```
+
+In the HTML template (`marginarcMarginAdvisor.html`), add a warning banner inside the BOM summary section (near the BOM totals display in the details panel). Show it only when `bomOppAmountMismatch` is non-null:
+
+```html
+<template lwc:if={bomOppAmountMismatch}>
+  <div class="bom-mismatch-warning">
+    <lightning-icon icon-name="utility:warning" size="x-small" variant="warning"></lightning-icon>
+    <span>BOM total ({bomOppAmountMismatch.bomTotal}) differs from Opportunity Amount ({bomOppAmountMismatch.oppAmount}) by {bomOppAmountMismatch.delta} ({bomOppAmountMismatch.pctDiff}%)</span>
+  </div>
+</template>
+```
+
+Style the warning banner in the CSS file with a light amber background (#FEF3C7), dark text (#92400E), border-radius 8px, padding 8px 12px, margin 8px 0, font-size 12px, and flex layout with gap. Add the CSS class `.bom-mismatch-warning`.
+
+## File 2: `sfdc/force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js` and `.html`
+
+### Fix 3: Hide REC% column in Phase 1
+
+The BOM Builder should detect whether any line has a recommendation and hide the "Rec%" column when none do. Add a phase-aware check:
+
+1. In `marginarcBomBuilder.js`, add a computed getter:
+```javascript
+get showRecColumn() {
+  return this._bomLines.some(line => line.recMargin != null);
+}
+```
+
+2. In `marginarcBomBuilder.html`, wrap the Rec% column header and the corresponding data cells with `<template lwc:if={showRecColumn}>`. This way the column only appears when there is actual data to show.
+
+3. Also in `marginarcMarginAdvisor.html`, in the BOM summary section inside the details panel, wrap the "Recommended" column header and cells in a similar conditional that checks if any BOM line has a `recommendedMarginDisplay` that is not "—".
+
+Run prettier and eslint on ALL modified files:
+```
+cd sfdc
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+npx prettier --write force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.html
+npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+npx eslint force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+```
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12D: Fix dealScoreFactors Crash + Score Improvement Tips [SFDC LWC] (Sprint 30)
+
+**Depends on 12A** (both modify marginarcMarginAdvisor.js). Run AFTER 12A merges.
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+There is a **P0 crash** when clicking "Show Details" on the Margin Advisor widget. The error is:
+
+```
+[(intermediate value) || []].map is not a function
+Function: get dealScoreFactors
+Component: markup://c:marginarcMarginAdvisor
+```
+
+**Root cause:** The Lambda API (`/api/recommend`) returns `scoreFactors` as a **plain object** with named keys:
+```json
+{
+  "marginAlignment": { "score": 0, "max": 40, "label": "Your margin is...", "direction": "negative" },
+  "winProbability": { "score": 13, "max": 25, "label": "Moderate win...", "direction": "positive" },
+  "dataQuality": { "score": 11, "max": 20, "label": "Good data...", "direction": "positive" },
+  "algorithmConfidence": { "score": 6, "max": 15, "label": "Limited...", "direction": "negative" }
+}
+```
+
+But the LWC `dealScoreFactors` getter (around line 2372) checks `Array.isArray(apiFactors)` — which returns false for the object. The fallback path then does `(this.dealScoreData?.factors || []).map(...)`. Since the `dealScoreData` getter at line 2345 sets `factors: this.recommendation.scoreFactors || []`, and `scoreFactors` is a truthy object, the `|| []` fallback never triggers. The code calls `.map()` on the plain object, which crashes.
+
+## File: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Convert scoreFactors object to array
+
+In the `dealScoreFactors` getter (around line 2372), replace the `Array.isArray(apiFactors)` check with logic that handles BOTH shapes — object and array:
+
+```javascript
+get dealScoreFactors() {
+    const apiFactors = this.recommendation?.scoreFactors;
+
+    // Convert object shape { marginAlignment: {...}, ... } to array
+    let factorsArray;
+    if (apiFactors && typeof apiFactors === 'object' && !Array.isArray(apiFactors)) {
+      // Server returns an object with named keys — convert to array
+      const DISPLAY_NAMES = {
+        marginAlignment: 'Margin Alignment',
+        winProbability: 'Win Probability',
+        dataQuality: 'Data Quality',
+        algorithmConfidence: 'Algorithm Confidence'
+      };
+      factorsArray = Object.entries(apiFactors).map(([key, val]) => ({
+        name: DISPLAY_NAMES[key] || key,
+        score: val.score,
+        max: val.max,
+        label: val.label,
+        direction: val.direction
+      }));
+    } else if (Array.isArray(apiFactors) && apiFactors.length > 0) {
+      factorsArray = apiFactors;
+    }
+
+    if (factorsArray && factorsArray.length > 0) {
+      return factorsArray.map((f) => {
+        const ratio = f.max > 0 ? f.score / f.max : 0.5;
+        let colorClass;
+        if (ratio >= 0.66) colorClass = 'score-factor-label score-factor-label-green';
+        else if (ratio >= 0.33) colorClass = 'score-factor-label score-factor-label-amber';
+        else colorClass = 'score-factor-label score-factor-label-red';
+        return { name: f.name, label: f.label || f.name, labelClass: colorClass };
+      });
+    }
+
+    // Fallback: client-side factors (also guard against object shape)
+    const clientFactors = this.dealScoreData?.factors;
+    const clientArray = Array.isArray(clientFactors) ? clientFactors : [];
+    // ... rest of fallback logic using clientArray instead of clientFactors
+}
+```
+
+### Fix 2: Fix dealScoreData getter too
+
+In the `dealScoreData` getter (around line 2345), also guard the `factors` assignment:
+
+```javascript
+// Change:
+factors: this.recommendation.scoreFactors || []
+// To:
+factors: Array.isArray(this.recommendation.scoreFactors)
+  ? this.recommendation.scoreFactors
+  : []
+```
+
+This ensures the client-side fallback path always gets an actual array.
+
+### Fix 3: Fix phase1Tips getter
+
+In the `phase1Tips` getter (around line 632), there is a similar `Array.isArray(factors)` guard that silently skips the API scoreFactors object. Apply the same object-to-array conversion:
+
+```javascript
+// Where it reads scoreFactors for the detail view, apply the same conversion
+const rawFactors = this.recommendation?.scoreFactors;
+let factors;
+if (rawFactors && typeof rawFactors === 'object' && !Array.isArray(rawFactors)) {
+  factors = Object.entries(rawFactors).map(([key, val]) => ({
+    name: key, score: val.score, max: val.max, label: val.label, direction: val.direction
+  }));
+} else if (Array.isArray(rawFactors)) {
+  factors = rawFactors;
+}
+```
+
+### Fix 4: Add "Improve Your Score" tips below deal score
+
+When the details panel is expanded, show actionable tips that tell the rep HOW to improve the score. Add a getter:
+
+```javascript
+get scoreImprovementTips() {
+  const tips = [];
+  const factors = this.recommendation?.scoreFactors;
+  if (!factors) return tips;
+
+  // Convert object shape to usable format
+  const f = typeof factors === 'object' && !Array.isArray(factors) ? factors : {};
+
+  // Margin alignment — if score is low, suggest updating planned margin
+  if (f.marginAlignment && f.marginAlignment.max > 0) {
+    const ratio = f.marginAlignment.score / f.marginAlignment.max;
+    if (ratio < 0.33) {
+      tips.push({
+        icon: 'utility:trending',
+        text: 'Update your planned margin closer to the recommendation',
+        pts: Math.round(f.marginAlignment.max * 0.5) - f.marginAlignment.score
+      });
+    }
+  }
+
+  // Data quality — if score is low, suggest filling in fields
+  if (f.dataQuality && f.dataQuality.max > 0) {
+    const ratio = f.dataQuality.score / f.dataQuality.max;
+    if (ratio < 0.66) {
+      const missingFields = this._missingFields || [];
+      const fieldHint = missingFields.length > 0
+        ? `Fill in: ${missingFields.slice(0, 3).join(', ')}`
+        : 'Add more deal details (competitors, urgency, complexity)';
+      tips.push({
+        icon: 'utility:edit',
+        text: fieldHint,
+        pts: Math.round(f.dataQuality.max * 0.3)
+      });
+    }
+  }
+
+  // Algorithm confidence — if low, encourage more deal scoring
+  if (f.algorithmConfidence && f.algorithmConfidence.max > 0) {
+    const ratio = f.algorithmConfidence.score / f.algorithmConfidence.max;
+    if (ratio < 0.5) {
+      tips.push({
+        icon: 'utility:database',
+        text: 'Score more deals to improve algorithm confidence',
+        pts: Math.round(f.algorithmConfidence.max * 0.3)
+      });
+    }
+  }
+
+  // Win probability — if low, suggest actions
+  if (f.winProbability && f.winProbability.max > 0) {
+    const ratio = f.winProbability.score / f.winProbability.max;
+    if (ratio < 0.33) {
+      tips.push({
+        icon: 'utility:like',
+        text: 'Register the deal or reduce competitor count to improve win probability',
+        pts: Math.round(f.winProbability.max * 0.3)
+      });
+    }
+  }
+
+  // Sort by potential points, take top 3
+  return tips.sort((a, b) => b.pts - a.pts).slice(0, 3);
+}
+
+get hasScoreImprovementTips() {
+  return this.scoreImprovementTips.length > 0;
+}
+```
+
+In the HTML template (`marginarcMarginAdvisor.html`), inside the details panel after the score factors display, add:
+
+```html
+<template lwc:if={hasScoreImprovementTips}>
+  <div class="score-tips">
+    <p class="score-tips-header">Improve your score:</p>
+    <template for:each={scoreImprovementTips} for:item="tip">
+      <div key={tip.text} class="score-tip-row">
+        <lightning-icon icon-name={tip.icon} size="xx-small"></lightning-icon>
+        <span class="score-tip-text">{tip.text}</span>
+        <span class="score-tip-pts">+{tip.pts} pts</span>
+      </div>
+    </template>
+  </div>
+</template>
+```
+
+Style the tips section in the CSS:
+- `.score-tips`: margin-top 12px, padding 12px, background #F8FAFC, border-radius 8px, border 1px solid #E2E8F0
+- `.score-tips-header`: font-size 11px, font-weight 600, text-transform uppercase, letter-spacing 0.5px, color #64748B, margin-bottom 8px
+- `.score-tip-row`: display flex, align-items center, gap 8px, padding 4px 0, font-size 13px
+- `.score-tip-text`: flex 1, color #334155
+- `.score-tip-pts`: font-size 11px, font-weight 600, color #059669 (green), white-space nowrap
+
+Run prettier and eslint on ALL modified files. Verify the widget loads without errors — specifically test the "Show Details" toggle.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12E: Fix BOM Table Overflow + Responsive Layout [SFDC LWC CSS] (Sprint 30)
+
+Can run **in parallel** with 12A, 12B, and 12D (only touches CSS files and BOM component HTML).
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The BOM Builder table extends beyond its container on the Salesforce Opportunity record page. The root cause is two layers of `overflow: hidden` on parent containers that clip the scroll wrapper, plus missing text truncation on long content.
+
+## File 1: `sfdc/force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.css`
+
+### Fix 1: Remove overflow clipping on parent containers
+
+The current CSS has:
+```css
+.bom-builder {
+  overflow: hidden;    /* CLIPS horizontal content */
+}
+.table-section {
+  overflow: hidden;    /* ALSO CLIPS horizontal content */
+}
+.table-scroll {
+  overflow-x: auto;   /* This is correct but parents negate it */
+}
+```
+
+Change `.bom-builder` from `overflow: hidden` to `overflow: visible`. Change `.table-section` from `overflow: hidden` to `overflow: visible`. Keep `.table-scroll` as `overflow-x: auto` — this is the intended scroll container.
+
+If `overflow: hidden` on `.bom-builder` is needed to clip something specific (like absolute-positioned children), use `overflow-y: hidden; overflow-x: visible` instead. But first try `overflow: visible` and verify nothing breaks.
+
+### Fix 2: Add text truncation for long content
+
+Add these CSS rules to prevent long unbroken strings from pushing the grid wider:
+
+```css
+.cell-input,
+.cell-desc,
+.cell-num {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bom-table {
+  width: 100%;
+  min-width: 760px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+```
+
+Also add `min-width: 0` to the grid row children:
+
+```css
+.table-header > *,
+div[role="row"] > *,
+.table-totals > * {
+  min-width: 0;
+  overflow: hidden;
+}
+```
+
+### Fix 3: Ensure the Description column truncates gracefully
+
+The Description column uses `1fr` and should not push other columns off-screen. Add:
+
+```css
+.cell-desc {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+```
+
+And in the HTML template (`marginarcBomBuilder.html`), find the description input field and add `title={line.description}` so users can hover to see the full text.
+
+## File 2: `sfdc/force-app/main/default/lwc/marginarcBomTable/marginarcBomTable.css`
+
+### Fix 4: Add text truncation for the read-only BOM table
+
+The read-only BOM table has similar overflow risks. Add truncation to the Line Item column:
+
+```css
+.bom-item-label,
+.bom-item-sku {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bom-table-wrap > * {
+  min-width: 0;
+}
+```
+
+### Fix 5: Consistent currency formatting
+
+In `marginarcBomBuilder.js`, find all places where currency values are displayed (Unit Cost and Ext Price columns). Ensure they use `.toFixed(2)` for consistent decimal places (e.g., "$6,232.30" not "$6,232.3"). Look for the formatting functions and fix any that produce inconsistent decimal output.
+
+## Testing
+
+After making changes:
+1. Verify the BOM Builder table does not overflow its container on a standard Opportunity record page
+2. Verify horizontal scroll works when the viewport is narrower than 760px
+3. Verify long descriptions are truncated with ellipsis and show full text on hover
+4. Verify the Category dropdown still appears correctly (not clipped by parent overflow)
+5. Verify responsive breakpoints still work (1024px and 768px)
+
+Run prettier on modified files:
+```
+cd sfdc
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.css
+npx prettier --write force-app/main/default/lwc/marginarcBomTable/marginarcBomTable.css
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.html
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+```
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+---
+
+## Epic 13: Margin Opportunity Assessment (MOA) — Open Source Scanner (Sprint 31-32)
+
+**Context:** Free, open-source SFDC package that scans a VAR's historical deals and produces a "Margin Opportunity Report" showing how much margin they're leaving on the table. Separate repo (`mattrothberg2/margin-opportunity-assessment`), Apache 2.0 license. Zero MarginArc proprietary code.
+
+**GTM motion:** Prospect self-installs MOA → sees "$X left on the table" → asks "how do I fix this?" → signs MarginArc. MOA data bootstraps Phase 2 on day 1 (no cold start).
+
+### Concurrency Guide
+- **13A** → **13B** → **13C** → **13D** (sequential — each builds on the previous)
+
+---
+
+### Prompt 13A: Scaffold MOA Repo + SFDC Project [SFDC] (Sprint 31)
+
+```
+You are creating a NEW open-source Salesforce package from scratch. This is NOT the MarginArc product — it's a free diagnostic tool called "Margin Opportunity Assessment" (MOA).
+
+## Setup
+
+1. Create a new GitHub repo:
+gh repo create mattrothberg2/margin-opportunity-assessment --public --description "Free margin opportunity scanner for IT VARs. See how much margin your team is leaving on the table." --clone
+cd margin-opportunity-assessment
+
+2. Initialize the SFDC project:
+sf project generate --name margin-opportunity-assessment --template standard
+
+3. Create the Apache 2.0 LICENSE file.
+
+4. Create this structure:
+force-app/main/default/
+├── classes/
+│   ├── MOA_Scanner.cls              (placeholder — built in 13B)
+│   ├── MOA_ScannerTest.cls          (placeholder)
+│   ├── MOA_ScanController.cls       (AuraEnabled methods for LWC)
+│   ├── MOA_ScanControllerTest.cls
+│   ├── MOA_Models.cls               (data classes for scan results)
+│   ├── MOA_InstallHandler.cls       (post-install setup)
+│   └── MOA_InstallHandlerTest.cls
+├── lwc/
+│   └── moaDashboard/                (placeholder — built in 13C)
+│       ├── moaDashboard.html
+│       ├── moaDashboard.js
+│       └── moaDashboard.css
+├── permissionsets/
+│   └── MOA_User.permissionset-meta.xml
+├── tabs/
+│   └── Margin_Opportunity_Assessment.tab-meta.xml
+├── objects/
+│   └── MOA_Config__c/               (Hierarchy Custom Setting)
+│       ├── MOA_Config__c.object-meta.xml
+│       └── fields/
+│           ├── Install_Date__c.field-meta.xml    (Date)
+│           ├── Scan_Months__c.field-meta.xml     (Number, default 24)
+│           ├── Min_Cohort_Size__c.field-meta.xml (Number, default 5)
+│           └── Last_Scan_Date__c.field-meta.xml  (DateTime)
+│   └── MOA_Scan_Result__c/          (Hierarchy Custom Setting)
+│       ├── MOA_Scan_Result__c.object-meta.xml
+│       └── fields/
+│           ├── Result_JSON__c.field-meta.xml     (Long Text Area, 131072)
+│           ├── Scan_Status__c.field-meta.xml     (Text 20)
+│           ├── Error_Message__c.field-meta.xml   (Long Text Area, 5000)
+│           └── Scan_Date__c.field-meta.xml       (DateTime)
+└── applications/
+    └── MOA.app-meta.xml
+
+## Permission Set: MOA_User
+
+Read-only access to: Opportunity (all standard fields), Account (Industry, AnnualRevenue, NumberOfEmployees, Name), OpportunityLineItem, Product2 (Name, Family, ProductCode), User (Name). Read/write to MOA_Config__c and MOA_Scan_Result__c. NO write access to Opportunity or Account.
+
+## Install Handler: MOA_InstallHandler
+
+Implements InstallHandler. On install: set MOA_Config__c defaults (Install_Date = today, Scan_Months = 24, Min_Cohort_Size = 5).
+
+## MOA_Models.cls
+
+Data classes — create inner classes: Cohort (oem, sizeBucket, segment, dealCount, wonCount, lostCount, winRate, medianMargin, p25Margin, p75Margin, avgMargin, totalRevenue, marginOpportunity), RepStats (repName, repId, dealCount, wonCount, avgMargin, vsTeamAvg, consistency, marginLeftOnTable), MarginBand (band, dealCount, winRate), ScanResult (totalDeals, totalWon, totalLost, totalRevenue, currentAvgMargin, achievableAvgMargin, annualOpportunity, cohorts list, reps list, winRateByMarginBand list, scanDate, scanMonths).
+
+## Tab
+
+Points to moaDashboard LWC. Icon: standard:analytics.
+
+## README.md
+
+Professional README with:
+- "Margin Opportunity Assessment by MarginArc"
+- What it does (3 bullets: scans deals, segments by OEM/size/tier, quantifies the gap)
+- What it does NOT do (no data leaves SF, no API calls, no writes, fully auditable code)
+- Installation instructions
+- How it works (link to docs/how-it-works.md)
+- Screenshots placeholder
+- License: Apache 2.0
+- "Built by MarginArc — AI-powered margin optimization for IT VARs"
+
+## docs/how-it-works.md
+
+Explain methodology: cohort segmentation (OEM × Size × Tier), median as benchmark, opportunity = sum of below-median gaps, rep consistency measurement. Emphasize this is basic statistics, not AI.
+
+Commit and push.
+```
+
+---
+
+TODO:
+
+### Prompt 13B: MOA Analysis Engine [SFDC Apex] (Sprint 31)
+
+**Depends on 13A.**
+
+```
+You are working on the Margin Opportunity Assessment package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Context
+
+Build the core analysis engine — a Database.Batchable<SObject> that scans Closed Won/Lost Opportunities and computes margin opportunity statistics. Everything runs in Apex. No external calls.
+
+## File: force-app/main/default/classes/MOA_Scanner.cls
+
+Implements Database.Batchable<SObject>, Database.Stateful.
+
+### start()
+
+Query closed Opportunities from the last N months (MOA_Config__c.Scan_Months__c, default 24):
+
+SELECT Id, Name, Amount, StageName, CloseDate, Type, OwnerId, IsClosed, IsWon,
+       Account.Industry, Account.AnnualRevenue, Account.NumberOfEmployees, Account.Name,
+       Owner.Name,
+       (SELECT ProductCode, UnitPrice, Quantity, TotalPrice, Product2.Family, Product2.Name FROM OpportunityLineItems)
+FROM Opportunity WHERE IsClosed = true AND CloseDate >= LAST_N_MONTHS:24 AND Amount > 0
+
+### execute()
+
+For each Opportunity in the batch:
+
+1. Derive OEM from line items: Pattern match Product2.Family or Product2.Name against known vendors (Cisco, Dell, HPE, Lenovo, Microsoft, Palo Alto, CrowdStrike, Fortinet, VMware, NetApp, Juniper, Aruba). If no match → "Other".
+
+2. Derive Size Bucket from Amount: <$25K, $25K-100K, $100K-500K, $500K-1M, $1M+
+
+3. Derive Customer Segment from Account.AnnualRevenue: >= $1B → Enterprise, >= $100M → Mid-Market, >= $10M → SMB, < $10M or null → Unknown
+
+4. Derive Margin: Try common custom fields in try/catch (many VARs use different field names):
+   - Try: Opportunity.get('Fulcrum_GP_Percent__c') — for MarginArc users
+   - Try: Opportunity.get('GP_Percent__c')
+   - Try: Opportunity.get('Margin_Percent__c')
+   - Fallback: If line items have cost data, compute from (Amount - cost) / Amount * 100
+   - If no margin available: mark deal as "margin_unknown" (include in win rate analysis but exclude from margin analysis)
+
+5. Accumulate into stateful maps:
+   - Map<String, List<DealData>> by cohort key (OEM|Size|Segment)
+   - Map<Id, RepAccumulator> by OwnerId
+
+Use a stateful List<DealData> or similar pattern to carry data across batches.
+
+### finish()
+
+1. For each cohort with >= Min_Cohort_Size deals:
+   - Sort margin values, compute median (middle value), p25, p75
+   - Compute win rate = wonCount / totalCount * 100
+   - Compute opportunity = sum of (median - actual) * amount for each Won deal where actual < median
+
+2. For each rep:
+   - For each of their deals, compare their margin to the cohort median for that deal's cohort
+   - avgMargin vs team average on same-cohort deals
+   - consistency = standard deviation of (deal_margin - cohort_median) across their deals
+
+3. Win rate by margin band: group all deals into bands (0-5%, 5-10%, 10-15%, 15-20%, 20-25%, 25%+), compute win rate per band
+
+4. Roll-ups:
+   - achievableAvgMargin = sum(cohort_median * deal_amount) / sum(deal_amount) for all Won deals
+   - annualOpportunity = total opportunity * (12 / scan_months) to annualize
+
+5. Serialize as ScanResult, store in MOA_Scan_Result__c.Result_JSON__c. Set Scan_Status = 'Complete'.
+
+6. Update MOA_Config__c.Last_Scan_Date__c = DateTime.now()
+
+### Error handling
+
+Wrap finish() in try/catch. On error, set MOA_Scan_Result__c.Scan_Status__c = 'Error', Error_Message__c = error message.
+
+## File: force-app/main/default/classes/MOA_ScanController.cls
+
+@AuraEnabled methods:
+- startScan(): Set Scan_Status = 'Running', execute batch
+- getScanResult(): Return Result_JSON__c
+- getScanStatus(): Return Scan_Status__c
+
+## File: force-app/main/default/classes/MOA_ScannerTest.cls
+
+75%+ coverage. Create: 3 Accounts (Enterprise $5B, Mid-Market $200M, SMB $20M), 15 Opportunities (mix of Won/Lost, varying amounts), Products with Families matching OEM names. Run batch, verify Result_JSON has correct structure.
+
+Commit and push.
+```
+
+---
+
+### Prompt 13C: MOA Report Dashboard [SFDC LWC] (Sprint 31-32)
+
+**Depends on 13B.**
+
+```
+You are working on the MOA package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Context
+
+Build the LWC dashboard that displays scan results. This is the "wow" screen for the sales conversation.
+
+## Component: force-app/main/default/lwc/moaDashboard/
+
+### Data Loading
+
+connectedCallback: call getScanStatus(). If 'Complete' → getScanResult(), parse JSON. If 'Running' → show spinner, poll every 5s. If no result → show welcome with "Scan Now" button.
+
+### Section 1: Executive Summary (KPI Strip)
+
+5 KPIs in a row: Deals Analyzed, Total Revenue, Current Avg Margin, Achievable Avg Margin, Annual Margin Opportunity (hero number — large green text).
+
+Below: "Your team is leaving an estimated $X/year on the table."
+
+### Section 2: Segment Breakdown Table
+
+Sortable table with columns: Segment (OEM × Size × Tier), Deals, Win Rate, Median Margin, Your Avg, Gap, Opportunity ($). Sort by Opportunity descending. Color-code Gap (green/red). Show top 15 with "Show All" toggle.
+
+### Section 3: Rep Leaderboard
+
+Table: Rep, Deals, Won, Win Rate, Avg Margin, vs Team Avg, Consistency, Opportunity ($). Color-code "vs Team Avg". Sort by Opportunity.
+
+### Section 4: Win Rate by Margin Band
+
+CSS bar chart (no library needed). Bars for each margin band showing win rate %. Label each bar with deal count. Highlight the "sweet spot" (highest win rate band with 10+ deals).
+
+### Trial Expiry
+
+Check MOA_Config__c.Install_Date__c. If > 30 days ago: show banner "Trial expired. Results still visible. Want continuous optimization? Learn about MarginArc →". Disable "Re-Scan" button.
+
+### Scan Now / Re-Scan Button
+
+Top of dashboard. Calls startScan(), shows progress, polls status. On complete, refresh.
+
+### Footer
+
+"Powered by MarginArc — AI-powered margin optimization for IT VARs. Learn more →"
+
+### Styling
+
+Clean, modern. White cards on #F1F5F9 background. Hero number: #059669 green, 28px bold. Tables: alternating rows, sticky headers. Responsive: stack KPIs vertically on mobile.
+
+### CSV Export
+
+"Export CSV" button for segment breakdown. Build CSV string in JS, create Blob, trigger download link.
+
+Commit and push.
+```
+
+---
+
+### Prompt 13D: MOA Polish + Release [SFDC] (Sprint 32)
+
+**Depends on 13C.**
+
+```
+You are working on the MOA package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Tasks
+
+1. PDF Export: Create MOA_ReportPDF.page (Visualforce renderAs="pdf"). Page 1: 5 KPIs + summary. Page 2: Top 10 segments. Page 3: Rep leaderboard. Footer: "Margin Opportunity Assessment | marginarc.com". Wire the LWC "Export PDF" button to open this page.
+
+2. Scan Progress: In the batch execute(), update MOA_Scan_Result__c.Scan_Status__c with progress count (e.g., "Running: 450/2847"). LWC polls and parses to show % progress bar.
+
+3. Error UX: If scan fails, show friendly error: "Scan encountered an issue: {error}. Contact support@marginarc.com for help."
+
+4. Deploy to MarginArc dev org for testing:
+SF_USE_GENERIC_UNIX_KEYCHAIN=true sf project deploy start --target-org matt.542a9844149e@agentforce.com --source-dir force-app
+Run the scan, take 3 screenshots (summary, segments, reps), save to docs/.
+
+5. Update README with screenshots and a SFDC deploy button URL.
+
+6. Create GitHub release v1.0.0.
+
+Commit and push.
+```
+
+---
+---
+
+## Epic 14: Real ML Algorithm — Replace Rules Engine (Sprint 32-34)
+
+**Context:** Replace the hardcoded rules engine (rules.js) with a real predictive model — logistic regression trained on each customer's Closed Won/Lost deals. The model learns which features predict winning, how margin affects win probability, and recommends the margin that maximizes expected GP.
+
+**Data source:** `recorded_deals` table already has 27 feature columns + outcome (status Won/Lost) + achieved_margin. MarginArcDealOutcomeSync pushes closed deals weekly. No new pipeline needed.
+
+**Architecture:** Win Probability Model: P(win | features, proposed_margin). Margin Optimizer: sweep 5-35%, find max expected GP. All pure Node.js — no Python, no SageMaker.
+
+### Concurrency Guide
+- **14A** and **14B** can run in **parallel** (separate new files)
+- **14C** depends on **14A + 14B** (training uses both)
+- **14D** depends on **14C** (inference needs trained model)
+- **14E** can run in **parallel** with 14C/14D (standalone benchmarks module)
+- **14F** depends on **14D + 14E** (LWC needs both working)
+
+---
+
+### Prompt 14A: Feature Engineering Module [Lambda Node.js] (Sprint 32)
+
+Can run in **parallel** with 14B.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Project Setup
+
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- All new files go under lambda/server/src/ml/ (create the ml/ directory)
+
+## Context — What This Is For
+
+MarginArc is an AI margin optimizer for IT VARs (Value-Added Resellers). Sales reps enter deal details in Salesforce, and our Lambda API returns a recommended margin percentage. Currently we use a hardcoded rules engine (rules.js) — we're replacing it with real ML.
+
+This module converts raw deal records from our PostgreSQL database into numeric feature vectors for logistic regression training. The model will predict P(win | features, proposed_margin) and sweep margins to find the optimal recommendation.
+
+## Data Schema — recorded_deals Table
+
+Deals are persisted by `src/analytics.js` via `insertRecordedDeal()`. The table schema (from analytics.js lines 6-37):
+
+```sql
+CREATE TABLE IF NOT EXISTS recorded_deals (
+    id SERIAL PRIMARY KEY,
+    segment VARCHAR(50) NOT NULL,              -- 'SMB', 'MidMarket', 'Enterprise'
+    industry VARCHAR(100) NOT NULL,            -- e.g. 'Technology', 'Financial Services'
+    product_category VARCHAR(50) NOT NULL,     -- 'Hardware','Software','Cloud','ProfessionalServices','ManagedServices','ComplexSolution'
+    deal_reg_type VARCHAR(30) NOT NULL,        -- 'NotRegistered','StandardApproved','PremiumHunting','Teaming'
+    competitors VARCHAR(5) NOT NULL,           -- '0','1','2','3+'
+    value_add VARCHAR(10) NOT NULL,            -- 'Low','Medium','High'
+    relationship_strength VARCHAR(20) NOT NULL, -- 'New','Good','Strategic'
+    customer_tech_sophistication VARCHAR(10) NOT NULL, -- 'Low','Medium','High'
+    solution_complexity VARCHAR(10) NOT NULL,   -- 'Low','Medium','High'
+    var_strategic_importance VARCHAR(10) NOT NULL, -- 'Low','Medium','High'
+    customer_price_sensitivity SMALLINT,        -- 1-5, nullable
+    customer_loyalty SMALLINT,                  -- 1-5, nullable
+    deal_urgency SMALLINT,                      -- 1-5, nullable
+    is_new_logo BOOLEAN,                        -- nullable
+    solution_differentiation SMALLINT,          -- 1-5, nullable
+    oem_cost NUMERIC(12,2) NOT NULL,            -- deal cost in dollars (e.g. 150000.00)
+    oem VARCHAR(100),                           -- vendor name: 'Cisco', 'Dell', 'HPE', etc.
+    services_attached BOOLEAN,                  -- nullable
+    quarter_end BOOLEAN,                        -- nullable
+    competitor_names JSONB,                      -- array of strings
+    bom_line_count INTEGER DEFAULT 0,
+    bom_avg_margin_pct NUMERIC(10,4),           -- nullable
+    has_manual_bom BOOLEAN DEFAULT false,
+    achieved_margin NUMERIC(10,4) NOT NULL,     -- decimal fraction (0.185 = 18.5%)
+    status VARCHAR(10) NOT NULL,                -- 'Won' or 'Lost'
+    loss_reason VARCHAR(255) DEFAULT '',
+    bom_lines JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    org_id TEXT DEFAULT 'global'                -- tenant isolation
+);
+```
+
+The `rowToDeal()` function (analytics.js lines 99-130) converts DB rows to JS objects with camelCase keys:
+- `row.segment` → `deal.segment`
+- `row.oem_cost` → `deal.oemCost` (parseFloat)
+- `row.deal_reg_type` → `deal.dealRegType`
+- `row.achieved_margin` → `deal.achievedMargin` (parseFloat, stays as decimal fraction)
+- etc.
+
+## Create: lambda/server/src/ml/features.js
+
+### Exports:
+
+1. **FEATURE_SPEC** — Array of feature definition objects. Each has:
+   - `name`: feature name in output vector
+   - `type`: 'continuous' | 'binary' | 'categorical'
+   - `source`: function(deal) that extracts raw value from a camelCase deal object
+   - `transform`: optional function for continuous features (e.g. Math.log)
+   - `categories`: for categorical features, array of possible values (one-hot, drop-last)
+
+   Features to include:
+
+   **Continuous (8):**
+   - `deal_size_log`: from `deal.oemCost`, apply `Math.log(x + 1)` to compress range ($5K-$5M → 8.5-15.4)
+   - `price_sensitivity`: from `deal.customerPriceSensitivity` (1-5, nullable → impute with 3)
+   - `customer_loyalty`: from `deal.customerLoyalty` (1-5, nullable → impute with 3)
+   - `deal_urgency`: from `deal.dealUrgency` (1-5, nullable → impute with 3)
+   - `solution_differentiation`: from `deal.solutionDifferentiation` (1-5, nullable → impute with 3)
+   - `bom_line_count`: from `deal.bomLineCount` (integer, default 0)
+   - `competitor_count`: from `deal.competitors` string → number ('0'→0, '1'→1, '2'→2, '3+'→4)
+   - `proposed_margin`: injected at inference time (decimal fraction 0-1), not from DB. Training uses `deal.achievedMargin`.
+
+   **Binary (4):**
+   - `is_new_logo`: from `deal.isNewLogo` (nullable bool → default false → 0/1)
+   - `services_attached`: from `deal.servicesAttached` (nullable bool → default false → 0/1)
+   - `quarter_end`: from `deal.quarterEnd` (nullable bool → default false → 0/1)
+   - `has_bom`: derived from `deal.bomLineCount > 0` (0/1)
+
+   **Categorical — one-hot encode, drop last category to avoid multicollinearity (6 groups):**
+   - `segment`: categories ['SMB', 'MidMarket', 'Enterprise'] → 2 features (drop Enterprise)
+   - `deal_reg`: from `deal.dealRegType`, categories ['NotRegistered', 'StandardApproved', 'PremiumHunting'] → 2 features (drop PremiumHunting). Map 'Teaming' → 'StandardApproved'.
+   - `complexity`: from `deal.solutionComplexity`, categories ['Low', 'Medium', 'High'] → 2 features
+   - `relationship`: from `deal.relationshipStrength`, categories ['New', 'Good', 'Strategic'] → 2 features
+   - `oem_top`: from `deal.oem`, categories ['Cisco', 'Dell', 'HPE', 'Microsoft', 'Palo Alto', 'CrowdStrike', 'Other'] → 6 features. Map any OEM not in the list to 'Other'.
+   - `product_cat`: from `deal.productCategory`, categories ['Hardware', 'Software', 'Services', 'Other'] → 3 features. Map 'ProfessionalServices'/'ManagedServices' → 'Services', 'Cloud' → 'Software', 'ComplexSolution' → 'Other'.
+
+   **Total feature vector length:** 8 continuous + 4 binary + 2+2+2+2+6+3 one-hot = **29 features**
+
+2. **featurize(deal, normStats, options)** — Transform a single deal object into a feature vector.
+   - `deal`: camelCase deal object (from rowToDeal or API input)
+   - `normStats`: { means: {name→number}, stds: {name→number} } for z-score normalization
+   - `options`: { proposedMargin?: number } — override for proposed_margin at inference time
+   - Returns: `{ features: number[], featureNames: string[] }`
+   - Continuous features: z-score normalize using `(value - mean) / (std || 1)`. If value is null/undefined, use the mean (equivalent to imputing 0 after normalization).
+   - Binary: 0 or 1 (null/undefined → 0)
+   - Categorical: one-hot encode, unknown category → all zeros (treated as dropped category)
+
+3. **computeNormStats(deals)** — Compute normalization statistics across an array of deal objects.
+   - Only processes continuous features from FEATURE_SPEC
+   - Returns: `{ means: { deal_size_log: 11.2, ... }, stds: { deal_size_log: 1.8, ... } }`
+   - Standard deviation: use population std (not sample). If std is 0 (all same value), store 1 to avoid division by zero.
+
+4. **FEATURE_DISPLAY_NAMES** — Object mapping feature names (including one-hot names like 'oem_top_Cisco') to human-readable labels. Examples:
+   - `deal_size_log` → 'Deal Size'
+   - `price_sensitivity` → 'Price Sensitivity'
+   - `segment_SMB` → 'SMB Segment'
+   - `oem_top_Cisco` → 'Cisco (OEM)'
+   - `proposed_margin` → 'Proposed Margin'
+
+5. **competitorToNum(str)** — Helper: '0'→0, '1'→1, '2'→2, '3+'→4
+
+6. **getFeatureCount()** — Returns the expected feature vector length (29)
+
+## Create: lambda/server/src/ml/features.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'` (ES module style).
+
+Tests:
+1. `featurize()` with a complete deal → returns vector of length 29 with correct feature names
+2. `featurize()` with missing nullable fields → imputes correctly (continuous to mean, binary to 0)
+3. `computeNormStats()` → correct mean and std for continuous features across 10 synthetic deals
+4. One-hot encoding: 'Cisco' OEM → oem_top_Cisco=1, others=0; unknown OEM → all zeros
+5. Log transform: oem_cost of 100000 → deal_size_log ≈ 11.51
+6. Competitor string conversion: '3+' → 4
+7. `proposedMargin` override works in featurize options
+8. Product category mapping: 'ProfessionalServices' → 'Services', 'Cloud' → 'Software'
+9. DealReg mapping: 'Teaming' → 'StandardApproved'
+10. Edge case: all-same values in computeNormStats → std returns 1 (not 0)
+
+Create branch feat/ml-features, commit, push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 14B: Logistic Regression Implementation [Lambda Node.js] (Sprint 32)
+
+Can run in **parallel** with 14A.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Project Setup
+
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- All new files go under lambda/server/src/ml/ (create the ml/ directory if not exists)
+- No external ML libraries — pure Node.js math only
+
+## Context — Why From Scratch
+
+MarginArc runs as an AWS Lambda function. Adding Python/TensorFlow/scikit-learn would balloon the deployment package from 15MB to 500MB+ and add cold-start latency. Logistic regression is simple enough to implement in ~200 lines of JavaScript, and it's the right model for our problem:
+- Binary classification (Win/Loss)
+- Need P(win) as a calibrated probability (not just a class label)
+- Need interpretable feature weights (to explain "why" to sales reps)
+- Dataset size: 100-10,000 deals per customer (not big data)
+- Margin is a feature — by sweeping it, we find the profit-maximizing price point
+
+## Create: lambda/server/src/ml/logistic-regression.js
+
+### Exports:
+
+1. **train(X, y, options)** — Mini-batch stochastic gradient descent with L2 regularization.
+   - `X`: 2D array `[n_samples][n_features]` — numeric feature matrix
+   - `y`: 1D array of 0/1 labels (0=Lost, 1=Won)
+   - `options` (all optional with defaults):
+     - `learningRate`: 0.01
+     - `lambda`: 0.01 (L2 regularization strength — prevents overfitting on small datasets)
+     - `epochs`: 500 (max iterations through the dataset)
+     - `batchSize`: 32
+     - `validationSplit`: 0.2 (hold out 20% for early stopping)
+     - `earlyStoppingPatience`: 20 (stop if val loss hasn't improved in 20 epochs)
+     - `seed`: null (optional seed for reproducible shuffling — use a simple LCG or Fisher-Yates with seed)
+   - Algorithm:
+     1. Validate inputs: X.length === y.length, X[0].length > 0, y contains only 0s and 1s
+     2. Shuffle data (seeded if seed provided)
+     3. Split into train (80%) and validation (20%) sets
+     4. Initialize: weights = new Array(n_features).fill(0), bias = 0
+     5. For each epoch:
+        a. Shuffle training set
+        b. Process mini-batches of size `batchSize`:
+           - For each sample in batch: z = dot(weights, x) + bias, pred = sigmoid(z)
+           - Gradient for weights: (1/batch_size) * Σ((pred - y) * x) + lambda * weights
+           - Gradient for bias: (1/batch_size) * Σ(pred - y)
+           - Update: weights -= learningRate * grad_w, bias -= learningRate * grad_b
+        c. Compute training loss (log loss on full training set)
+        d. Compute validation loss (log loss on validation set)
+        e. If val loss is best so far, save weights snapshot
+        f. If no improvement for `patience` epochs, stop and restore best weights
+     6. Return model object
+   - Returns: `{ weights: number[], bias: number, featureCount: number, epochsRun: number, trainLoss: number, valLoss: number, trainedAt: new Date().toISOString() }`
+
+2. **predict(model, features)** — Single prediction.
+   - Compute z = dot(model.weights, features) + model.bias
+   - Clip z to [-500, 500] to prevent Math.exp overflow (exp(-501) = 0, exp(501) = Infinity)
+   - Return sigmoid(z) = 1 / (1 + Math.exp(-z))
+   - Validate: features.length === model.featureCount, throw if mismatch
+
+3. **predictBatch(model, X)** — Predict for each row. Returns array of probabilities.
+
+4. **evaluate(model, X, y)** — Comprehensive model evaluation.
+   - Returns `{ auc, logLoss, accuracy, calibration, n }`
+   - **AUC** (Area Under ROC Curve):
+     1. Get predictions for all samples
+     2. Create array of { pred, label } sorted by pred descending
+     3. Walk through sorted list tracking true positive rate and false positive rate
+     4. Compute AUC via trapezoidal integration
+     5. Handle edge cases: all same label → AUC = 0.5
+   - **Log Loss**: -(1/n) * Σ(y*log(p) + (1-y)*log(1-p)). Clip p to [1e-15, 1-1e-15] to avoid log(0).
+   - **Accuracy**: threshold at 0.5
+   - **Calibration**: 10 equal-width bins from 0 to 1. For each bin: `{ bucket: '0.0-0.1', predicted: mean_pred, actual: mean_label, count }`. Skip empty bins.
+
+5. **getFeatureImportance(model, featureNames)** — Feature impact ranking.
+   - Returns array sorted by |weight| descending: `[{ name: string, weight: number, absWeight: number, direction: 'positive'|'negative' }]`
+   - `direction`: 'positive' if weight > 0 (increases win probability), 'negative' if weight < 0
+   - featureNames must have same length as model.weights
+
+6. **serializeModel(model)** → JSON string
+   **deserializeModel(json)** → model object. Validate required fields exist.
+
+### Internal helpers (not exported):
+- `sigmoid(z)` — 1 / (1 + Math.exp(-clip(z, -500, 500)))
+- `dot(a, b)` — inner product of two arrays
+- `logLoss(y, p)` — single-sample log loss with clipping
+- `shuffle(arr, seed?)` — Fisher-Yates shuffle, optionally seeded
+
+## Create: lambda/server/src/ml/logistic-regression.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'`.
+
+Tests:
+1. **Linearly separable data → AUC > 0.95**: Generate 200 points where x[0] > 0 → y=1, x[0] <= 0 → y=0. Train. Evaluate. The model should nearly perfectly separate.
+2. **Random data → AUC near 0.5**: Generate 200 points with random features and random labels. AUC should be between 0.35 and 0.65.
+3. **L2 regularization effect**: Train same data with lambda=0 and lambda=1. Higher lambda should produce smaller max(|weight|).
+4. **Early stopping fires**: On linearly separable data, training should stop well before `epochs` limit (e.g. within 100 epochs for easy data with patience=20).
+5. **Serialization round-trip**: Train a model, serialize, deserialize, predict on same data — predictions should be identical (within floating point tolerance 1e-10).
+6. **Feature importance correctness**: Generate data where only feature 2 (out of 5) determines the label. After training, feature 2 should have the highest |weight|.
+7. **Calibration sanity**: After training on well-separable data, high-confidence predictions (>0.8) should have actual win rate > 0.6.
+8. **predict() validates feature length**: Passing wrong-length feature vector should throw.
+9. **Edge case: single feature**: Train with 1 feature, verify it works.
+10. **Gradient math check**: For a simple case (2 features, 4 samples), manually compute one gradient step and verify weights update correctly.
+
+Create branch feat/ml-logistic-regression, commit, push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 14C: Training Pipeline + Model Storage [Lambda Node.js] (Sprint 33)
+
+**Depends on 14A + 14B.** Make sure both PRs are merged into main before starting.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Project Setup
+
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- Database: PostgreSQL via `src/licensing/db.js` which exports `query(text, params)` and `getSSMParameter(name)`
+- DB queries use $1, $2 parameterized syntax (pg library)
+
+## Existing Code You Need to Know
+
+### Database query helper (src/licensing/db.js):
+```js
+export async function query(text, params) { /* returns { rows, rowCount } */ }
+```
+
+### Recorded deals (src/analytics.js):
+```js
+export async function getRecordedDeals(orgId)  // returns array of camelCase deal objects
+```
+The `rowToDeal()` function (analytics.js:99-130) converts DB snake_case to camelCase JS objects. The deal objects have fields like: `segment`, `industry`, `productCategory`, `dealRegType`, `competitors`, `oemCost`, `achievedMargin` (decimal fraction like 0.185), `status` ('Won'/'Lost'), etc.
+
+### Phase management (src/phases.js):
+```js
+export async function getCustomerPhaseById(customerId)  // returns 1, 2, or 3
+export async function setCustomerPhase(customerId, phase) // upserts, validates phase in [1,2,3]
+```
+
+### Customer → Org resolution (via licenses table):
+```sql
+SELECT org_id FROM licenses WHERE customer_id = $1 AND status = 'active' AND org_id IS NOT NULL
+```
+
+### Schema migration pattern (src/licensing/db.js lines 214-229):
+```js
+export async function ensureApiKeySchema() {
+  const pool = await getPool();
+  try {
+    await pool.query(`ALTER TABLE customers ADD COLUMN IF NOT EXISTS api_key VARCHAR(50) UNIQUE`);
+    console.log('customers.api_key column ensured');
+  } catch (err) {
+    if (err.message && err.message.includes('already exists')) {
+      console.log('customers.api_key column already exists');
+    } else {
+      console.error('Failed to add api_key column:', err.message);
+    }
+  }
+}
+```
+
+### Cold-start init (index.js lines 44-49):
+```js
+ensureSalesforceSchema().catch(err => console.error('Failed to ensure Salesforce schema:', err.message))
+ensureDocsSchema().catch(err => console.error('Failed to ensure Docs schema:', err.message))
+ensureDealsSchema().catch(err => console.error('Failed to ensure deals schema:', err.message))
+ensurePhaseSchema().catch(err => console.error('Failed to ensure phase schema:', err.message))
+ensureApiKeySchema().catch(err => console.error('Failed to ensure api_key schema:', err.message))
+ensureMfaSchema().catch(err => console.error('Failed to ensure MFA schema:', err.message))
+```
+
+### customer_config table (current columns):
+```
+customer_id UUID (PK, FK→customers.id), gemini_api_key VARCHAR(255),
+fulcrum_api_url VARCHAR(500), phone_home_interval_days INTEGER,
+features JSONB, settings JSONB, updated_at TIMESTAMP, algorithm_phase INTEGER
+```
+
+### Admin auth (src/middleware/auth.js):
+The admin routes are protected by `verifyToken` middleware (JWT-based). The admin router is at `src/licensing/admin.js`. New admin routes should be added to that router before the `router.use(verifyToken)` line (for unauthed routes) or after it (for authed routes). All ML admin routes should be AFTER verifyToken (authed).
+
+The admin router is mounted in index.js at: `app.use('/admin/api', adminRoutes)`
+
+### ML modules from 14A and 14B:
+```js
+import { featurize, computeNormStats, FEATURE_SPEC, getFeatureCount } from './ml/features.js'
+import { train, evaluate, getFeatureImportance, serializeModel, deserializeModel } from './ml/logistic-regression.js'
+```
+
+## Create: lambda/server/src/ml/train.js
+
+### Export: ensureMLSchema()
+
+Add `ml_model JSONB` column to customer_config. Follow the exact pattern from ensureApiKeySchema():
+```js
+import { query } from '../licensing/db.js'
+
+export async function ensureMLSchema() {
+  try {
+    await query('ALTER TABLE customer_config ADD COLUMN IF NOT EXISTS ml_model JSONB')
+    console.log('customer_config.ml_model column ensured')
+  } catch (err) {
+    if (err.message?.includes('already exists')) {
+      console.log('customer_config.ml_model column already exists')
+    } else {
+      console.error('Failed to add ml_model column:', err.message)
+    }
+  }
+}
+```
+
+### Export: trainCustomerModel(customerId)
+
+This is the main training function. Steps:
+
+1. **Get org_ids** for this customer from the licenses table:
+   ```js
+   const orgResult = await query(
+     'SELECT org_id FROM licenses WHERE customer_id = $1 AND status = \'active\' AND org_id IS NOT NULL',
+     [customerId]
+   )
+   const orgIds = orgResult.rows.map(r => r.org_id).filter(Boolean)
+   ```
+   If no org_ids, return `{ success: false, reason: 'No active licenses with org_id found' }`
+
+2. **Pull training data** from recorded_deals — all closed deals for this customer's orgs:
+   ```sql
+   SELECT * FROM recorded_deals WHERE org_id IN ($1, $2, ...) AND status IN ('Won', 'Lost')
+   ```
+   Convert rows with the same field mapping as `rowToDeal()` in analytics.js.
+
+3. **Validate minimum data requirements**:
+   - Total deals >= 100 (statistical minimum for meaningful logistic regression)
+   - Won deals >= 20 (need positive examples)
+   - Lost deals >= 20 (need negative examples)
+   - If not met, return `{ success: false, reason: 'Need X more deals (Y won, Z lost currently)', dealCount: total, wonCount, lostCount }`
+
+4. **Create training samples** — the key insight is teaching margin sensitivity:
+   - Each Won deal: `{ ...deal, proposedMargin: deal.achievedMargin, label: 1 }`
+   - Each Lost deal: `{ ...deal, proposedMargin: deal.achievedMargin, label: 0 }`
+   - **Synthetic augmentation** (teaches model that margin affects win probability):
+     - For each Won deal: add a synthetic sample at `achievedMargin + 0.10` with `label: 0` (if you'd asked for 10pp more, you likely would have lost)
+     - For each Lost deal: add a synthetic sample at `achievedMargin - 0.05` with `label: 1` (if you'd priced 5pp lower, you might have won)
+     - Cap synthetic margins to [0.01, 0.55] range
+
+5. **Compute normalization stats** from all training samples (including synthetic): `computeNormStats(allSamples)`
+
+6. **Featurize all samples**: For each sample, call `featurize(deal, normStats, { proposedMargin: sample.proposedMargin })`. Collect into X (2D array) and y (labels array).
+
+7. **Train the model**:
+   ```js
+   const model = train(X, y, {
+     learningRate: 0.01,
+     lambda: 0.01,
+     epochs: 500,
+     batchSize: 32,
+     validationSplit: 0.2,
+     earlyStoppingPatience: 20
+   })
+   ```
+
+8. **Evaluate on ORIGINAL deals only** (not synthetic) — this gives honest metrics:
+   - Re-featurize only the real Won/Lost deals
+   - Call `evaluate(model, X_real, y_real)`
+
+9. **Get feature importance**: `getFeatureImportance(model, featureNames)`
+
+10. **Store model package** as JSON in customer_config.ml_model:
+    ```js
+    const modelPackage = {
+      model: serializeModel(model),    // { weights, bias, featureCount, ... }
+      normStats,                        // { means, stds }
+      featureNames,                     // from featurize output
+      metrics: evaluationResult,        // { auc, logLoss, accuracy, calibration, n }
+      importance: topFeatures,          // from getFeatureImportance
+      dealCount: realDeals.length,
+      trainedAt: new Date().toISOString(),
+      version: 1                        // for future schema migrations
+    }
+    await query(
+      'UPDATE customer_config SET ml_model = $1 WHERE customer_id = $2',
+      [JSON.stringify(modelPackage), customerId]
+    )
+    ```
+
+11. **Auto-promote to Phase 2** if model is good enough:
+    ```js
+    const currentPhase = await getCustomerPhaseById(customerId)
+    if (evaluationResult.auc >= 0.60 && realDeals.length >= 100 && currentPhase < 2) {
+      await setCustomerPhase(customerId, 2)
+    }
+    ```
+
+12. **Return result**:
+    ```js
+    return {
+      success: true,
+      metrics: { auc, logLoss, accuracy, n: realDeals.length },
+      dealCount: realDeals.length,
+      syntheticCount: allSamples.length - realDeals.length,
+      topFeatures: topFeatures.slice(0, 10),
+      phase: await getCustomerPhaseById(customerId),
+      epochsRun: model.epochsRun
+    }
+    ```
+
+### Export: getModel(customerId)
+
+Load the model package from customer_config:
+```js
+export async function getModel(customerId) {
+  const result = await query('SELECT ml_model FROM customer_config WHERE customer_id = $1', [customerId])
+  if (result.rows.length === 0 || !result.rows[0].ml_model) return null
+  return result.rows[0].ml_model  // PostgreSQL auto-parses JSONB
+}
+```
+
+### Export: getModelByOrgId(orgId)
+
+Resolve org_id → customer_id → model (needed by /api/recommend):
+```js
+export async function getModelByOrgId(orgId) {
+  if (!orgId) return null
+  const result = await query(
+    `SELECT cc.ml_model FROM customer_config cc
+     JOIN licenses l ON l.customer_id = cc.customer_id
+     WHERE l.org_id = $1 AND l.status = 'active'
+     LIMIT 1`,
+    [orgId]
+  )
+  return result.rows.length > 0 ? result.rows[0].ml_model : null
+}
+```
+
+## Modify: lambda/server/index.js
+
+### Add to imports (near line 40):
+```js
+import { ensureMLSchema, getModelByOrgId } from './src/ml/train.js'
+```
+
+### Add to cold-start init (after line 49):
+```js
+ensureMLSchema().catch(err => console.error('Failed to ensure ML schema:', err.message))
+```
+
+### Add admin routes to src/licensing/admin.js
+
+Add these routes AFTER the `router.use(verifyToken)` line:
+
+```js
+// ML training endpoints
+router.post('/ml/train/:customerId', async (req, res) => {
+  try {
+    const { trainCustomerModel } = await import('../ml/train.js')
+    const result = await trainCustomerModel(req.params.customerId)
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.get('/ml/model/:customerId', async (req, res) => {
+  try {
+    const { getModel } = await import('../ml/train.js')
+    const modelPkg = await getModel(req.params.customerId)
+    if (!modelPkg) return res.status(404).json({ error: 'No trained model' })
+    // Don't expose raw weights — just metadata
+    res.json({
+      metrics: modelPkg.metrics,
+      dealCount: modelPkg.dealCount,
+      topFeatures: modelPkg.importance?.slice(0, 10),
+      trainedAt: modelPkg.trainedAt,
+      version: modelPkg.version
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+```
+
+## Testing: lambda/server/src/ml/train.test.js
+
+Use `import { describe, it, expect, jest } from '@jest/globals'`.
+
+**Mock the database** — do NOT connect to real PostgreSQL. Mock `../licensing/db.js`:
+```js
+jest.unstable_mockModule('../licensing/db.js', () => ({
+  query: jest.fn(),
+  getSSMParameter: jest.fn()
+}))
+```
+Then dynamically import after mocking:
+```js
+const { query } = await import('../licensing/db.js')
+const { trainCustomerModel, getModel } = await import('./train.js')
+```
+
+Set up query mock to return:
+- For `SELECT org_id FROM licenses...`: return `{ rows: [{ org_id: 'test_org' }] }`
+- For `SELECT * FROM recorded_deals...`: return 150 synthetic deal rows (80 Won, 70 Lost) with varying features and margins
+- For `SELECT algorithm_phase FROM customer_config...`: return `{ rows: [{ algorithm_phase: 1 }] }`
+- For `UPDATE customer_config SET ml_model...`: return `{ rowCount: 1 }`
+- For `INSERT INTO customer_config...`: return `{ rowCount: 1 }`
+
+Generate synthetic deals: randomize segment, competitors, oemCost ($10K-$500K), achievedMargin (0.08-0.30), with Won deals tending to have lower margins and stronger deal structure (creates a learnable signal).
+
+Tests:
+1. Training completes successfully with 150 deals → returns `{ success: true }`
+2. AUC > 0.5 (model learned something from the data)
+3. Returns correct dealCount and topFeatures
+4. Rejects when < 100 deals → returns `{ success: false, reason: ... }`
+5. Rejects when < 20 Won or < 20 Lost deals
+6. Model is stored via UPDATE query with valid JSON
+7. Auto-promotes to Phase 2 when AUC >= 0.60
+8. getModel returns null when no model exists
+
+Create branch feat/ml-training-pipeline, commit, push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 14D: ML Inference — Replace Rules Engine [Lambda Node.js] (Sprint 33)
+
+**Depends on 14C.** Make sure PR is merged into main before starting.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Project Setup
+
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+
+## Business Context
+
+When a sales rep opens an Opportunity in Salesforce and clicks "Get Recommendation," the LWC calls our Apex controller which calls POST /api/recommend on this Lambda. Currently, we use a hardcoded rules engine. Now, if a customer has a trained ML model, we use it instead. The rules engine stays as a fallback.
+
+The key insight: the ML model predicts P(win | features, proposed_margin). By sweeping `proposed_margin` from 5% to 35%, we find the margin that maximizes Expected GP = margin × deal_value × P(win). This gives the rep three options: conservative (safe), optimal (max ROI), and aggressive (max margin).
+
+## Existing /api/recommend Handler (index.js lines 474-608)
+
+Here is the CURRENT flow — you'll modify it, not replace it:
+
+```js
+app.post('/api/recommend', async (req, res) => {
+  try {
+    const input = DealInput.parse(req.body?.input)
+    const planned = typeof req.body?.plannedMarginPct === 'number' ? req.body.plannedMarginPct : null
+    const manualBomLines = Array.isArray(req.body?.bomLines) ? BomLinesInput.parse(req.body.bomLines) : []
+    const manualStats = manualBomLines.length ? computeManualBomStats(manualBomLines) : null
+
+    const orgId = req.headers['x-org-id'] || null
+    let phase = 1
+    try { phase = await getCustomerPhase(orgId) } catch (phaseErr) { /* ... */ }
+
+    const deals = await fetchAllDeals(sampleDeals, orgId)
+    const rec = await computeRecommendation(input, deals, { bomStats: manualStats })
+    // ... (BOM override, Gemini AI, deal score computation)
+
+    // Phase 1: Returns dealScore but suggestedMarginPct: null
+    if (phase === 1) {
+      return res.json({
+        dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+        suggestedMarginPct: null,  // <-- THIS IS THE PROBLEM (no value!)
+        suggestedPrice: null,
+        winProbability: rec.winProbability, confidence: rec.confidence,
+        method: rec.method, drivers: rec.drivers, policyFloor: rec.policyFloor,
+        phaseInfo: { current: 1, message: '...', nextPhaseReady: false }
+      })
+    }
+
+    // Phase 2/3: Full recommendation
+    return res.json({ ...response, explanation, qualitativeSummary, metrics, bom, ... })
+  } catch (e) { ... }
+})
+```
+
+### Current imports at top of index.js (relevant ones):
+```js
+import { computeRecommendation } from './src/rules.js'               // line 14
+import { assessPredictionQuality } from './src/quality.js'            // line 18
+import { ensurePhaseSchema, getCustomerPhase, computeDealScore, generateTopDrivers, generatePhase1Guidance } from './src/phases.js'  // line 40
+```
+
+### ML modules available from 14A-14C:
+```js
+// These are the new imports you'll add:
+import { getModelByOrgId } from './src/ml/train.js'
+import { recommendMargin } from './src/ml/inference.js'  // the file you create below
+import { generateBenchmarkResponse } from './src/ml/benchmarks.js'  // from 14E (may not exist yet, guard it)
+```
+
+## Create: lambda/server/src/ml/inference.js
+
+### Export: recommendMargin(dealInput, modelPackage)
+
+Parameters:
+- `dealInput`: the DealInput object from the API request (camelCase, from Zod validation)
+- `modelPackage`: the JSONB object from customer_config.ml_model containing { model (serialized), normStats, featureNames, metrics, importance }
+
+Algorithm:
+1. Deserialize the model: `deserializeModel(modelPackage.model)`
+2. Load normStats from modelPackage
+3. **Margin sweep**: iterate `proposedMargin` from 0.05 to 0.35 in 0.005 steps (61 points):
+   - For each margin value:
+     a. Create deal with proposed margin: `const featureResult = featurize(dealInput, normStats, { proposedMargin: margin })`
+     b. Predict: `const pWin = predict(model, featureResult.features)`
+     c. Compute expected GP: `const sellPrice = dealInput.oemCost / (1 - margin)`, `const gp = sellPrice - dealInput.oemCost`, `const expectedGP = gp * pWin`
+     d. Store: `{ margin, pWin, expectedGP, sellPrice, gp }`
+
+4. **Find three margin options**:
+   - `optimal`: the margin with highest `expectedGP` (best risk-adjusted return)
+   - `conservative`: the HIGHEST margin where `pWin >= 0.70` (safe bet)
+   - `aggressive`: the HIGHEST margin where `pWin >= 0.45` (push the envelope)
+   - If no margin meets conservative threshold, use the margin with highest pWin
+   - If no margin meets aggressive threshold, use optimal
+
+5. **Generate key drivers** from feature importance + deal's actual feature values:
+   - Take top 5 features from `modelPackage.importance`
+   - For each: look up the feature's actual value in the deal, compute its contribution to the prediction (weight × normalized_value), generate a human-readable sentence using FEATURE_DISPLAY_NAMES
+   - Each driver: `{ name: string, sentence: string, impact: number (in percentage points), direction: 'positive'|'negative' }`
+
+6. **Compute confidence**: `computeConfidence(modelPackage, dealInput)`
+
+7. **Build GP curve** for frontend chart: every 3rd point from the sweep → `[{ margin: 5.0, pWin: 82, expectedGP: 12500 }, ...]`
+
+8. **Return**:
+   ```js
+   {
+     suggestedMarginPct: optimal.margin * 100,      // e.g. 18.5
+     conservativeMarginPct: conservative.margin * 100,
+     aggressiveMarginPct: aggressive.margin * 100,
+     winProbability: optimal.pWin,                    // 0-1
+     expectedGP: optimal.expectedGP,                  // dollar amount
+     confidence: confidence,                           // 0-1
+     keyDrivers: drivers,                              // array of 5 driver objects
+     expectedGPCurve: curvePoints,                     // for chart
+     modelMetrics: {
+       auc: modelPackage.metrics.auc,
+       dealCount: modelPackage.dealCount,
+       trainedAt: modelPackage.trainedAt
+     },
+     source: 'ml_model'
+   }
+   ```
+
+### Export: computeConfidence(modelPackage, dealInput)
+
+Confidence is a 0-1 score reflecting how much we trust this specific prediction:
+- Base = (AUC - 0.5) × 2 — maps AUC 0.5→0, AUC 1.0→1
+- Data factor = min(1, dealCount / 500) — more training data = more confident
+- Return: clamp(base × dataFactor, 0.1, 0.95)
+
+## Modify: lambda/server/index.js — /api/recommend handler
+
+**IMPORTANT: Do NOT delete rules.js or change computeRecommendation. Keep the existing code as fallback.**
+
+### Add imports at the top (after existing imports, around line 40):
+```js
+import { getModelByOrgId } from './src/ml/train.js'
+import { recommendMargin } from './src/ml/inference.js'
+```
+
+### Modify the handler — new flow (insert AFTER phase lookup, BEFORE the existing rules engine call):
+
+After line 491 (where `phase` is determined), add ML model lookup:
+```js
+    // Try to load ML model for this customer
+    let modelPackage = null
+    try {
+      modelPackage = await getModelByOrgId(orgId)
+    } catch (mlErr) {
+      structuredLog('warn', 'ml_model_lookup_failed', { orgId, error: mlErr?.message })
+    }
+```
+
+Then restructure the response logic into 3 tiers:
+
+**Tier 1 — ML Model (Phase 2+, has model with AUC >= 0.55):**
+```js
+    if (modelPackage && modelPackage.metrics?.auc >= 0.55) {
+      // ML inference
+      const mlResult = recommendMargin(input, modelPackage)
+      // Still compute deal score using ML's values
+      const predictionQuality = assessPredictionQuality(input, { confidence: mlResult.confidence })
+      const { dealScore, scoreFactors } = computeDealScore({
+        plannedMarginPct: planned,
+        suggestedMarginPct: mlResult.suggestedMarginPct,
+        winProbability: mlResult.winProbability,
+        confidence: mlResult.confidence,
+        predictionQuality
+      })
+      return res.json({
+        ...mlResult,                  // suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, etc.
+        dealScore, scoreFactors,
+        topDrivers: mlResult.keyDrivers.map(d => d.sentence),
+        predictionQuality,
+        phaseInfo: { current: phase },
+        source: 'ml_model'
+      })
+    }
+```
+
+**Tier 2 — Phase 1 (keep existing Phase 1 code, but add `source: 'rules_engine'`):**
+The existing Phase 1 block (lines 563-584) stays mostly the same. Just add `source: 'rules_engine'` to the response object.
+
+**NOTE: If 14E (benchmarks) has been merged, replace the Phase 1 block with benchmark-based response. But if 14E hasn't been merged yet, just add the source field. 14E will handle its own integration.**
+
+**Tier 3 — Rules Engine fallback (existing Phase 2/3 code):**
+Add `source: 'rules_engine'` to the Phase 2/3 response object.
+
+### Summary of changes to /api/recommend:
+1. Add `getModelByOrgId` import and `recommendMargin` import
+2. After phase lookup, try to load ML model
+3. If model exists and AUC >= 0.55, use ML inference (new code)
+4. If Phase 1, use existing Phase 1 code + `source` field
+5. If Phase 2/3 without model, use existing rules engine + `source` field
+6. `source` field is present in ALL code paths
+
+## Testing: lambda/server/src/ml/inference.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'`.
+
+Create a mock model package with known weights (don't train — just set weights directly so tests are deterministic):
+- 29 features (matching getFeatureCount())
+- Set the proposed_margin weight to a large negative value (e.g. -5.0) so higher margin → lower pWin
+- Set a few other weights to known values
+
+Tests:
+1. **Monotonic pWin decrease**: As margin increases from 5% to 35%, pWin should strictly decrease (because proposed_margin weight is negative)
+2. **Optimal margin maximizes expectedGP**: The optimal margin should NOT be the lowest margin (0% GP) or the highest margin (0% win prob), but somewhere in the middle
+3. **Conservative has higher pWin than aggressive**: conservative.pWin should be >= aggressive.pWin
+4. **Three options are in correct order**: conservativeMarginPct <= suggestedMarginPct <= aggressiveMarginPct
+5. **Confidence calculation**: AUC=0.75, dealCount=200 → confidence should be between 0.1 and 0.95
+6. **Key drivers are generated**: result.keyDrivers should have 5 items with name, sentence, impact, direction
+7. **GP curve has points**: result.expectedGPCurve should be a non-empty array
+8. **Source is 'ml_model'**: result.source === 'ml_model'
+
+Create branch feat/ml-inference, commit, push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 14E: Industry Benchmarks for Phase 1 [Lambda Node.js] (Sprint 33)
+
+Can run in **parallel** with 14C/14D (standalone module, no dependencies on ML training).
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Project Setup
+
+- ES modules project ("type": "module" in package.json)
+- Test runner: `node --experimental-vm-modules node_modules/.bin/jest`
+- Import style: `import { x } from './path.js'` (must include .js extension)
+- New file goes under lambda/server/src/ml/ directory
+
+## Business Context — Why This Matters
+
+Phase 1 customers currently see `suggestedMarginPct: null` — the UI shows "Score your deals to build your data foundation" with no actual margin guidance. This is terrible for adoption because:
+- A VAR sales rep opens an Opportunity, clicks "Get Recommendation," and gets... nothing useful
+- They need to score 50+ deals before getting any margin guidance
+- Most will churn before reaching that threshold
+
+**Fix:** Return industry-standard margin benchmarks based on OEM, customer segment, and deal size. Not ML — just curated data from public earnings reports, distributor surveys, and industry knowledge. Still useful from Day 1.
+
+## Current Phase 1 Response (index.js lines 563-584)
+
+```js
+if (phase === 1) {
+  return res.json({
+    dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+    suggestedMarginPct: null,        // <-- REPLACE THIS
+    suggestedPrice: null,            // <-- REPLACE THIS
+    winProbability: response.winProbability,
+    confidence: response.confidence,
+    method: response.method,
+    drivers: response.drivers,
+    policyFloor: response.policyFloor,
+    phaseInfo: {
+      current: 1,
+      message: 'Score your deals to build your data foundation. Margin recommendations unlock at Phase 2.',
+      nextPhaseReady: false
+    }
+  })
+}
+```
+
+## OEM Margin Context from Current Rules Engine (rules.js)
+
+The rules engine already has OEM-specific adjustments (rules.js lines 27-38):
+```js
+const OEM_MARGIN_ADJ = {
+  Cisco: 0.01, 'Palo Alto': 0.015, Fortinet: 0.005, HPE: 0,
+  Dell: -0.005, VMware: 0.01, Microsoft: -0.01, 'Pure Storage': 0.015,
+  NetApp: 0.005, Arista: 0.01
+}
+```
+
+These are adjustments around a ~17% midpoint, but they're too granular. The benchmarks module should use broader, more defensible ranges.
+
+## DealInput Fields Available (from Zod schema in index.js)
+
+The `input` object has these fields you can use for benchmark lookup:
+- `input.oem` (string, optional) — OEM vendor name like 'Cisco', 'Dell', 'HPE'
+- `input.customerSegment` (enum: 'SMB', 'MidMarket', 'Enterprise')
+- `input.oemCost` (number, required) — deal cost in dollars, use as deal size proxy
+- `input.dealRegType` (enum: 'NotRegistered', 'StandardApproved', 'PremiumHunting', 'Teaming')
+- `input.competitors` (enum: '0', '1', '2', '3+')
+- `input.servicesAttached` (boolean, optional)
+- `input.productCategory` (enum: 'Hardware', 'Software', 'Cloud', 'ProfessionalServices', 'ManagedServices', 'ComplexSolution')
+
+## Create: lambda/server/src/ml/benchmarks.js
+
+### BENCHMARKS constant
+
+Nested object structure: `OEM → Segment → SizeBucket → { p25, median, p75, source }`
+
+The margins are percentage points (e.g. 15 means 15%). Source is a string describing where the benchmark comes from (for display in UI).
+
+Include these OEMs with realistic IT VAR margins (based on typical distributor margins, public data from Tech Data/Ingram reports, and VAR industry knowledge):
+
+| OEM | Enterprise Large | Enterprise Small | MidMarket | SMB |
+|-----|-----------------|-----------------|-----------|-----|
+| Cisco | 10-14-17% | 12-16-20% | 15-19-24% | 18-23-28% |
+| Dell | 8-12-16% | 10-14-18% | 14-18-23% | 18-22-27% |
+| HPE | 9-13-17% | 11-15-19% | 15-19-24% | 19-23-28% |
+| Microsoft | 12-16-22% | 14-18-24% | 18-22-28% | 22-26-32% |
+| Palo Alto | 12-16-20% | 14-18-23% | 18-22-27% | 22-26-32% |
+| CrowdStrike | 18-22-28% | 20-24-30% | 22-26-32% | 25-30-35% |
+| Fortinet | 12-15-20% | 14-18-22% | 16-20-25% | 20-24-28% |
+| VMware | 10-14-18% | 12-16-20% | 16-20-25% | 20-24-30% |
+| Pure Storage | 12-16-22% | 14-18-24% | 18-22-28% | 22-26-32% |
+| _default | 10-14-18% | 12-16-20% | 14-18-23% | 18-22-27% |
+
+Size buckets (based on `oemCost`):
+- `<$25K` → use SMB margins even for larger segments (small deals have more margin room)
+- `$25K-$100K` → use segment-appropriate margins
+- `$100K-$500K` → use segment-appropriate margins
+- `$500K-$1M` → compress 2pp from base (big deals = price pressure)
+- `$1M+` → compress 4pp from base (mega deals = significant compression)
+
+### getSizeBucket(oemCost)
+
+Returns string: '<$25K', '$25K-$100K', '$100K-$500K', '$500K-$1M', '$1M+'
+
+### getBenchmark(oem, segment, oemCost)
+
+Cascading lookup:
+1. Try exact OEM + segment + size-adjusted
+2. Fall back to OEM + segment (ignore size)
+3. Fall back to `_default` + segment
+4. Final fallback: `{ p25: 12, median: 16, p75: 22, source: 'General IT VAR benchmark' }`
+
+Apply size compression:
+- For $500K-$1M: subtract 2 from each (p25, median, p75), floor at 5
+- For $1M+: subtract 4 from each, floor at 5
+
+Returns: `{ low: p25, median, high: p75, source: string, specificity: 'oem_segment'|'oem_default'|'general' }`
+
+### generateBenchmarkResponse(dealInput)
+
+Takes the validated DealInput object and returns a response object:
+
+```js
+{
+  suggestedMarginPct: benchmark.median,           // e.g. 18.0
+  suggestedMarginRange: { low: benchmark.low, high: benchmark.high },  // e.g. { low: 14, high: 23 }
+  suggestedPrice: dealInput.oemCost / (1 - benchmark.median / 100),   // sell price at median margin
+  benchmarkSource: benchmark.source,               // e.g. 'Cisco Enterprise benchmark'
+  benchmarkSpecificity: benchmark.specificity,      // how precise the lookup was
+  insights: generateInsights(dealInput, benchmark), // contextual tips
+  source: 'industry_benchmark'                      // tells LWC to render benchmark UI
+}
+```
+
+### generateInsights(dealInput, benchmark) — internal helper
+
+Returns array of 2-4 contextual strings based on deal attributes:
+- If `dealRegType` !== 'NotRegistered': "Deal registration typically supports 2-4pp above median"
+- If `competitors` === '3+': "3+ competitors typically compress margins 2-3pp below median"
+- If `servicesAttached`: "Services-attached deals achieve 3-5pp higher blended margins"
+- If `productCategory` includes 'Services' or 'Managed': "Services/managed categories support premium margins"
+- If deal size > $500K: "Large deal sizes ($500K+) create 2-4pp margin compression"
+- Always include: "These ranges are industry benchmarks — your ML model will personalize after 100 closed deals"
+
+Limit to 4 insights max.
+
+## Modify: lambda/server/index.js — Wire benchmarks into Phase 1
+
+### Add import (near other ML imports):
+```js
+import { generateBenchmarkResponse } from './src/ml/benchmarks.js'
+```
+
+### Replace the Phase 1 response block (lines 563-584):
+
+```js
+if (phase === 1) {
+  // Generate benchmark-based recommendation for Phase 1
+  const benchmarkData = generateBenchmarkResponse(input)
+  const phase1Guidance = generatePhase1Guidance(response.drivers, input)
+
+  return res.json({
+    dealScore, scoreFactors, topDrivers, phase1Guidance, dataQuality,
+    suggestedMarginPct: benchmarkData.suggestedMarginPct,     // NOW HAS A VALUE!
+    suggestedMarginRange: benchmarkData.suggestedMarginRange, // NEW: { low, high }
+    suggestedPrice: benchmarkData.suggestedPrice,             // NOW HAS A VALUE!
+    benchmarkSource: benchmarkData.benchmarkSource,           // NEW
+    benchmarkInsights: benchmarkData.insights,                // NEW
+    winProbability: response.winProbability,
+    confidence: response.confidence,
+    method: response.method,
+    drivers: response.drivers,
+    policyFloor: response.policyFloor,
+    phaseInfo: {
+      current: 1,
+      message: 'Industry benchmark guidance active. ML recommendations unlock after 100 closed deals with outcomes.',
+      nextPhaseReady: false
+    },
+    source: 'industry_benchmark'                               // NEW
+  })
+}
+```
+
+## Testing: lambda/server/src/ml/benchmarks.test.js
+
+Use `import { describe, it, expect } from '@jest/globals'`.
+
+Tests:
+1. Cisco + Enterprise + $250K deal → returns Cisco-specific range (not default)
+2. Unknown OEM ('Juniper') → falls back to _default range
+3. $1M+ deal → margins are compressed 4pp vs base
+4. SMB + $10K deal → returns SMB-level margins (higher than Enterprise)
+5. Deal with 3+ competitors → insights include competition warning
+6. Deal with services attached → insights include services uplift mention
+7. Always includes "ML model will personalize" caveat in insights
+8. generateBenchmarkResponse returns all required fields including `source: 'industry_benchmark'`
+9. getSizeBucket correctly categorizes: $5K → '<$25K', $50K → '$25K-$100K', $750K → '$500K-$1M'
+10. Margin floors: even $5M deal shouldn't go below 5% benchmark
+
+Create branch feat/ml-benchmarks, commit, push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 14F: LWC Updates — ML Recommendations Display [SFDC LWC] (Sprint 34)
+
+**Depends on 14D + 14E.** Make sure both PRs are merged into main before starting.
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo, under sfdc/.
+
+## Context — What Changed in the API
+
+The Lambda API now returns different response shapes based on `source`:
+
+### Phase 1 Response (source: 'industry_benchmark'):
+```json
+{
+  "dealScore": 52,
+  "scoreFactors": { "marginAlignment": {...}, "winProbability": {...}, ... },
+  "suggestedMarginPct": 18.0,
+  "suggestedMarginRange": { "low": 14, "high": 23 },
+  "suggestedPrice": 182926.83,
+  "benchmarkSource": "Cisco Enterprise benchmark",
+  "benchmarkInsights": ["Deal registration typically supports 2-4pp above median", ...],
+  "winProbability": 0.62,
+  "confidence": 0.45,
+  "source": "industry_benchmark",
+  "phaseInfo": { "current": 1, "message": "..." }
+}
+```
+
+### Phase 2+ Response with ML (source: 'ml_model'):
+```json
+{
+  "suggestedMarginPct": 18.5,
+  "conservativeMarginPct": 15.2,
+  "aggressiveMarginPct": 22.0,
+  "winProbability": 0.68,
+  "expectedGP": 27750,
+  "confidence": 0.72,
+  "keyDrivers": [
+    { "name": "proposed_margin", "sentence": "Margin level is the strongest factor in win probability", "impact": -3.2, "direction": "negative" },
+    { "name": "deal_reg", "sentence": "Premium deal registration adds margin protection", "impact": 2.1, "direction": "positive" }
+  ],
+  "expectedGPCurve": [{ "margin": 5.0, "pWin": 92, "expectedGP": 7500 }, ...],
+  "modelMetrics": { "auc": 0.71, "dealCount": 312, "trainedAt": "2026-02-15T..." },
+  "dealScore": 68,
+  "scoreFactors": { ... },
+  "source": "ml_model",
+  "phaseInfo": { "current": 2 }
+}
+```
+
+### Phase 2+ Response without ML (source: 'rules_engine') — unchanged from current.
+
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+
+**This file is 2671 lines long.** Key locations:
+
+- **Tracked properties**: Lines 56-81 (recordId, isLoading, recommendation, opportunityData, etc.)
+- **phase1Tips getter**: Lines 594-654 — builds array of insight objects from topDrivers, phase1Guidance, scoreFactors
+- **fetchRecommendation()**: Lines 1908-2042 — main API call flow. Assigns `this.recommendation = recommendation` at line 2010.
+- **dealScoreData getter**: Lines 2315-2350 — extracts score from API response
+- **dealScoreFactors getter**: Lines 2372-2419 — **BUG: expects array but API returns object** (this is the crash from prompt 12D — check if it's been fixed. If `scoreFactors` is still an object, convert to array first with `Object.entries()`)
+- **recommendedMargin getter**: Line 842 — `this.recommendation?.suggestedMarginPct?.toFixed(1) || '0.0'`
+- **toggleDetails()**: Lines 423-435 — expands/collapses detail panel
+
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.html
+
+**This file is 709 lines.** Key sections:
+
+- **Deal Score Hero**: Lines 30-109 — dark navy card with score, spectrum bar, phase1 tips
+- **Score Summary Line**: Lines 112-127 — `lwc:if={isPhaseOne}` shows label; `lwc:if={isNotPhaseOne}` shows margin
+- **Phase 1 Callout**: Lines 156-187 — progress bar toward threshold
+- **Recommended Margin Callout**: Lines 202-215 — `lwc:if={showMarginRecommendation}` (phase >= 2)
+- **Expandable Details Panel**: Lines 287-619 — comparison table, drivers, AI summary, history, BOM
+
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.css
+
+**This file is 2173 lines.** Key design tokens:
+
+```css
+:host {
+  --navy-900: #0a1a2f; --navy-800: #0f2744; --navy-700: #1a3a5c;
+  --teal-500: #02b1b5; --teal-400: #14c8cc; --teal-600: #019a9e;
+  --slate-50: #f8fafc; --slate-200: #e2e8f0; --slate-500: #64748b;
+  --red-500: #ef4444; --green-500: #22c55e;
+}
+```
+
+## Changes to Make
+
+### Change 1: Source Detection Getters (add after line ~870 in JS)
+
+```js
+get recommendationSource() {
+  return this.recommendation?.source || 'rules_engine';
+}
+get isMLRecommendation() {
+  return this.recommendationSource === 'ml_model';
+}
+get isBenchmarkRecommendation() {
+  return this.recommendationSource === 'industry_benchmark';
+}
+get hasMarginRange() {
+  return this.recommendation?.suggestedMarginRange != null;
+}
+get marginRangeLow() {
+  return this.recommendation?.suggestedMarginRange?.low || 0;
+}
+get marginRangeHigh() {
+  return this.recommendation?.suggestedMarginRange?.high || 0;
+}
+get benchmarkSource() {
+  return this.recommendation?.benchmarkSource || 'Industry benchmark';
+}
+get hasConservativeMargin() {
+  return this.recommendation?.conservativeMarginPct != null;
+}
+get conservativeMarginPct() {
+  return this.recommendation?.conservativeMarginPct?.toFixed(1) || '0.0';
+}
+get aggressiveMarginPct() {
+  return this.recommendation?.aggressiveMarginPct?.toFixed(1) || '0.0';
+}
+get hasMLKeyDrivers() {
+  return this.isMLRecommendation && Array.isArray(this.recommendation?.keyDrivers) && this.recommendation.keyDrivers.length > 0;
+}
+get mlKeyDrivers() {
+  return (this.recommendation?.keyDrivers || []).map((d, i) => ({
+    id: `driver-${i}`,
+    sentence: d.sentence,
+    impact: d.impact > 0 ? `+${d.impact.toFixed(1)}pp` : `${d.impact.toFixed(1)}pp`,
+    isPositive: d.direction === 'positive',
+    isNegative: d.direction === 'negative',
+    iconName: d.direction === 'positive' ? 'utility:arrowup' : 'utility:arrowdown',
+    impactClass: d.direction === 'positive' ? 'driver-impact-positive' : 'driver-impact-negative'
+  }));
+}
+get hasModelMetrics() {
+  return this.recommendation?.modelMetrics != null;
+}
+get modelMetricsDisplay() {
+  const m = this.recommendation?.modelMetrics;
+  if (!m) return '';
+  const deals = m.dealCount || 0;
+  const accuracy = m.auc ? Math.round(m.auc * 100) : 0;
+  const trained = m.trainedAt ? new Date(m.trainedAt).toLocaleDateString() : 'unknown';
+  return `Model trained on ${deals} deals | Accuracy: ${accuracy}% | Last trained: ${trained}`;
+}
+```
+
+### Change 2: Update phase1Tips Getter (lines 594-654)
+
+Add benchmark insights as a new source at the TOP of the priority chain. Before the existing topDrivers check (line 598), add:
+
+```js
+// Priority 0: Benchmark insights (Phase 1 with industry_benchmark source)
+const benchmarkInsights = this.recommendation?.benchmarkInsights;
+if (Array.isArray(benchmarkInsights) && benchmarkInsights.length > 0) {
+  benchmarkInsights.forEach((text, i) => {
+    tips.push({ id: `benchmark-${i}`, icon: 'utility:trending', text });
+  });
+}
+```
+
+### Change 3: Phase 1 Benchmark Range Display (HTML)
+
+Replace the **Phase 1 Callout** section (lines 156-187) with a benchmark-aware version. When `isBenchmarkRecommendation`:
+
+- Show a visual margin range bar (horizontal bar from `marginRangeLow` to `marginRangeHigh` with the median marked and the rep's planned margin as a colored indicator)
+- Show text: "Based on {benchmarkSource}" (e.g. "Based on Cisco Enterprise benchmark")
+- Position assessment: if planned margin is within range → green "In Range"; below → amber "Below Benchmark"; above → red "Above Benchmark"
+- Caveat text: "Personalized ML recommendations unlock after 100 closed deals"
+
+When NOT `isBenchmarkRecommendation` (old behavior), keep the existing progress-bar-toward-threshold UI.
+
+### Change 4: Phase 2 Three Margin Options (HTML)
+
+When `isMLRecommendation` AND `hasConservativeMargin`, replace the single "Recommended Margin" callout (lines 202-215) with a 3-column card layout:
+
+```html
+<div class="margin-options-grid">
+  <div class="margin-option margin-option-conservative">
+    <div class="margin-option-label">Conservative</div>
+    <div class="margin-option-value">{conservativeMarginPct}%</div>
+    <div class="margin-option-detail">Higher win probability</div>
+  </div>
+  <div class="margin-option margin-option-optimal">
+    <div class="margin-option-badge">Best ROI</div>
+    <div class="margin-option-label">Recommended</div>
+    <div class="margin-option-value">{recommendedMargin}%</div>
+    <div class="margin-option-detail">Max expected GP</div>
+  </div>
+  <div class="margin-option margin-option-aggressive">
+    <div class="margin-option-label">Aggressive</div>
+    <div class="margin-option-value">{aggressiveMarginPct}%</div>
+    <div class="margin-option-detail">Higher margin</div>
+  </div>
+</div>
+```
+
+When NOT ML but still Phase 2+ (rules engine), keep the existing single margin callout.
+
+### Change 5: ML Key Drivers Section (HTML)
+
+In the expandable details panel, when `hasMLKeyDrivers`, show a "Key Drivers (learned from your data)" section ABOVE the existing drivers section:
+
+```html
+<template lwc:if={hasMLKeyDrivers}>
+  <div class="ml-drivers-section">
+    <div class="section-header">Key Drivers <span class="ml-badge">Learned from your data</span></div>
+    <template for:each={mlKeyDrivers} for:item="driver">
+      <div key={driver.id} class="ml-driver-row">
+        <lightning-icon icon-name={driver.iconName} size="x-small" class={driver.impactClass}></lightning-icon>
+        <span class="ml-driver-text">{driver.sentence}</span>
+        <span class={driver.impactClass}>{driver.impact}</span>
+      </div>
+    </template>
+  </div>
+</template>
+```
+
+### Change 6: Model Transparency (HTML)
+
+In the expanded details panel (at the bottom, before the Collapse All button at line 610), add:
+
+```html
+<template lwc:if={hasModelMetrics}>
+  <div class="model-transparency">
+    <lightning-icon icon-name="utility:info" size="xx-small"></lightning-icon>
+    <span class="model-transparency-text">{modelMetricsDisplay}</span>
+  </div>
+</template>
+```
+
+### Change 7: CSS Additions
+
+Add to the CSS file:
+
+```css
+/* Benchmark Range Bar */
+.benchmark-range-container { padding: 16px 0; }
+.benchmark-range-bar {
+  position: relative; height: 24px; border-radius: 12px;
+  background: linear-gradient(90deg, #fef3c7 0%, #d1fae5 50%, #fef3c7 100%);
+  margin: 8px 0;
+}
+.benchmark-range-marker {
+  position: absolute; top: -4px; width: 4px; height: 32px;
+  background: var(--teal-600); border-radius: 2px;
+}
+.benchmark-range-planned {
+  position: absolute; top: -6px; width: 12px; height: 12px;
+  border-radius: 50%; border: 3px solid var(--navy-900);
+  transform: translateX(-50%);
+}
+.benchmark-in-range { background: var(--green-500); }
+.benchmark-below { background: #f59e0b; }
+.benchmark-above { background: var(--red-500); }
+.benchmark-source-text {
+  font-size: 12px; color: var(--slate-500); margin-top: 4px;
+}
+.benchmark-caveat {
+  font-size: 11px; color: var(--slate-500); font-style: italic; margin-top: 8px;
+}
+
+/* Three Margin Options */
+.margin-options-grid {
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;
+  padding: 16px 0;
+}
+.margin-option {
+  padding: 16px; border-radius: 12px; text-align: center;
+  border: 2px solid var(--slate-200); background: white;
+  cursor: pointer; transition: all 0.2s ease;
+}
+.margin-option:hover { border-color: var(--teal-400); box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+.margin-option-optimal {
+  border-color: var(--teal-500); background: #f0fdfa;
+  box-shadow: 0 2px 12px rgba(2,177,181,0.15);
+}
+.margin-option-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 10px;
+  background: var(--teal-500); color: white; font-size: 10px;
+  font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+.margin-option-label { font-size: 12px; color: var(--slate-500); font-weight: 600; text-transform: uppercase; }
+.margin-option-value { font-size: 28px; font-weight: 800; color: var(--navy-900); margin: 4px 0; }
+.margin-option-detail { font-size: 11px; color: var(--slate-500); }
+
+/* ML Key Drivers */
+.ml-drivers-section { padding: 16px 0; border-bottom: 1px solid var(--slate-200); }
+.ml-badge {
+  display: inline-block; padding: 2px 8px; border-radius: 8px;
+  background: #ede9fe; color: #7c3aed; font-size: 10px; font-weight: 600;
+  margin-left: 8px; vertical-align: middle;
+}
+.ml-driver-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--slate-50);
+}
+.ml-driver-text { flex: 1; font-size: 13px; color: var(--slate-700); }
+.driver-impact-positive { color: var(--green-500); font-weight: 600; font-size: 12px; }
+.driver-impact-negative { color: var(--red-500); font-weight: 600; font-size: 12px; }
+
+/* Model Transparency */
+.model-transparency {
+  display: flex; align-items: center; gap: 6px;
+  padding: 12px 16px; margin-top: 12px;
+  background: var(--slate-50); border-radius: 8px;
+}
+.model-transparency-text { font-size: 11px; color: var(--slate-500); }
+```
+
+## Important Notes
+
+- LWC templates do NOT support `!` unary operator in expressions. Use computed getters for negation: `get isNotBenchmark() { return !this.isBenchmarkRecommendation; }`
+- For the benchmark range bar positioning, compute left% using: `((value - low) / (high - low)) * 100`
+- Ensure the 3-column grid degrades gracefully on narrow screens (Salesforce utility panel is ~380px wide) — consider `@media` or min-width fallback
+- Run prettier and eslint on all modified files before committing
+
+Create branch feat/ml-lwc-display, commit, push. Open a PR from the GitHub UI.
+```
