@@ -2614,3 +2614,318 @@
   font-size: 11px;
   color: var(--slate-500);
 }
+
+/* =========================================================================
+   Phase 1 Redesign — Score Hero Layout
+   ========================================================================= */
+
+/* 1. Header — clean white background */
+.p1-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 12px;
+  background: white;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.p1-header-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--navy-900);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.p1-header-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 12px;
+  background: var(--slate-50);
+  border: 1px solid var(--slate-200);
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--slate-600);
+  letter-spacing: 0.02em;
+}
+
+.p1-badge-estimated {
+  font-weight: 400;
+  color: var(--slate-400);
+  font-size: 10px;
+}
+
+/* 2. Score Hero — the centerpiece */
+.p1-score-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 20px 16px;
+  background: white;
+}
+
+.p1-score-number {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Score color classes */
+.p1-score-critical { color: #dc2626; }
+.p1-score-needs-work { color: #d97706; }
+.p1-score-good { color: #059669; }
+.p1-score-excellent { color: #2563eb; }
+
+/* Gauge arc — semicircle using conic-gradient */
+.p1-gauge-container {
+  position: relative;
+  width: 120px;
+  height: 60px;
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.p1-gauge-arc {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  /* conic-gradient is set via inline style from JS getter */
+}
+
+.p1-gauge-mask {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: white;
+}
+
+.p1-score-label {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+}
+
+.p1-gp-opportunity {
+  margin-top: 8px;
+  padding: 5px 14px;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #92400e;
+  text-align: center;
+}
+
+/* 3. Compact Margin Range Bar */
+.p1-range-section {
+  padding: 12px 20px 10px;
+  background: white;
+  border-top: 1px solid var(--slate-100);
+}
+
+.p1-range-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.p1-range-endpoint {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--slate-500);
+  white-space: nowrap;
+  min-width: 28px;
+  text-align: center;
+}
+
+.p1-range-bar-track {
+  flex: 1;
+  position: relative;
+  height: 20px;
+  background: rgba(148, 163, 184, 0.12);
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.p1-range-bar-zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #fef3c7 0%, #d1fae5 40%, #d1fae5 60%, #fef3c7 100%);
+  border-radius: 6px;
+  border: 1px solid rgba(34, 197, 94, 0.15);
+}
+
+.p1-range-bar-median {
+  position: absolute;
+  top: -1px;
+  width: 2px;
+  height: 22px;
+  background: var(--teal-600);
+  border-radius: 1px;
+  transform: translateX(-50%);
+  z-index: 2;
+}
+
+/* Reuse planned-marker styles from existing bar (same classes) */
+
+.p1-range-summary {
+  text-align: center;
+  margin-top: 6px;
+}
+
+.p1-range-summary-text {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--slate-400);
+  letter-spacing: 0.01em;
+}
+
+/* 4. Deal Insights — light background */
+.p1-insights {
+  margin: 0;
+  padding: 10px 20px 12px;
+  background: var(--slate-50);
+  border-top: 1px solid var(--slate-100);
+}
+
+.p1-insight-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--slate-100);
+}
+
+.p1-insight-row:last-child {
+  border-bottom: none;
+}
+
+.p1-insight-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--slate-700);
+  line-height: 1.45;
+  flex: 1;
+}
+
+/* 5. Footer — Refresh icon left, Show Details right */
+.p1-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px;
+  background: white;
+  border-top: 1px solid var(--slate-100);
+}
+
+.p1-footer-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid var(--slate-200);
+  border-radius: 8px;
+  color: var(--slate-400);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p1-footer-refresh:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-300);
+  color: var(--slate-600);
+}
+
+.p1-footer-refresh svg {
+  width: 16px;
+  height: 16px;
+}
+
+.p1-footer-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 14px;
+  background: transparent;
+  border: 1px solid var(--slate-200);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--slate-500);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.p1-footer-details:hover {
+  background: var(--slate-50);
+  border-color: var(--slate-300);
+  color: var(--slate-700);
+}
+
+/* Score factors in Phase 1 expanded — use light background (not dark hero) */
+.p1-score-factors {
+  background: white;
+  padding: 12px 20px;
+}
+
+/* Override secondary vendor badges for Phase 1 (light background context) */
+.p1-header .marginarc-secondary-oem-badge {
+  background: var(--slate-100);
+  border-color: var(--slate-200);
+  color: var(--slate-600);
+}
+
+/* Planned marker adjustments for compact bar — reduce size */
+.p1-range-bar-track .planned-marker-label {
+  top: -18px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.p1-range-bar-track .planned-marker::after {
+  width: 12px;
+  height: 12px;
+  border-width: 2px;
+}
+
+/* Responsive adjustments for Phase 1 */
+@media (max-width: 420px) {
+  .p1-score-number {
+    font-size: 40px;
+  }
+
+  .p1-gauge-container {
+    width: 100px;
+    height: 50px;
+  }
+
+  .p1-gauge-arc {
+    width: 100px;
+    height: 100px;
+  }
+
+  .p1-gauge-mask {
+    top: 7px;
+    left: 7px;
+    width: 86px;
+    height: 86px;
+  }
+}

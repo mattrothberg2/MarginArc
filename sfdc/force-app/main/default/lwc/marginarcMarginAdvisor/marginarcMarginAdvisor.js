@@ -722,6 +722,153 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return this.isPhaseOne && this.phase1Tips.length > 0;
   }
 
+  // Phase 1 filtered tips — remove margin position and GP insights (shown in score hero)
+  get phase1FilteredTips() {
+    return this.phase1Tips
+      .filter(tip => tip.id !== 'margin-pos' && tip.id !== 'gp')
+      .slice(0, 2);
+  }
+
+  get hasPhase1FilteredTips() {
+    return this.isPhaseOne && this.phase1FilteredTips.length > 0;
+  }
+
+  // =========================================================================
+  // Phase 1 Score Computation (client-side, margin-position-consistent)
+  // =========================================================================
+
+  get phase1Score() {
+    // Base: margin position relative to benchmark range (0-70 points)
+    const planned = this.effectivePlannedMargin || 0;
+    const low = this.marginRangeLow || 0;
+    const high = this.marginRangeHigh || 0;
+    const median = this.benchmarkMedianValue
+      ? parseFloat(this.benchmarkMedianValue)
+      : (low + high) / 2;
+
+    let marginScore = 0;
+    if (high > low) {
+      if (planned >= median) {
+        // At or above median: 55-70 points
+        const aboveMedian = high > median
+          ? Math.min((planned - median) / (high - median), 1)
+          : 1;
+        marginScore = 55 + (aboveMedian * 15);
+      } else if (planned >= low) {
+        // Between floor and median: 35-55 points
+        const inRange = median > low
+          ? (planned - low) / (median - low)
+          : 0;
+        marginScore = 35 + (inRange * 20);
+      } else {
+        // Below floor: 0-35 points (proportional to how far below)
+        const belowFloor = Math.max(0, 1 - (low - planned) / 10); // 10pp below = 0
+        marginScore = belowFloor * 35;
+      }
+    } else {
+      // No valid benchmark range — give baseline score
+      marginScore = 35;
+    }
+
+    // Bonus factors (0-30 points)
+    let bonus = 0;
+
+    // Deal registration: +10
+    const dealReg = this.opportunityData?.dealRegType || 'NotRegistered';
+    if (dealReg !== 'NotRegistered') bonus += 10;
+
+    // Services attached: +8
+    const services = this.opportunityData?.servicesAttached || false;
+    if (services) bonus += 8;
+
+    // Low competitor count: +6 for 0-1, +3 for 2, 0 for 3+
+    const competitors = this.opportunityData?.competitors || '0';
+    const compCount = competitors === '3+' ? 4 : parseInt(competitors || '0', 10);
+    if (compCount <= 1) bonus += 6;
+    else if (compCount === 2) bonus += 3;
+
+    // Data completeness: +6 (key fields populated)
+    const amount = this.opportunityData?.amount || 0;
+    if (planned > 0 && amount > 0) bonus += 6;
+
+    return Math.round(Math.min(100, marginScore + bonus));
+  }
+
+  get phase1ScoreLabel() {
+    const score = this.phase1Score;
+    if (score < 40) return 'CRITICAL';
+    if (score < 65) return 'NEEDS WORK';
+    if (score < 85) return 'GOOD';
+    return 'EXCELLENT';
+  }
+
+  get phase1ScoreColor() {
+    const score = this.phase1Score;
+    if (score < 40) return '#dc2626';
+    if (score < 65) return '#d97706';
+    if (score < 85) return '#059669';
+    return '#2563eb';
+  }
+
+  get phase1ScoreClass() {
+    const score = this.phase1Score;
+    if (score < 40) return 'p1-score-critical';
+    if (score < 65) return 'p1-score-needs-work';
+    if (score < 85) return 'p1-score-good';
+    return 'p1-score-excellent';
+  }
+
+  get phase1ScoreStyle() {
+    return `color: ${this.phase1ScoreColor}`;
+  }
+
+  get phase1ScoreLabelStyle() {
+    return `color: ${this.phase1ScoreColor}`;
+  }
+
+  // Gauge arc — a semicircle showing score progress via conic-gradient
+  get phase1ScoreArcStyle() {
+    const score = this.phase1Score;
+    const color = this.phase1ScoreColor;
+    // The arc goes from 0 to 180 degrees (semicircle). Score maps proportionally.
+    const degrees = (score / 100) * 180;
+    // Use literal hex for track color since CSS vars don't resolve in inline styles
+    const trackColor = '#e2e8f0'; // slate-200
+    return `background: conic-gradient(${color} 0deg, ${color} ${degrees}deg, ${trackColor} ${degrees}deg, ${trackColor} 180deg, transparent 180deg, transparent 360deg)`;
+  }
+
+  // GP opportunity text — shown when below benchmark range
+  get phase1GpText() {
+    if (!this.isBelowBenchmark) return '';
+    const oemCost = this.opportunityData?.oemCost || this.opportunityData?.amount || 0;
+    const current = this.effectivePlannedMargin / 100;
+    const target = this.marginRangeLow / 100;
+    if (current >= target || oemCost <= 0) return '';
+    const currentGP = oemCost * current / (1 - current);
+    const targetGP = oemCost * target / (1 - target);
+    const delta = Math.round(targetGP - currentGP);
+    if (delta <= 0) return '';
+    return `+$${delta.toLocaleString()} GP if you raise to ${this.marginRangeLow}%`;
+  }
+
+  get hasPhase1GpText() {
+    return this.phase1GpText.length > 0;
+  }
+
+  // Compact bar — plan summary text
+  get phase1PlanSummary() {
+    return `Your plan: ${this.currentMargin}%`;
+  }
+
+  get phase1BenchmarkSummary() {
+    return `Benchmark: ${this.marginRangeLow}\u2013${this.marginRangeHigh}%`;
+  }
+
+  // OEM + Segment badge pill text
+  get phase1BadgeText() {
+    return `${this.detectedOem} \u00b7 ${this.detectedSegment}`;
+  }
+
   get phaseProgressFraction() {
     return `${this.phaseScoredDeals}/${this.phaseThreshold}`;
   }
