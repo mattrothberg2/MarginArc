@@ -343,6 +343,44 @@
   color: #fca5a5;
 }
 
+/* Score Improvement Tips */
+.score-tips {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.score-tips-header {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.score-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.score-tip-text {
+  flex: 1;
+  color: #334155;
+}
+
+.score-tip-pts {
+  font-size: 11px;
+  font-weight: 600;
+  color: #059669;
+  white-space: nowrap;
+}
+
 /* =========================================================================
    Recommended Margin Callout
    ========================================================================= */

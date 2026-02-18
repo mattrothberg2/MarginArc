@@ -652,7 +652,23 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     }
 
     // 3. scoreFactors with human-readable labels
-    const factors = this.recommendation?.scoreFactors;
+    const rawFactors = this.recommendation?.scoreFactors;
+    let factors;
+    if (
+      rawFactors &&
+      typeof rawFactors === "object" &&
+      !Array.isArray(rawFactors)
+    ) {
+      factors = Object.entries(rawFactors).map(([key, val]) => ({
+        name: key,
+        score: val.score,
+        max: val.max,
+        label: val.label,
+        direction: val.direction
+      }));
+    } else if (Array.isArray(rawFactors)) {
+      factors = rawFactors;
+    }
     if (Array.isArray(factors) && tips.length === 0) {
       for (const f of factors) {
         const label = f.label || f.name || "";
@@ -2365,7 +2381,9 @@ export default class MarginarcMarginAdvisor extends LightningElement {
         score: clampedScore,
         label,
         color,
-        factors: this.recommendation.scoreFactors || []
+        factors: Array.isArray(this.recommendation.scoreFactors)
+          ? this.recommendation.scoreFactors
+          : []
       };
     }
     // Fallback: client-side computation when API is unavailable
@@ -2393,10 +2411,34 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get dealScoreFactors() {
-    // Prefer API scoreFactors with human-readable labels
     const apiFactors = this.recommendation?.scoreFactors;
-    if (Array.isArray(apiFactors) && apiFactors.length > 0) {
-      return apiFactors.map((f) => {
+
+    // Convert object shape { marginAlignment: {...}, ... } to array
+    const DISPLAY_NAMES = {
+      marginAlignment: "Margin Alignment",
+      winProbability: "Win Probability",
+      dataQuality: "Data Quality",
+      algorithmConfidence: "Algorithm Confidence"
+    };
+    let factorsArray;
+    if (
+      apiFactors &&
+      typeof apiFactors === "object" &&
+      !Array.isArray(apiFactors)
+    ) {
+      factorsArray = Object.entries(apiFactors).map(([key, val]) => ({
+        name: DISPLAY_NAMES[key] || key,
+        score: val.score,
+        max: val.max,
+        label: val.label,
+        direction: val.direction
+      }));
+    } else if (Array.isArray(apiFactors) && apiFactors.length > 0) {
+      factorsArray = apiFactors;
+    }
+
+    if (factorsArray && factorsArray.length > 0) {
+      return factorsArray.map((f) => {
         const ratio = f.max > 0 ? f.score / f.max : 0.5;
         let colorClass;
         if (ratio >= 0.66) {
@@ -2421,7 +2463,9 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       "Deal structure": "Structure",
       "Competitive position": "Competition"
     };
-    return (this.dealScoreData?.factors || []).map((f) => {
+    const clientFactors = this.dealScoreData?.factors;
+    const clientArray = Array.isArray(clientFactors) ? clientFactors : [];
+    return clientArray.map((f) => {
       const ratio = f.max > 0 ? f.score / f.max : 0.5;
       const tier = ratio >= 0.66 ? "High" : ratio >= 0.33 ? "Medium" : "Low";
       const shortName = FALLBACK_LABELS[f.name] || f.name;
@@ -2443,6 +2487,71 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get hasDealScore() {
     return this.dealScoreData !== null;
+  }
+
+  get scoreImprovementTips() {
+    const tips = [];
+    const factors = this.recommendation?.scoreFactors;
+    if (!factors) return tips;
+
+    // Convert object shape to usable format
+    const f =
+      typeof factors === "object" && !Array.isArray(factors) ? factors : {};
+
+    // Margin alignment — if score is low, suggest updating planned margin
+    if (f.marginAlignment && f.marginAlignment.max > 0) {
+      const ratio = f.marginAlignment.score / f.marginAlignment.max;
+      if (ratio < 0.33) {
+        tips.push({
+          icon: "utility:trending",
+          text: "Update your planned margin closer to the recommendation",
+          pts: Math.round(f.marginAlignment.max * 0.5) - f.marginAlignment.score
+        });
+      }
+    }
+
+    // Data quality — if score is low, suggest filling in fields
+    if (f.dataQuality && f.dataQuality.max > 0) {
+      const ratio = f.dataQuality.score / f.dataQuality.max;
+      if (ratio < 0.66) {
+        tips.push({
+          icon: "utility:edit",
+          text: "Add more deal details (competitors, urgency, complexity)",
+          pts: Math.round(f.dataQuality.max * 0.3)
+        });
+      }
+    }
+
+    // Algorithm confidence — if low, encourage more deal scoring
+    if (f.algorithmConfidence && f.algorithmConfidence.max > 0) {
+      const ratio = f.algorithmConfidence.score / f.algorithmConfidence.max;
+      if (ratio < 0.5) {
+        tips.push({
+          icon: "utility:database",
+          text: "Score more deals to improve algorithm confidence",
+          pts: Math.round(f.algorithmConfidence.max * 0.3)
+        });
+      }
+    }
+
+    // Win probability — if low, suggest actions
+    if (f.winProbability && f.winProbability.max > 0) {
+      const ratio = f.winProbability.score / f.winProbability.max;
+      if (ratio < 0.33) {
+        tips.push({
+          icon: "utility:like",
+          text: "Register the deal or reduce competitor count to improve win probability",
+          pts: Math.round(f.winProbability.max * 0.3)
+        });
+      }
+    }
+
+    // Sort by potential points, take top 3
+    return tips.sort((a, b) => b.pts - a.pts).slice(0, 3);
+  }
+
+  get hasScoreImprovementTips() {
+    return this.scoreImprovementTips.length > 0;
   }
 
   get marginDeltaDisplay() {

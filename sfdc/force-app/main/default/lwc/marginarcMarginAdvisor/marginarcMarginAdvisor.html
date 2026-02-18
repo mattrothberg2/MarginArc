@@ -105,6 +105,21 @@
                 </template>
               </div>
             </template>
+            <template lwc:if={hasScoreImprovementTips}>
+              <div class="score-tips">
+                <p class="score-tips-header">Improve your score:</p>
+                <template for:each={scoreImprovementTips} for:item="tip">
+                  <div key={tip.text} class="score-tip-row">
+                    <lightning-icon
+                      icon-name={tip.icon}
+                      size="xx-small"
+                    ></lightning-icon>
+                    <span class="score-tip-text">{tip.text}</span>
+                    <span class="score-tip-pts">+{tip.pts} pts</span>
+                  </div>
+                </template>
+              </div>
+            </template>
           </template>
         </div>
 
