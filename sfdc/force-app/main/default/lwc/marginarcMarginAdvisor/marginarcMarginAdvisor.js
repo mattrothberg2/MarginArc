@@ -973,7 +973,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   // Benchmark range bar computed properties
   get benchmarkPlannedPosition() {
-    const planned = this.opportunityData?.plannedMargin || 0;
+    const planned = this.effectivePlannedMargin;
     const low = this.marginRangeLow;
     const high = this.marginRangeHigh;
     if (high <= low) return 50;
@@ -995,7 +995,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return `left: ${this.benchmarkMedianPosition}%`;
   }
   get benchmarkAssessment() {
-    const planned = this.opportunityData?.plannedMargin || 0;
+    const planned = this.effectivePlannedMargin;
     const low = this.marginRangeLow;
     const high = this.marginRangeHigh;
     if (planned < low) return "Below Benchmark";
@@ -1011,7 +1011,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return "benchmark-assessment benchmark-assessment-red";
   }
   get benchmarkPlannedDotClass() {
-    const planned = this.opportunityData?.plannedMargin || 0;
+    const planned = this.effectivePlannedMargin;
     const low = this.marginRangeLow;
     const high = this.marginRangeHigh;
     if (planned < low) return "benchmark-range-planned benchmark-below";
@@ -1081,28 +1081,42 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return this.recommendation?.suggestedMarginPct?.toFixed(1) || "0.0";
   }
 
+  /**
+   * Returns the effective planned margin percentage (as a number, e.g. 15.0).
+   * When BOM lines exist, the blended BOM margin is the most accurate
+   * representation of what the rep is actually proposing, so prefer it
+   * over the Opportunity-level Fulcrum_Planned_Margin__c field.
+   */
+  get effectivePlannedMargin() {
+    const bomMarginPct = this.activeBomData?.totals?.marginPct;
+    if (bomMarginPct != null && this.activeBomData?.items?.length > 0) {
+      return bomMarginPct * 100;
+    }
+    return this.opportunityData?.plannedMargin || 15;
+  }
+
   get currentMargin() {
-    return this.opportunityData?.plannedMargin?.toFixed(1) || "15.0";
+    return this.effectivePlannedMargin.toFixed(1);
   }
 
   get marginDelta() {
     const delta =
       (this.recommendation?.suggestedMarginPct || 0) -
-      (this.opportunityData?.plannedMargin || 15);
+      this.effectivePlannedMargin;
     return Math.abs(delta).toFixed(1);
   }
 
   get marginIncrease() {
     return (
       (this.recommendation?.suggestedMarginPct || 0) >
-      (this.opportunityData?.plannedMargin || 15)
+      this.effectivePlannedMargin
     );
   }
 
   get marginDecrease() {
     return (
       (this.recommendation?.suggestedMarginPct || 0) <
-      (this.opportunityData?.plannedMargin || 15)
+      this.effectivePlannedMargin
     );
   }
 
@@ -1148,7 +1162,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     if (m?.planned?.winProb != null) return Math.round(m.planned.winProb);
     // Fallback: use algorithm locally
     const data = this.opportunityData || {};
-    const plannedMargin = data.plannedMargin || 15;
+    const plannedMargin = this.effectivePlannedMargin;
     const competitors = data.competitors || "1";
     const compBase =
       competitors === "0"
@@ -1191,7 +1205,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       });
     }
     const cost = this.opportunityData?.oemCost || 10000;
-    const margin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const margin = this.effectivePlannedMargin / 100;
     const winProb = this.plannedWinProbability / 100;
     const profit = cost * margin * winProb;
     return Math.round(profit).toLocaleString(undefined, {
@@ -1262,7 +1276,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get dealContextSellPrice() {
     const cost = this.opportunityData?.oemCost || 0;
-    const margin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const margin = this.effectivePlannedMargin / 100;
     const price = cost / (1 - margin);
     return (
       "$" +
@@ -1275,7 +1289,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get dealContextGrossProfit() {
     const cost = this.opportunityData?.oemCost || 0;
-    const margin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const margin = this.effectivePlannedMargin / 100;
     const price = cost / (1 - margin);
     const gp = price - cost;
     return (
@@ -1288,7 +1302,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get dealContextPlannedMargin() {
-    return (this.opportunityData?.plannedMargin || 15).toFixed(1) + "%";
+    return this.effectivePlannedMargin.toFixed(1) + "%";
   }
 
   get dealContextComplexity() {
@@ -1349,7 +1363,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get priceDelta() {
     const cost = this.opportunityData?.oemCost || 0;
-    const plannedMargin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const plannedMargin = this.effectivePlannedMargin / 100;
     const recMargin = (this.recommendation?.suggestedMarginPct || 15) / 100;
     const plannedPrice = cost / (1 - plannedMargin);
     const recPrice = cost / (1 - recMargin);
@@ -1367,7 +1381,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get priceDeltaPositive() {
     const cost = this.opportunityData?.oemCost || 0;
-    const plannedMargin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const plannedMargin = this.effectivePlannedMargin / 100;
     const recMargin = (this.recommendation?.suggestedMarginPct || 15) / 100;
     const plannedPrice = cost / (1 - plannedMargin);
     const recPrice = cost / (1 - recMargin);
@@ -1376,7 +1390,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get gpDelta() {
     const cost = this.opportunityData?.oemCost || 0;
-    const plannedMargin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const plannedMargin = this.effectivePlannedMargin / 100;
     const recMargin = (this.recommendation?.suggestedMarginPct || 15) / 100;
     const plannedGP = cost / (1 - plannedMargin) - cost;
     const recGP = cost / (1 - recMargin) - cost;
@@ -1394,7 +1408,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   get gpDeltaPositive() {
     const cost = this.opportunityData?.oemCost || 0;
-    const plannedMargin = (this.opportunityData?.plannedMargin || 15) / 100;
+    const plannedMargin = this.effectivePlannedMargin / 100;
     const recMargin = (this.recommendation?.suggestedMarginPct || 15) / 100;
     const plannedGP = cost / (1 - plannedMargin) - cost;
     const recGP = cost / (1 - recMargin) - cost;
@@ -2060,8 +2074,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
           recommendedMargin: finalMarginPct,
           aiConfidence: confidence * 100,
           winProbability: winProbability * 100,
-          plannedMarginAtTime:
-            Number(this.opportunityData?.plannedMargin) || 15,
+          plannedMarginAtTime: this.effectivePlannedMargin,
           source: "Manual",
           applied: true
         });
@@ -2093,7 +2106,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       const bomPayload = {
         action: "bom-analyze",
         input: this.buildInputPayload(),
-        plannedMarginPct: this.opportunityData?.plannedMargin || 15,
+        plannedMarginPct: this.effectivePlannedMargin,
         bomLines: this.activeBomData.items.map((item) => ({
           key: item.key,
           description: item.label,
@@ -2203,7 +2216,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       try {
         const apiPayloadObj = {
           input: inputPayload,
-          plannedMarginPct: this.opportunityData.plannedMargin || 15
+          plannedMarginPct: this.effectivePlannedMargin
         };
 
         // If we have saved BOM lines, include them so the API computes blended scores
@@ -2454,7 +2467,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
     const data = this.opportunityData;
     const rec = this.recommendation;
-    const plannedMargin = Number(data.plannedMargin) || 15;
+    const plannedMargin = this.effectivePlannedMargin;
     const recommendedMargin = Number(rec.suggestedMarginPct) || 15;
     const factors = [];
 
@@ -2788,7 +2801,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   get marginDeltaDisplay() {
     const delta =
       (this.recommendation?.suggestedMarginPct || 0) -
-      (this.opportunityData?.plannedMargin || 15);
+      this.effectivePlannedMargin;
     const sign = delta >= 0 ? "+" : "";
     return sign + delta.toFixed(1) + "%";
   }
@@ -2796,7 +2809,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   get marginDeltaIsPositive() {
     return (
       (this.recommendation?.suggestedMarginPct || 0) >=
-      (this.opportunityData?.plannedMargin || 15)
+      this.effectivePlannedMargin
     );
   }
 
@@ -2982,7 +2995,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
     // Build metrics object matching backend structure
     const oemCost = data.oemCost || amount * 0.85;
-    const plannedMarginPct = data.plannedMargin || 15;
+    const plannedMarginPct = this.effectivePlannedMargin;
     const recMarginPct = Math.max(8, Math.min(35, suggestedMargin));
     const plannedGP = oemCost * (plannedMarginPct / 100);
     const recGP = oemCost * (recMarginPct / 100);
