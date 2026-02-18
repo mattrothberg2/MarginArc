@@ -419,6 +419,109 @@ export default class MarginarcMarginAdvisor extends LightningElement {
 
   toggleDetails() {
     this.isDetailExpanded = !this.isDetailExpanded;
+    // When expanding, default to showing comparison only (most important detail)
+    if (this.isDetailExpanded) {
+      this.collapsedSections = {
+        ...this.collapsedSections,
+        comparison: false,
+        drivers: true,
+        aiSummary: true,
+        bomSummary: true
+      };
+    }
+  }
+
+  // =========================================================================
+  // Accordion section toggles (inside detail panel)
+  // =========================================================================
+
+  toggleComparison() {
+    this.collapsedSections = {
+      ...this.collapsedSections,
+      comparison: !this.collapsedSections.comparison
+    };
+  }
+
+  toggleDrivers() {
+    this.collapsedSections = {
+      ...this.collapsedSections,
+      drivers: !this.collapsedSections.drivers
+    };
+  }
+
+  toggleAiSummary() {
+    this.collapsedSections = {
+      ...this.collapsedSections,
+      aiSummary: !this.collapsedSections.aiSummary
+    };
+  }
+
+  toggleBomSummary() {
+    this.collapsedSections = {
+      ...this.collapsedSections,
+      bomSummary: !this.collapsedSections.bomSummary
+    };
+  }
+
+  collapseAll() {
+    this.collapsedSections = {
+      ...this.collapsedSections,
+      comparison: true,
+      drivers: true,
+      aiSummary: true,
+      bomSummary: true,
+      history: true
+    };
+  }
+
+  // Computed getters for accordion collapsed state
+  // LWC templates don't allow `!` unary — use computed getters
+  get isComparisonCollapsed() {
+    return !!this.collapsedSections.comparison;
+  }
+
+  get isComparisonExpanded() {
+    return !this.collapsedSections.comparison;
+  }
+
+  get comparisonChevron() {
+    return this.isComparisonExpanded ? "\u25BE" : "\u25B8";
+  }
+
+  get isDriversCollapsed() {
+    return !!this.collapsedSections.drivers;
+  }
+
+  get isDriversExpanded() {
+    return !this.collapsedSections.drivers;
+  }
+
+  get driversChevron() {
+    return this.isDriversExpanded ? "\u25BE" : "\u25B8";
+  }
+
+  get isAiSummaryCollapsed() {
+    return !!this.collapsedSections.aiSummary;
+  }
+
+  get isAiSummaryExpanded() {
+    return !this.collapsedSections.aiSummary;
+  }
+
+  get aiSummaryChevron() {
+    return this.isAiSummaryExpanded ? "\u25BE" : "\u25B8";
+  }
+
+  get isBomSummaryCollapsed() {
+    return !!this.collapsedSections.bomSummary;
+  }
+
+  get isBomSummaryExpanded() {
+    return !this.collapsedSections.bomSummary;
+  }
+
+  get bomSummaryChevron() {
+    return this.isBomSummaryExpanded ? "\u25BE" : "\u25B8";
   }
 
   // =========================================================================
@@ -636,6 +739,44 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   // Deal info for initial state
   get detectedOem() {
     return this.opportunityData?.oem || "Unknown Vendor";
+  }
+
+  // Secondary vendor badges from BOM data (Fix 2: multi-vendor deals)
+  get secondaryVendors() {
+    if (!this.activeBomData?.items?.length) return [];
+    const primary = this.opportunityData?.oem;
+    const vendors = [
+      ...new Set(
+        this.activeBomData.items
+          .map((item) => item.vendor)
+          .filter((v) => v && v !== primary && v !== "Unknown")
+      )
+    ];
+    return vendors.slice(0, 3);
+  }
+
+  get hasSecondaryVendors() {
+    return this.secondaryVendors.length > 0;
+  }
+
+  get allBomVendorCount() {
+    if (!this.activeBomData?.items?.length) return 0;
+    const primary = this.opportunityData?.oem;
+    const vendors = new Set(
+      this.activeBomData.items
+        .map((item) => item.vendor)
+        .filter((v) => v && v !== primary && v !== "Unknown")
+    );
+    return vendors.size;
+  }
+
+  get hasOverflowVendors() {
+    return this.allBomVendorCount > 3;
+  }
+
+  get overflowVendorLabel() {
+    const overflow = this.allBomVendorCount - 3;
+    return `+${overflow} more`;
   }
 
   get detectedSegment() {
