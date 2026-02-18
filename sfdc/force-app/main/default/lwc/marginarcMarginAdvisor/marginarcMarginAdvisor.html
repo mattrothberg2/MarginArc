@@ -26,91 +26,127 @@
     <!-- Recommendation Display -->
     <template lwc:if={hasRecommendation}>
       <div class="marginarc-card">
-        <!-- Phase 1: Score Hero + Compact Margin Bar Redesign -->
+        <!-- Phase 1: Score Hero + Benchmark Range Bar -->
         <template lwc:if={isPhaseOne}>
-          <!-- 1. Header — clean white background -->
-          <div class="p1-header">
-            <h3 class="p1-header-title">Margin Advisor</h3>
-            <span class="p1-header-badge">{phase1BadgeText}<template
-                lwc:if={isSegmentInferred}
-              ><span class="p1-badge-estimated"> (est.)</span></template
-            ></span>
-          </div>
-
-          <!-- 2. Score Hero — centerpiece -->
-          <div class="p1-score-hero">
-            <div class="p1-score-number" style={phase1ScoreStyle}>{phase1Score}</div>
-            <div class="p1-gauge-container">
-              <div class="p1-gauge-arc" style={phase1ScoreArcStyle}></div>
-              <div class="p1-gauge-mask"></div>
+          <!-- Score Hero (same style as Phase 2+, using phase1Score) -->
+          <div class="deal-score-hero">
+            <div class="score-header-row">
+              <div class="score-title-group">
+                <h3 class="score-main-title">Margin Advisor</h3>
+                <span class="header-badge"
+                  >{detectedOem} &bull; {detectedSegment}<template
+                    lwc:if={isSegmentInferred}
+                  >
+                    <span class="segment-estimated">(estimated)</span></template
+                  ></span
+                >
+              </div>
             </div>
-            <div class="p1-score-label" style={phase1ScoreLabelStyle}>{phase1ScoreLabel}</div>
-            <template lwc:if={hasPhase1GpText}>
-              <div class="p1-gp-opportunity">{phase1GpText}</div>
-            </template>
-          </div>
 
-          <!-- 3. Compact Margin Range Bar -->
-          <template lwc:if={isBenchmarkRecommendation}>
-            <div class="p1-range-section">
-              <div class="p1-range-bar-row">
-                <span class="p1-range-endpoint">{marginRangeLow}%</span>
-                <div class="p1-range-bar-track">
-                  <div class="p1-range-bar-zone" style={benchmarkZoneStyle}></div>
-                  <div class="p1-range-bar-median" style={benchmarkMedianBarStyle}></div>
-                  <div class={plannedMarkerClass} style={plannedMarkerStyle}>
-                    <div class="planned-marker-label">{currentMargin}%</div>
-                  </div>
+            <div class="score-display">
+              <div class="score-number" style={phase1ScoreStyle}>{phase1Score}</div>
+              <div class="score-label" style={phase1ScoreStyle}>
+                {phase1ScoreLabel}
+              </div>
+            </div>
+
+            <!-- Spectrum Bar -->
+            <div class="score-spectrum-container">
+              <div class="score-spectrum">
+                <div class="score-marker" style={phase1ScoreMarkerStyle}>
+                  <div class="score-marker-dot"></div>
+                  <div class="score-marker-line"></div>
                 </div>
-                <span class="p1-range-endpoint">{marginRangeHigh}%</span>
               </div>
-              <div class="p1-range-summary">
-                <span class="p1-range-summary-text">{phase1PlanSummary} &middot; {phase1BenchmarkSummary}</span>
+              <div class="score-spectrum-labels">
+                <span class="spectrum-label spectrum-label-red">Needs Work</span>
+                <span class="spectrum-label spectrum-label-orange"
+                  >Below Avg</span
+                >
+                <span class="spectrum-label spectrum-label-yellow">Fair</span>
+                <span class="spectrum-label spectrum-label-green">Good</span>
+                <span class="spectrum-label spectrum-label-bright">Optimal</span>
               </div>
             </div>
-          </template>
 
-          <!-- 4. Deal Insights — light background, max 2, filtered -->
-          <template lwc:if={hasPhase1FilteredTips}>
-            <div class="p1-insights">
-              <template for:each={phase1FilteredTips} for:item="tip">
-                <div key={tip.id} class="p1-insight-row">
-                  <lightning-icon
-                    icon-name={tip.icon}
-                    size="x-small"
-                  ></lightning-icon>
-                  <span class="p1-insight-text">{tip.text}</span>
-                </div>
-              </template>
-            </div>
-          </template>
-
-          <!-- Score Factor Labels (expanded only) -->
-          <template lwc:if={isDetailExpanded}>
-            <template lwc:if={hasDealScore}>
-              <div class="score-factors p1-score-factors">
-                <template for:each={dealScoreFactors} for:item="factor">
-                  <div key={factor.name} class={factor.labelClass}>
-                    {factor.label}
-                  </div>
-                </template>
-              </div>
-            </template>
-            <template lwc:if={hasScoreImprovementTips}>
-              <div class="score-tips">
-                <p class="score-tips-header">Improve your score:</p>
-                <template for:each={scoreImprovementTips} for:item="tip">
-                  <div key={tip.text} class="score-tip-row">
+            <!-- Deal Insights (inside the hero) -->
+            <template lwc:if={hasPhase1FilteredTips}>
+              <div class="marginarc-phase1-insights">
+                <h3 class="insights-header">Deal Insights</h3>
+                <template for:each={phase1FilteredTips} for:item="tip">
+                  <div key={tip.id} class="insight-row">
                     <lightning-icon
                       icon-name={tip.icon}
-                      size="xx-small"
+                      size="x-small"
                     ></lightning-icon>
-                    <span class="score-tip-text">{tip.text}</span>
-                    <span class="score-tip-pts">+{tip.pts} pts</span>
+                    <span class="insight-text">{tip.text}</span>
                   </div>
                 </template>
               </div>
             </template>
+
+            <!-- Score Factor Labels (expanded only) -->
+            <template lwc:if={isDetailExpanded}>
+              <template lwc:if={hasDealScore}>
+                <div class="score-factors">
+                  <template for:each={dealScoreFactors} for:item="factor">
+                    <div key={factor.name} class={factor.labelClass}>
+                      {factor.label}
+                    </div>
+                  </template>
+                </div>
+              </template>
+            </template>
+          </div>
+
+          <!-- Benchmark Range Bar (below score hero) -->
+          <template lwc:if={isBenchmarkRecommendation}>
+            <div class="marginarc-phase-callout benchmark-callout">
+              <div class="benchmark-range-container">
+                <div class="benchmark-range-header">
+                  <span class="benchmark-range-title">Margin Range</span>
+                  <span class={benchmarkAssessmentClass}
+                    >{benchmarkAssessment}</span
+                  >
+                </div>
+                <div class="benchmark-range-labels">
+                  <span class="benchmark-range-label-low"
+                    >{marginRangeLow}%</span
+                  >
+                  <span class="benchmark-range-label-high"
+                    >{marginRangeHigh}%</span
+                  >
+                </div>
+                <div class="benchmark-range-bar">
+                  <div
+                    class="benchmark-range-marker"
+                    style={benchmarkMedianStyle}
+                  ></div>
+                  <div
+                    class={benchmarkPlannedDotClass}
+                    style={benchmarkPlannedStyle}
+                  ></div>
+                </div>
+                <div class="benchmark-range-legend">
+                  <span class="benchmark-range-legend-item">
+                    <span
+                      class="benchmark-legend-dot benchmark-legend-dot-median"
+                    ></span>
+                    Median
+                  </span>
+                  <span class="benchmark-range-legend-item">
+                    <span
+                      class="benchmark-legend-dot benchmark-legend-dot-planned"
+                    ></span>
+                    Your plan: {currentMargin}%
+                  </span>
+                </div>
+                <template lwc:if={hasPhase1GpText}>
+                  <p class="benchmark-gp-callout">{phase1GpText}</p>
+                </template>
+                <p class="benchmark-source-text">Based on {benchmarkSource}</p>
+              </div>
+            </div>
           </template>
         </template>
 
@@ -320,40 +356,8 @@
           </div>
         </template>
 
-        <!-- Phase 1 Footer: Refresh icon + Show Details -->
-        <template lwc:if={isPhaseOne}>
-          <div class="p1-footer">
-            <button
-              class="p1-footer-refresh"
-              onclick={handleRefresh}
-              aria-label="Refresh recommendation"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
-                <path
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                />
-              </svg>
-            </button>
-            <button
-              class="p1-footer-details"
-              onclick={toggleDetails}
-              aria-expanded={isDetailExpanded}
-              aria-label={detailsToggleLabel}
-            >
-              <span class="toggle-label">{detailsToggleLabel}</span>
-              <span class="toggle-chevron">{detailsToggleIcon}</span>
-            </button>
-          </div>
-        </template>
-
-        <!-- Phase 2+ Action Bar -->
-        <template lwc:if={isNotPhaseOne}>
-          <div class="action-bar">
+        <!-- Action Bar -->
+        <div class="action-bar">
             <button
               class="btn-secondary"
               onclick={handleRefresh}
@@ -398,7 +402,6 @@
               </button>
             </template>
           </div>
-        </template>
 
         <!-- Undo Bar (shown for 30s after applying) -->
         <template lwc:if={showUndoBar}>
@@ -409,9 +412,8 @@
           </div>
         </template>
 
-        <!-- Show/Hide Details Toggle (Phase 2+ only — Phase 1 uses p1-footer) -->
-        <template lwc:if={isNotPhaseOne}>
-          <div class="details-toggle-bar">
+        <!-- Show/Hide Details Toggle -->
+        <div class="details-toggle-bar">
             <button
               class="btn-toggle-details"
               onclick={toggleDetails}
@@ -422,7 +424,6 @@
               <span class="toggle-chevron">{detailsToggleIcon}</span>
             </button>
           </div>
-        </template>
 
         <!-- Expandable Detail Sections -->
         <div class={detailsPanelClass}>

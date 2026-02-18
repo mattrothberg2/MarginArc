@@ -2335,6 +2335,15 @@
   font-style: italic;
   margin-top: 8px;
 }
+.benchmark-gp-callout {
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+  background: #fef3c7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-top: 10px;
+}
 
 /* =========================================================================
    Phase 1 Redesigned Benchmark Bar

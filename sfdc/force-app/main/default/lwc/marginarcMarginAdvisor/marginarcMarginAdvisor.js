@@ -826,15 +826,9 @@ export default class MarginarcMarginAdvisor extends LightningElement {
     return `color: ${this.phase1ScoreColor}`;
   }
 
-  // Gauge arc — a semicircle showing score progress via conic-gradient
-  get phase1ScoreArcStyle() {
-    const score = this.phase1Score;
-    const color = this.phase1ScoreColor;
-    // The arc goes from 0 to 180 degrees (semicircle). Score maps proportionally.
-    const degrees = (score / 100) * 180;
-    // Use literal hex for track color since CSS vars don't resolve in inline styles
-    const trackColor = '#e2e8f0'; // slate-200
-    return `background: conic-gradient(${color} 0deg, ${color} ${degrees}deg, ${trackColor} ${degrees}deg, ${trackColor} 180deg, transparent 180deg, transparent 360deg)`;
+  // Spectrum bar marker position for Phase 1 score
+  get phase1ScoreMarkerStyle() {
+    return `left: ${this.phase1Score}%`;
   }
 
   // GP opportunity text — shown when below benchmark range
