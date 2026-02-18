@@ -2035,4 +2035,36 @@ router.post('/customers/:id/phase', requireRole('super_admin', 'admin'), async (
   }
 });
 
+// ===========================
+// ML TRAINING ENDPOINTS
+// ===========================
+
+router.post('/ml/train/:customerId', async (req, res) => {
+  try {
+    const { trainCustomerModel } = await import('../ml/train.js')
+    const result = await trainCustomerModel(req.params.customerId)
+    res.json(result)
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
+router.get('/ml/model/:customerId', async (req, res) => {
+  try {
+    const { getModel } = await import('../ml/train.js')
+    const modelPkg = await getModel(req.params.customerId)
+    if (!modelPkg) return res.status(404).json({ error: 'No trained model' })
+    // Don't expose raw weights — just metadata
+    res.json({
+      metrics: modelPkg.metrics,
+      dealCount: modelPkg.dealCount,
+      topFeatures: modelPkg.importance?.slice(0, 10),
+      trainedAt: modelPkg.trainedAt,
+      version: modelPkg.version
+    })
+  } catch (err) {
+    res.status(500).json({ error: err.message })
+  }
+})
+
 export default router;
