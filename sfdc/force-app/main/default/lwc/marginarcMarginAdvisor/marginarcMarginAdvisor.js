@@ -701,36 +701,52 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       }
     }
 
-    // Deduplicate: if the same key entity appears in both topDrivers and phase1Guidance,
-    // keep only the first occurrence
-    const seen = new Set();
+    // Deduplicate across ALL insight sources (topDrivers, phase1Guidance,
+    // benchmarkInsights, scoreFactors). Two passes:
+    //   1. Exact text match (case-insensitive) — catches identical sentences
+    //      from different source arrays
+    //   2. Entity match — if two different sentences reference the same key
+    //      entity (vendor, segment, or topic), keep only the first
+    const seenTexts = new Set();
+    const seenEntities = new Set();
     const dedupedTips = [];
+    const entities = [
+      "cisco",
+      "hpe",
+      "dell",
+      "palo alto",
+      "fortinet",
+      "vmware",
+      "microsoft",
+      "netapp",
+      "pure storage",
+      "arista",
+      "crowdstrike",
+      "nutanix",
+      "smb",
+      "midmarket",
+      "enterprise",
+      "services",
+      "deal size",
+      "displacement",
+      "quarter-end",
+      "registration"
+    ];
     for (const tip of tips) {
-      const normalized = tip.text.toLowerCase();
-      const entities = [
-        "cisco",
-        "hpe",
-        "dell",
-        "palo alto",
-        "fortinet",
-        "vmware",
-        "microsoft",
-        "netapp",
-        "pure storage",
-        "arista",
-        "crowdstrike",
-        "nutanix",
-        "smb",
-        "midmarket",
-        "enterprise"
-      ];
-      const matchedEntity = entities.find((e) => normalized.includes(e));
-      const key = matchedEntity || normalized.substring(0, 40);
+      const normalized = tip.text.toLowerCase().trim();
 
-      if (!seen.has(key)) {
-        seen.add(key);
-        dedupedTips.push(tip);
+      // Pass 1: exact text dedup
+      if (seenTexts.has(normalized)) continue;
+      seenTexts.add(normalized);
+
+      // Pass 2: entity-based dedup — keep first mention of each entity
+      const matchedEntity = entities.find((e) => normalized.includes(e));
+      if (matchedEntity) {
+        if (seenEntities.has(matchedEntity)) continue;
+        seenEntities.add(matchedEntity);
       }
+
+      dedupedTips.push(tip);
     }
     return dedupedTips;
   }
@@ -1565,7 +1581,7 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   }
 
   get confirmCurrentPlannedMargin() {
-    return (this.opportunityData?.plannedMargin || 15).toFixed(1);
+    return this.effectivePlannedMargin.toFixed(1);
   }
 
   get confirmWinProb() {
