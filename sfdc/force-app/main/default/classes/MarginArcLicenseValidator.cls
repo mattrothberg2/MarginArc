@@ -1,4 +1,4 @@
-public class MarginArcLicenseValidator implements Schedulable, Database.AllowsCallouts {
+public with sharing class MarginArcLicenseValidator implements Schedulable, Database.AllowsCallouts {
   public void execute(SchedulableContext sc) {
     validateLicenseAsync();
     sendTelemetryAsync();
