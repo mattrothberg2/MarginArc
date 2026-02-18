@@ -268,6 +268,29 @@ export default class MarginarcMarginAdvisor extends LightningElement {
             : "SMB";
     }
 
+    // Sanity check: if explicit segment contradicts AnnualRevenue by 2+ tiers, override
+    if (!isSegmentInferred && annualRevenue != null && annualRevenue > 0) {
+      const revenueSegment =
+        annualRevenue >= 100000000
+          ? "Enterprise"
+          : annualRevenue >= 10000000
+            ? "MidMarket"
+            : "SMB";
+
+      const tiers = { SMB: 0, MidMarket: 1, Enterprise: 2 };
+      const explicitTier = tiers[customerSegment] ?? 1;
+      const revenueTier = tiers[revenueSegment] ?? 1;
+
+      if (Math.abs(explicitTier - revenueTier) >= 2) {
+        // Explicit segment is wildly inconsistent with revenue — override
+        console.warn(
+          `MarginArc: Overriding explicit segment "${explicitSegment}" with revenue-derived "${revenueSegment}" (AnnualRevenue: $${annualRevenue})`
+        );
+        customerSegment = revenueSegment;
+        isSegmentInferred = true;
+      }
+    }
+
     // Derive complexity from amount and stage
     const stageName = fields.StageName?.value || "";
     const solutionComplexity =

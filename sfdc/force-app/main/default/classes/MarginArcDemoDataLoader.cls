@@ -512,20 +512,46 @@ public with sharing class MarginArcDemoDataLoader {
 
   private static List<Account> createAccountRecords() {
     return new List<Account>{
-      new Account(Name = 'Acme Technologies (Demo)', Industry = 'Technology'),
-      new Account(Name = 'Meridian Healthcare (Demo)', Industry = 'Healthcare'),
-      new Account(Name = 'Pinnacle Financial (Demo)', Industry = 'Finance'),
+      new Account(
+        Name = 'Acme Technologies (Demo)',
+        Industry = 'Technology',
+        AnnualRevenue = 2500000000.0
+      ),
+      new Account(
+        Name = 'Meridian Healthcare (Demo)',
+        Industry = 'Healthcare',
+        AnnualRevenue = 850000000.0
+      ),
+      new Account(
+        Name = 'Pinnacle Financial (Demo)',
+        Industry = 'Finance',
+        AnnualRevenue = 5200000000.0
+      ),
       new Account(
         Name = 'Atlas Manufacturing (Demo)',
-        Industry = 'Manufacturing'
+        Industry = 'Manufacturing',
+        AnnualRevenue = 175000000.0
       ),
-      new Account(Name = 'Horizon Energy (Demo)', Industry = 'Energy'),
+      new Account(
+        Name = 'Horizon Energy (Demo)',
+        Industry = 'Energy',
+        AnnualRevenue = 8000000.0
+      ),
       new Account(
         Name = 'Velocity Logistics (Demo)',
-        Industry = 'Transportation'
+        Industry = 'Transportation',
+        AnnualRevenue = 85000000.0
       ),
-      new Account(Name = 'Crestline Retail (Demo)', Industry = 'Retail'),
-      new Account(Name = 'Spectrum Media (Demo)', Industry = 'Communications')
+      new Account(
+        Name = 'Crestline Retail (Demo)',
+        Industry = 'Retail',
+        AnnualRevenue = 35000000.0
+      ),
+      new Account(
+        Name = 'Spectrum Media (Demo)',
+        Industry = 'Communications',
+        AnnualRevenue = 1500000000.0
+      )
     };
   }
 
