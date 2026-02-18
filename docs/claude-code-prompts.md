@@ -2020,8 +2020,9 @@ Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 **Core problem:** The segment detection fix (PR #66) added AnnualRevenue-based inference, but it is never reached because the `Fulcrum_Customer_Segment__c` field has an explicit "SMB" value on the Opportunity (from demo data). This cascades into every downstream calculation.
 
 ### Concurrency Guide
-- **12A** and **12B** can run in **parallel** (different files)
-- **12C** depends on **12A** (both touch marginarcMarginAdvisor.js)
+- **12A**, **12B**, and **12E** can run in **parallel** (all touch different files)
+- **12D** depends on **12A** (both touch marginarcMarginAdvisor.js) — run AFTER 12A merges
+- **12C** depends on **12D** (both touch marginarcMarginAdvisor.js) — run AFTER 12D merges
 
 ---
 
@@ -2289,6 +2290,347 @@ npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBom
 npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.html
 npx eslint force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
 npx eslint force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
+```
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12D: Fix dealScoreFactors Crash + Score Improvement Tips [SFDC LWC] (Sprint 30)
+
+**Depends on 12A** (both modify marginarcMarginAdvisor.js). Run AFTER 12A merges.
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+There is a **P0 crash** when clicking "Show Details" on the Margin Advisor widget. The error is:
+
+```
+[(intermediate value) || []].map is not a function
+Function: get dealScoreFactors
+Component: markup://c:marginarcMarginAdvisor
+```
+
+**Root cause:** The Lambda API (`/api/recommend`) returns `scoreFactors` as a **plain object** with named keys:
+```json
+{
+  "marginAlignment": { "score": 0, "max": 40, "label": "Your margin is...", "direction": "negative" },
+  "winProbability": { "score": 13, "max": 25, "label": "Moderate win...", "direction": "positive" },
+  "dataQuality": { "score": 11, "max": 20, "label": "Good data...", "direction": "positive" },
+  "algorithmConfidence": { "score": 6, "max": 15, "label": "Limited...", "direction": "negative" }
+}
+```
+
+But the LWC `dealScoreFactors` getter (around line 2372) checks `Array.isArray(apiFactors)` — which returns false for the object. The fallback path then does `(this.dealScoreData?.factors || []).map(...)`. Since the `dealScoreData` getter at line 2345 sets `factors: this.recommendation.scoreFactors || []`, and `scoreFactors` is a truthy object, the `|| []` fallback never triggers. The code calls `.map()` on the plain object, which crashes.
+
+## File: `sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js`
+
+### Fix 1: Convert scoreFactors object to array
+
+In the `dealScoreFactors` getter (around line 2372), replace the `Array.isArray(apiFactors)` check with logic that handles BOTH shapes — object and array:
+
+```javascript
+get dealScoreFactors() {
+    const apiFactors = this.recommendation?.scoreFactors;
+
+    // Convert object shape { marginAlignment: {...}, ... } to array
+    let factorsArray;
+    if (apiFactors && typeof apiFactors === 'object' && !Array.isArray(apiFactors)) {
+      // Server returns an object with named keys — convert to array
+      const DISPLAY_NAMES = {
+        marginAlignment: 'Margin Alignment',
+        winProbability: 'Win Probability',
+        dataQuality: 'Data Quality',
+        algorithmConfidence: 'Algorithm Confidence'
+      };
+      factorsArray = Object.entries(apiFactors).map(([key, val]) => ({
+        name: DISPLAY_NAMES[key] || key,
+        score: val.score,
+        max: val.max,
+        label: val.label,
+        direction: val.direction
+      }));
+    } else if (Array.isArray(apiFactors) && apiFactors.length > 0) {
+      factorsArray = apiFactors;
+    }
+
+    if (factorsArray && factorsArray.length > 0) {
+      return factorsArray.map((f) => {
+        const ratio = f.max > 0 ? f.score / f.max : 0.5;
+        let colorClass;
+        if (ratio >= 0.66) colorClass = 'score-factor-label score-factor-label-green';
+        else if (ratio >= 0.33) colorClass = 'score-factor-label score-factor-label-amber';
+        else colorClass = 'score-factor-label score-factor-label-red';
+        return { name: f.name, label: f.label || f.name, labelClass: colorClass };
+      });
+    }
+
+    // Fallback: client-side factors (also guard against object shape)
+    const clientFactors = this.dealScoreData?.factors;
+    const clientArray = Array.isArray(clientFactors) ? clientFactors : [];
+    // ... rest of fallback logic using clientArray instead of clientFactors
+}
+```
+
+### Fix 2: Fix dealScoreData getter too
+
+In the `dealScoreData` getter (around line 2345), also guard the `factors` assignment:
+
+```javascript
+// Change:
+factors: this.recommendation.scoreFactors || []
+// To:
+factors: Array.isArray(this.recommendation.scoreFactors)
+  ? this.recommendation.scoreFactors
+  : []
+```
+
+This ensures the client-side fallback path always gets an actual array.
+
+### Fix 3: Fix phase1Tips getter
+
+In the `phase1Tips` getter (around line 632), there is a similar `Array.isArray(factors)` guard that silently skips the API scoreFactors object. Apply the same object-to-array conversion:
+
+```javascript
+// Where it reads scoreFactors for the detail view, apply the same conversion
+const rawFactors = this.recommendation?.scoreFactors;
+let factors;
+if (rawFactors && typeof rawFactors === 'object' && !Array.isArray(rawFactors)) {
+  factors = Object.entries(rawFactors).map(([key, val]) => ({
+    name: key, score: val.score, max: val.max, label: val.label, direction: val.direction
+  }));
+} else if (Array.isArray(rawFactors)) {
+  factors = rawFactors;
+}
+```
+
+### Fix 4: Add "Improve Your Score" tips below deal score
+
+When the details panel is expanded, show actionable tips that tell the rep HOW to improve the score. Add a getter:
+
+```javascript
+get scoreImprovementTips() {
+  const tips = [];
+  const factors = this.recommendation?.scoreFactors;
+  if (!factors) return tips;
+
+  // Convert object shape to usable format
+  const f = typeof factors === 'object' && !Array.isArray(factors) ? factors : {};
+
+  // Margin alignment — if score is low, suggest updating planned margin
+  if (f.marginAlignment && f.marginAlignment.max > 0) {
+    const ratio = f.marginAlignment.score / f.marginAlignment.max;
+    if (ratio < 0.33) {
+      tips.push({
+        icon: 'utility:trending',
+        text: 'Update your planned margin closer to the recommendation',
+        pts: Math.round(f.marginAlignment.max * 0.5) - f.marginAlignment.score
+      });
+    }
+  }
+
+  // Data quality — if score is low, suggest filling in fields
+  if (f.dataQuality && f.dataQuality.max > 0) {
+    const ratio = f.dataQuality.score / f.dataQuality.max;
+    if (ratio < 0.66) {
+      const missingFields = this._missingFields || [];
+      const fieldHint = missingFields.length > 0
+        ? `Fill in: ${missingFields.slice(0, 3).join(', ')}`
+        : 'Add more deal details (competitors, urgency, complexity)';
+      tips.push({
+        icon: 'utility:edit',
+        text: fieldHint,
+        pts: Math.round(f.dataQuality.max * 0.3)
+      });
+    }
+  }
+
+  // Algorithm confidence — if low, encourage more deal scoring
+  if (f.algorithmConfidence && f.algorithmConfidence.max > 0) {
+    const ratio = f.algorithmConfidence.score / f.algorithmConfidence.max;
+    if (ratio < 0.5) {
+      tips.push({
+        icon: 'utility:database',
+        text: 'Score more deals to improve algorithm confidence',
+        pts: Math.round(f.algorithmConfidence.max * 0.3)
+      });
+    }
+  }
+
+  // Win probability — if low, suggest actions
+  if (f.winProbability && f.winProbability.max > 0) {
+    const ratio = f.winProbability.score / f.winProbability.max;
+    if (ratio < 0.33) {
+      tips.push({
+        icon: 'utility:like',
+        text: 'Register the deal or reduce competitor count to improve win probability',
+        pts: Math.round(f.winProbability.max * 0.3)
+      });
+    }
+  }
+
+  // Sort by potential points, take top 3
+  return tips.sort((a, b) => b.pts - a.pts).slice(0, 3);
+}
+
+get hasScoreImprovementTips() {
+  return this.scoreImprovementTips.length > 0;
+}
+```
+
+In the HTML template (`marginarcMarginAdvisor.html`), inside the details panel after the score factors display, add:
+
+```html
+<template lwc:if={hasScoreImprovementTips}>
+  <div class="score-tips">
+    <p class="score-tips-header">Improve your score:</p>
+    <template for:each={scoreImprovementTips} for:item="tip">
+      <div key={tip.text} class="score-tip-row">
+        <lightning-icon icon-name={tip.icon} size="xx-small"></lightning-icon>
+        <span class="score-tip-text">{tip.text}</span>
+        <span class="score-tip-pts">+{tip.pts} pts</span>
+      </div>
+    </template>
+  </div>
+</template>
+```
+
+Style the tips section in the CSS:
+- `.score-tips`: margin-top 12px, padding 12px, background #F8FAFC, border-radius 8px, border 1px solid #E2E8F0
+- `.score-tips-header`: font-size 11px, font-weight 600, text-transform uppercase, letter-spacing 0.5px, color #64748B, margin-bottom 8px
+- `.score-tip-row`: display flex, align-items center, gap 8px, padding 4px 0, font-size 13px
+- `.score-tip-text`: flex 1, color #334155
+- `.score-tip-pts`: font-size 11px, font-weight 600, color #059669 (green), white-space nowrap
+
+Run prettier and eslint on ALL modified files. Verify the widget loads without errors — specifically test the "Show Details" toggle.
+
+Create a feature branch, commit, and push. Open a PR from the GitHub UI.
+```
+
+---
+
+### Prompt 12E: Fix BOM Table Overflow + Responsive Layout [SFDC LWC CSS] (Sprint 30)
+
+Can run **in parallel** with 12A, 12B, and 12D (only touches CSS files and BOM component HTML).
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo.
+
+## Context
+
+The BOM Builder table extends beyond its container on the Salesforce Opportunity record page. The root cause is two layers of `overflow: hidden` on parent containers that clip the scroll wrapper, plus missing text truncation on long content.
+
+## File 1: `sfdc/force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.css`
+
+### Fix 1: Remove overflow clipping on parent containers
+
+The current CSS has:
+```css
+.bom-builder {
+  overflow: hidden;    /* CLIPS horizontal content */
+}
+.table-section {
+  overflow: hidden;    /* ALSO CLIPS horizontal content */
+}
+.table-scroll {
+  overflow-x: auto;   /* This is correct but parents negate it */
+}
+```
+
+Change `.bom-builder` from `overflow: hidden` to `overflow: visible`. Change `.table-section` from `overflow: hidden` to `overflow: visible`. Keep `.table-scroll` as `overflow-x: auto` — this is the intended scroll container.
+
+If `overflow: hidden` on `.bom-builder` is needed to clip something specific (like absolute-positioned children), use `overflow-y: hidden; overflow-x: visible` instead. But first try `overflow: visible` and verify nothing breaks.
+
+### Fix 2: Add text truncation for long content
+
+Add these CSS rules to prevent long unbroken strings from pushing the grid wider:
+
+```css
+.cell-input,
+.cell-desc,
+.cell-num {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bom-table {
+  width: 100%;
+  min-width: 760px;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+```
+
+Also add `min-width: 0` to the grid row children:
+
+```css
+.table-header > *,
+div[role="row"] > *,
+.table-totals > * {
+  min-width: 0;
+  overflow: hidden;
+}
+```
+
+### Fix 3: Ensure the Description column truncates gracefully
+
+The Description column uses `1fr` and should not push other columns off-screen. Add:
+
+```css
+.cell-desc {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+```
+
+And in the HTML template (`marginarcBomBuilder.html`), find the description input field and add `title={line.description}` so users can hover to see the full text.
+
+## File 2: `sfdc/force-app/main/default/lwc/marginarcBomTable/marginarcBomTable.css`
+
+### Fix 4: Add text truncation for the read-only BOM table
+
+The read-only BOM table has similar overflow risks. Add truncation to the Line Item column:
+
+```css
+.bom-item-label,
+.bom-item-sku {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bom-table-wrap > * {
+  min-width: 0;
+}
+```
+
+### Fix 5: Consistent currency formatting
+
+In `marginarcBomBuilder.js`, find all places where currency values are displayed (Unit Cost and Ext Price columns). Ensure they use `.toFixed(2)` for consistent decimal places (e.g., "$6,232.30" not "$6,232.3"). Look for the formatting functions and fix any that produce inconsistent decimal output.
+
+## Testing
+
+After making changes:
+1. Verify the BOM Builder table does not overflow its container on a standard Opportunity record page
+2. Verify horizontal scroll works when the viewport is narrower than 760px
+3. Verify long descriptions are truncated with ellipsis and show full text on hover
+4. Verify the Category dropdown still appears correctly (not clipped by parent overflow)
+5. Verify responsive breakpoints still work (1024px and 768px)
+
+Run prettier on modified files:
+```
+cd sfdc
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.css
+npx prettier --write force-app/main/default/lwc/marginarcBomTable/marginarcBomTable.css
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.html
+npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBomBuilder.js
 ```
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
