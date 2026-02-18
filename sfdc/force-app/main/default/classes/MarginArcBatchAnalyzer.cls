@@ -10,7 +10,7 @@
  *         Fulcrum_Win_Probability__c
  * Does NOT touch: Amount, Fulcrum_Planned_Margin__c, or other rep-set fields.
  */
-public without sharing class MarginArcBatchAnalyzer implements Database.Batchable<SObject>, Database.AllowsCallouts, Schedulable {
+public without sharing class MarginArcBatchAnalyzer implements Database.Batchable<SObject>, Database.AllowsCallouts, Database.Stateful, Schedulable {
   // ── Configuration ──
   private static final String FALLBACK_API_URL = 'https://api.marginarc.com/api/recommend';
   @TestVisible
