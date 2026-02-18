@@ -2635,3 +2635,617 @@ npx prettier --write force-app/main/default/lwc/marginarcBomBuilder/marginarcBom
 
 Create a feature branch, commit, and push. Open a PR from the GitHub UI.
 ```
+
+---
+---
+
+## Epic 13: Margin Opportunity Assessment (MOA) — Open Source Scanner (Sprint 31-32)
+
+**Context:** Free, open-source SFDC package that scans a VAR's historical deals and produces a "Margin Opportunity Report" showing how much margin they're leaving on the table. Separate repo (`mattrothberg2/margin-opportunity-assessment`), Apache 2.0 license. Zero MarginArc proprietary code.
+
+**GTM motion:** Prospect self-installs MOA → sees "$X left on the table" → asks "how do I fix this?" → signs MarginArc. MOA data bootstraps Phase 2 on day 1 (no cold start).
+
+### Concurrency Guide
+- **13A** → **13B** → **13C** → **13D** (sequential — each builds on the previous)
+
+---
+
+### Prompt 13A: Scaffold MOA Repo + SFDC Project [SFDC] (Sprint 31)
+
+```
+You are creating a NEW open-source Salesforce package from scratch. This is NOT the MarginArc product — it's a free diagnostic tool called "Margin Opportunity Assessment" (MOA).
+
+## Setup
+
+1. Create a new GitHub repo:
+gh repo create mattrothberg2/margin-opportunity-assessment --public --description "Free margin opportunity scanner for IT VARs. See how much margin your team is leaving on the table." --clone
+cd margin-opportunity-assessment
+
+2. Initialize the SFDC project:
+sf project generate --name margin-opportunity-assessment --template standard
+
+3. Create the Apache 2.0 LICENSE file.
+
+4. Create this structure:
+force-app/main/default/
+├── classes/
+│   ├── MOA_Scanner.cls              (placeholder — built in 13B)
+│   ├── MOA_ScannerTest.cls          (placeholder)
+│   ├── MOA_ScanController.cls       (AuraEnabled methods for LWC)
+│   ├── MOA_ScanControllerTest.cls
+│   ├── MOA_Models.cls               (data classes for scan results)
+│   ├── MOA_InstallHandler.cls       (post-install setup)
+│   └── MOA_InstallHandlerTest.cls
+├── lwc/
+│   └── moaDashboard/                (placeholder — built in 13C)
+│       ├── moaDashboard.html
+│       ├── moaDashboard.js
+│       └── moaDashboard.css
+├── permissionsets/
+│   └── MOA_User.permissionset-meta.xml
+├── tabs/
+│   └── Margin_Opportunity_Assessment.tab-meta.xml
+├── objects/
+│   └── MOA_Config__c/               (Hierarchy Custom Setting)
+│       ├── MOA_Config__c.object-meta.xml
+│       └── fields/
+│           ├── Install_Date__c.field-meta.xml    (Date)
+│           ├── Scan_Months__c.field-meta.xml     (Number, default 24)
+│           ├── Min_Cohort_Size__c.field-meta.xml (Number, default 5)
+│           └── Last_Scan_Date__c.field-meta.xml  (DateTime)
+│   └── MOA_Scan_Result__c/          (Hierarchy Custom Setting)
+│       ├── MOA_Scan_Result__c.object-meta.xml
+│       └── fields/
+│           ├── Result_JSON__c.field-meta.xml     (Long Text Area, 131072)
+│           ├── Scan_Status__c.field-meta.xml     (Text 20)
+│           ├── Error_Message__c.field-meta.xml   (Long Text Area, 5000)
+│           └── Scan_Date__c.field-meta.xml       (DateTime)
+└── applications/
+    └── MOA.app-meta.xml
+
+## Permission Set: MOA_User
+
+Read-only access to: Opportunity (all standard fields), Account (Industry, AnnualRevenue, NumberOfEmployees, Name), OpportunityLineItem, Product2 (Name, Family, ProductCode), User (Name). Read/write to MOA_Config__c and MOA_Scan_Result__c. NO write access to Opportunity or Account.
+
+## Install Handler: MOA_InstallHandler
+
+Implements InstallHandler. On install: set MOA_Config__c defaults (Install_Date = today, Scan_Months = 24, Min_Cohort_Size = 5).
+
+## MOA_Models.cls
+
+Data classes — create inner classes: Cohort (oem, sizeBucket, segment, dealCount, wonCount, lostCount, winRate, medianMargin, p25Margin, p75Margin, avgMargin, totalRevenue, marginOpportunity), RepStats (repName, repId, dealCount, wonCount, avgMargin, vsTeamAvg, consistency, marginLeftOnTable), MarginBand (band, dealCount, winRate), ScanResult (totalDeals, totalWon, totalLost, totalRevenue, currentAvgMargin, achievableAvgMargin, annualOpportunity, cohorts list, reps list, winRateByMarginBand list, scanDate, scanMonths).
+
+## Tab
+
+Points to moaDashboard LWC. Icon: standard:analytics.
+
+## README.md
+
+Professional README with:
+- "Margin Opportunity Assessment by MarginArc"
+- What it does (3 bullets: scans deals, segments by OEM/size/tier, quantifies the gap)
+- What it does NOT do (no data leaves SF, no API calls, no writes, fully auditable code)
+- Installation instructions
+- How it works (link to docs/how-it-works.md)
+- Screenshots placeholder
+- License: Apache 2.0
+- "Built by MarginArc — AI-powered margin optimization for IT VARs"
+
+## docs/how-it-works.md
+
+Explain methodology: cohort segmentation (OEM × Size × Tier), median as benchmark, opportunity = sum of below-median gaps, rep consistency measurement. Emphasize this is basic statistics, not AI.
+
+Commit and push.
+```
+
+---
+
+### Prompt 13B: MOA Analysis Engine [SFDC Apex] (Sprint 31)
+
+**Depends on 13A.**
+
+```
+You are working on the Margin Opportunity Assessment package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Context
+
+Build the core analysis engine — a Database.Batchable<SObject> that scans Closed Won/Lost Opportunities and computes margin opportunity statistics. Everything runs in Apex. No external calls.
+
+## File: force-app/main/default/classes/MOA_Scanner.cls
+
+Implements Database.Batchable<SObject>, Database.Stateful.
+
+### start()
+
+Query closed Opportunities from the last N months (MOA_Config__c.Scan_Months__c, default 24):
+
+SELECT Id, Name, Amount, StageName, CloseDate, Type, OwnerId, IsClosed, IsWon,
+       Account.Industry, Account.AnnualRevenue, Account.NumberOfEmployees, Account.Name,
+       Owner.Name,
+       (SELECT ProductCode, UnitPrice, Quantity, TotalPrice, Product2.Family, Product2.Name FROM OpportunityLineItems)
+FROM Opportunity WHERE IsClosed = true AND CloseDate >= LAST_N_MONTHS:24 AND Amount > 0
+
+### execute()
+
+For each Opportunity in the batch:
+
+1. Derive OEM from line items: Pattern match Product2.Family or Product2.Name against known vendors (Cisco, Dell, HPE, Lenovo, Microsoft, Palo Alto, CrowdStrike, Fortinet, VMware, NetApp, Juniper, Aruba). If no match → "Other".
+
+2. Derive Size Bucket from Amount: <$25K, $25K-100K, $100K-500K, $500K-1M, $1M+
+
+3. Derive Customer Segment from Account.AnnualRevenue: >= $1B → Enterprise, >= $100M → Mid-Market, >= $10M → SMB, < $10M or null → Unknown
+
+4. Derive Margin: Try common custom fields in try/catch (many VARs use different field names):
+   - Try: Opportunity.get('Fulcrum_GP_Percent__c') — for MarginArc users
+   - Try: Opportunity.get('GP_Percent__c')
+   - Try: Opportunity.get('Margin_Percent__c')
+   - Fallback: If line items have cost data, compute from (Amount - cost) / Amount * 100
+   - If no margin available: mark deal as "margin_unknown" (include in win rate analysis but exclude from margin analysis)
+
+5. Accumulate into stateful maps:
+   - Map<String, List<DealData>> by cohort key (OEM|Size|Segment)
+   - Map<Id, RepAccumulator> by OwnerId
+
+Use a stateful List<DealData> or similar pattern to carry data across batches.
+
+### finish()
+
+1. For each cohort with >= Min_Cohort_Size deals:
+   - Sort margin values, compute median (middle value), p25, p75
+   - Compute win rate = wonCount / totalCount * 100
+   - Compute opportunity = sum of (median - actual) * amount for each Won deal where actual < median
+
+2. For each rep:
+   - For each of their deals, compare their margin to the cohort median for that deal's cohort
+   - avgMargin vs team average on same-cohort deals
+   - consistency = standard deviation of (deal_margin - cohort_median) across their deals
+
+3. Win rate by margin band: group all deals into bands (0-5%, 5-10%, 10-15%, 15-20%, 20-25%, 25%+), compute win rate per band
+
+4. Roll-ups:
+   - achievableAvgMargin = sum(cohort_median * deal_amount) / sum(deal_amount) for all Won deals
+   - annualOpportunity = total opportunity * (12 / scan_months) to annualize
+
+5. Serialize as ScanResult, store in MOA_Scan_Result__c.Result_JSON__c. Set Scan_Status = 'Complete'.
+
+6. Update MOA_Config__c.Last_Scan_Date__c = DateTime.now()
+
+### Error handling
+
+Wrap finish() in try/catch. On error, set MOA_Scan_Result__c.Scan_Status__c = 'Error', Error_Message__c = error message.
+
+## File: force-app/main/default/classes/MOA_ScanController.cls
+
+@AuraEnabled methods:
+- startScan(): Set Scan_Status = 'Running', execute batch
+- getScanResult(): Return Result_JSON__c
+- getScanStatus(): Return Scan_Status__c
+
+## File: force-app/main/default/classes/MOA_ScannerTest.cls
+
+75%+ coverage. Create: 3 Accounts (Enterprise $5B, Mid-Market $200M, SMB $20M), 15 Opportunities (mix of Won/Lost, varying amounts), Products with Families matching OEM names. Run batch, verify Result_JSON has correct structure.
+
+Commit and push.
+```
+
+---
+
+### Prompt 13C: MOA Report Dashboard [SFDC LWC] (Sprint 31-32)
+
+**Depends on 13B.**
+
+```
+You are working on the MOA package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Context
+
+Build the LWC dashboard that displays scan results. This is the "wow" screen for the sales conversation.
+
+## Component: force-app/main/default/lwc/moaDashboard/
+
+### Data Loading
+
+connectedCallback: call getScanStatus(). If 'Complete' → getScanResult(), parse JSON. If 'Running' → show spinner, poll every 5s. If no result → show welcome with "Scan Now" button.
+
+### Section 1: Executive Summary (KPI Strip)
+
+5 KPIs in a row: Deals Analyzed, Total Revenue, Current Avg Margin, Achievable Avg Margin, Annual Margin Opportunity (hero number — large green text).
+
+Below: "Your team is leaving an estimated $X/year on the table."
+
+### Section 2: Segment Breakdown Table
+
+Sortable table with columns: Segment (OEM × Size × Tier), Deals, Win Rate, Median Margin, Your Avg, Gap, Opportunity ($). Sort by Opportunity descending. Color-code Gap (green/red). Show top 15 with "Show All" toggle.
+
+### Section 3: Rep Leaderboard
+
+Table: Rep, Deals, Won, Win Rate, Avg Margin, vs Team Avg, Consistency, Opportunity ($). Color-code "vs Team Avg". Sort by Opportunity.
+
+### Section 4: Win Rate by Margin Band
+
+CSS bar chart (no library needed). Bars for each margin band showing win rate %. Label each bar with deal count. Highlight the "sweet spot" (highest win rate band with 10+ deals).
+
+### Trial Expiry
+
+Check MOA_Config__c.Install_Date__c. If > 30 days ago: show banner "Trial expired. Results still visible. Want continuous optimization? Learn about MarginArc →". Disable "Re-Scan" button.
+
+### Scan Now / Re-Scan Button
+
+Top of dashboard. Calls startScan(), shows progress, polls status. On complete, refresh.
+
+### Footer
+
+"Powered by MarginArc — AI-powered margin optimization for IT VARs. Learn more →"
+
+### Styling
+
+Clean, modern. White cards on #F1F5F9 background. Hero number: #059669 green, 28px bold. Tables: alternating rows, sticky headers. Responsive: stack KPIs vertically on mobile.
+
+### CSV Export
+
+"Export CSV" button for segment breakdown. Build CSV string in JS, create Blob, trigger download link.
+
+Commit and push.
+```
+
+---
+
+### Prompt 13D: MOA Polish + Release [SFDC] (Sprint 32)
+
+**Depends on 13C.**
+
+```
+You are working on the MOA package in the `mattrothberg2/margin-opportunity-assessment` repo.
+
+## Tasks
+
+1. PDF Export: Create MOA_ReportPDF.page (Visualforce renderAs="pdf"). Page 1: 5 KPIs + summary. Page 2: Top 10 segments. Page 3: Rep leaderboard. Footer: "Margin Opportunity Assessment | marginarc.com". Wire the LWC "Export PDF" button to open this page.
+
+2. Scan Progress: In the batch execute(), update MOA_Scan_Result__c.Scan_Status__c with progress count (e.g., "Running: 450/2847"). LWC polls and parses to show % progress bar.
+
+3. Error UX: If scan fails, show friendly error: "Scan encountered an issue: {error}. Contact support@marginarc.com for help."
+
+4. Deploy to MarginArc dev org for testing:
+SF_USE_GENERIC_UNIX_KEYCHAIN=true sf project deploy start --target-org matt.542a9844149e@agentforce.com --source-dir force-app
+Run the scan, take 3 screenshots (summary, segments, reps), save to docs/.
+
+5. Update README with screenshots and a SFDC deploy button URL.
+
+6. Create GitHub release v1.0.0.
+
+Commit and push.
+```
+
+---
+---
+
+## Epic 14: Real ML Algorithm — Replace Rules Engine (Sprint 32-34)
+
+**Context:** Replace the hardcoded rules engine (rules.js) with a real predictive model — logistic regression trained on each customer's Closed Won/Lost deals. The model learns which features predict winning, how margin affects win probability, and recommends the margin that maximizes expected GP.
+
+**Data source:** `recorded_deals` table already has 27 feature columns + outcome (status Won/Lost) + achieved_margin. MarginArcDealOutcomeSync pushes closed deals weekly. No new pipeline needed.
+
+**Architecture:** Win Probability Model: P(win | features, proposed_margin). Margin Optimizer: sweep 5-35%, find max expected GP. All pure Node.js — no Python, no SageMaker.
+
+### Concurrency Guide
+- **14A** and **14B** can run in **parallel** (separate new files)
+- **14C** depends on **14A + 14B** (training uses both)
+- **14D** depends on **14C** (inference needs trained model)
+- **14E** can run in **parallel** with 14C/14D (standalone benchmarks module)
+- **14F** depends on **14D + 14E** (LWC needs both working)
+
+---
+
+### Prompt 14A: Feature Engineering Module [Lambda Node.js] (Sprint 32)
+
+Can run in **parallel** with 14B.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Context
+
+Build the feature engineering pipeline that transforms raw deal data from recorded_deals into numeric vectors for logistic regression.
+
+The recorded_deals table columns include: segment, industry, product_category, deal_reg_type, competitors (VARCHAR '0','1','2','3+'), value_add, relationship_strength, customer_tech_sophistication, solution_complexity, var_strategic_importance, customer_price_sensitivity (1-5), customer_loyalty (1-5), deal_urgency (1-5), is_new_logo (bool), solution_differentiation (1-5), oem_cost (numeric), oem (varchar), services_attached (bool), quarter_end (bool), competitor_names (jsonb), bom_line_count (int), bom_avg_margin_pct (numeric), status ('Won'/'Lost'), achieved_margin (numeric fraction).
+
+## Create: lambda/server/src/ml/features.js
+
+### Exports:
+
+1. FEATURE_SPEC — array of feature definitions with name, type (continuous/binary/categorical), source column, transform, and categories for one-hot encoding. Include these features:
+   - Continuous: deal_size_log (from oem_cost, log transform), price_sensitivity, customer_loyalty, deal_urgency, solution_differentiation, bom_line_count, competitor_count (competitors string → number), proposed_margin (injected at inference time)
+   - Binary: is_new_logo, services_attached, quarter_end, has_bom (bom_line_count > 0)
+   - Categorical (one-hot, drop last): segment (SMB/MidMarket/Enterprise), deal_reg (PremiumHunting/StandardApproved/NotRegistered), complexity (Low/Medium/High), relationship (New/Developing/Good/Strategic), oem_top (Cisco/Dell/HPE/Microsoft/Palo Alto/CrowdStrike/Other), product_cat (Hardware/Software/Services/Mixed)
+
+2. featurize(deal, normStats) — takes raw deal + normalization stats, returns { features: number[], featureNames: string[] }. Z-score normalize continuous features, one-hot encode categoricals (drop last to avoid multicollinearity), impute missing with mean.
+
+3. computeNormStats(deals) — compute mean and std for each continuous feature across an array of deals. Returns { means: {}, stds: {} }.
+
+4. FEATURE_DISPLAY_NAMES — map from feature names (including one-hot like 'oem_top_Cisco') to human-readable labels for the UI.
+
+5. Helper: competitorToNum(str) — '0'→0, '1'→1, '2'→2, '3+'→4
+
+## Create: lambda/server/src/ml/features.test.js
+
+Tests: featurize complete deal → correct vector length; missing fields → imputed; computeNormStats correct; one-hot encoding correct; log transform correct.
+
+Create branch feat/ml-features, commit, push. Open a PR.
+```
+
+---
+
+### Prompt 14B: Logistic Regression Implementation [Lambda Node.js] (Sprint 32)
+
+Can run in **parallel** with 14A.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Context
+
+Implement logistic regression from scratch in pure Node.js. No external ML libraries. This predicts P(win) given deal features + proposed margin.
+
+## Create: lambda/server/src/ml/logistic-regression.js
+
+### Exports:
+
+1. train(X, y, options) — Mini-batch gradient descent with L2 regularization.
+   - X: 2D array [n_samples][n_features], y: array of 0/1 labels
+   - options: { learningRate: 0.01, lambda: 0.01, epochs: 500, batchSize: 32, validationSplit: 0.2, earlyStoppingPatience: 20 }
+   - Algorithm: shuffle data, split train/val, init weights=0, for each epoch: mini-batch SGD with gradient = (1/batch) * sum((sigmoid(Wx+b) - y) * x) + lambda*w. Track val loss, early stop if no improvement in patience epochs.
+   - Returns: { weights: number[], bias: number, featureCount, epochsRun, trainLoss, valLoss, trainedAt: ISO string }
+
+2. predict(model, features) — sigmoid(dot(weights, features) + bias). Clip z to [-500, 500] to prevent overflow.
+
+3. predictBatch(model, X) — predict for each row.
+
+4. evaluate(model, X, y) — Returns { auc, logLoss, accuracy, calibration: [{bucket, predicted, actual}], n }.
+   - AUC: sort predictions desc, sweep threshold, trapezoidal integration of ROC curve.
+   - Calibration: 10 bins, mean predicted vs actual win rate per bin.
+
+5. getFeatureImportance(model, featureNames) — Sort features by |weight|, return [{ name, weight, absWeight, direction }].
+
+6. serializeModel(model) / deserializeModel(json) — JSON round-trip.
+
+## Create: lambda/server/src/ml/logistic-regression.test.js
+
+Tests:
+1. Linearly separable data → AUC > 0.95
+2. Random data → AUC near 0.5
+3. Higher lambda → smaller weight magnitudes
+4. Early stopping fires before max epochs on easy data
+5. Serialization round-trip preserves predictions
+6. Feature importance ranks the generating feature highest
+
+Create branch feat/ml-logistic-regression, commit, push. Open a PR.
+```
+
+---
+
+### Prompt 14C: Training Pipeline + Model Storage [Lambda Node.js] (Sprint 33)
+
+**Depends on 14A + 14B.**
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Context
+
+Build the pipeline that pulls deals from recorded_deals, trains the win probability model, evaluates it, stores it, and auto-promotes customers to Phase 2.
+
+## Create: lambda/server/src/ml/train.js
+
+### Main export: trainCustomerModel(customerId)
+
+Steps:
+1. Get org_ids for customer (from licenses table)
+2. Pull training data: SELECT * FROM recorded_deals WHERE org_id IN (...) AND status IN ('Won','Lost')
+3. Validate: need 100+ deals, 20+ won, 20+ lost. If not, return { success: false, reason }
+4. Create training samples:
+   - Each Won deal: label=1, proposed_margin=achieved_margin
+   - Each Lost deal: label=0, proposed_margin=achieved_margin
+   - Synthetic augmentation for margin sensitivity: for Won deals, create a sample at achieved_margin+0.10 with label=0 (teaches model that higher margin = lower win prob). For Lost deals, create sample at achieved_margin-0.05 with label=1.
+5. computeNormStats on training data
+6. Featurize all samples
+7. Train logistic regression (lr=0.01, lambda=0.01, epochs=500, batch=32, valSplit=0.2, patience=20)
+8. Evaluate on original (non-synthetic) deals only
+9. Get feature importance
+10. Store model package (model params + normStats + featureNames + metrics + importance) as JSON in customer_config.ml_model column
+11. Auto-promote: if AUC >= 0.60 AND deals >= 100 AND current phase < 2 → setCustomerPhase(customerId, 2)
+12. Return { success, metrics, dealCount, topFeatures, phase }
+
+### Schema migration: ensureMLSchema()
+
+ALTER TABLE customer_config ADD COLUMN IF NOT EXISTS ml_model JSONB
+
+Call this from Lambda cold-start init in index.js alongside other ensureSchema calls.
+
+### Export: getModel(customerId) — load model package from customer_config.ml_model
+
+### Admin API endpoints (add to index.js):
+
+POST /api/admin/ml/train/:customerId — trigger training, return results
+GET /api/admin/ml/model/:customerId — return model info (metrics, deal count, top features, phase) without exposing weights
+
+Both behind adminAuth middleware.
+
+## Testing: lambda/server/src/ml/train.test.js
+
+Mock query() to return 150 synthetic recorded_deals rows (80 Won, 70 Lost with varying features and margins). Verify training completes, AUC > 0.5, model stored.
+
+Create branch feat/ml-training-pipeline, commit, push. Open a PR.
+```
+
+---
+
+### Prompt 14D: ML Inference — Replace Rules Engine [Lambda Node.js] (Sprint 33)
+
+**Depends on 14C.**
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Context
+
+Replace the rules engine in /api/recommend with real ML inference. When a customer has a trained model, sweep margins to find the optimal recommendation. Keep rules.js as fallback.
+
+## Create: lambda/server/src/ml/inference.js
+
+### Export: recommendMargin(deal, modelPackage)
+
+1. Deserialize model, load normStats
+2. Sweep margins from 5% to 35% in 0.5% steps:
+   - For each margin: featurize deal with proposed_margin=margin, predict P(win), compute expectedGP = margin * (oem_cost / (1-margin)) * pWin
+3. Find optimal (max expectedGP), conservative (max margin where pWin > 0.70), aggressive (max margin where pWin > 0.45)
+4. Generate key drivers from feature importance + feature values: top 5 features with human-readable sentences using FEATURE_DISPLAY_NAMES, quantified impact in pp
+5. Return: { suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, winProbability, expectedGP, confidence, keyDrivers, expectedGPCurve (every other point for chart), modelMetrics: { auc, dealCount, trainedAt }, source: 'ml_model' }
+
+### Export: computeConfidence(modelPackage, deal)
+
+Base = (auc - 0.5) * 2, multiply by min(1, dealCount/500). Returns 0-1.
+
+## Modify: lambda/server/index.js — /api/recommend handler
+
+IMPORTANT: Do NOT delete rules.js. Keep it as final fallback.
+
+New flow:
+1. Parse input as before
+2. Resolve customer → get phase and ML model
+3. If modelPackage exists AND metrics.auc >= 0.55:
+   - Use ML inference: recommendMargin(dealInput, modelPackage)
+   - Include in response: suggestedMarginPct, conservativeMarginPct, aggressiveMarginPct, expectedGPCurve, keyDrivers (learned), modelMetrics, source='ml_model'
+4. Else if Phase 1:
+   - Use industry benchmarks (import from benchmarks.js, built in 14E)
+   - Include: suggestedMarginPct (benchmark median), suggestedMarginRange { low, high }, source='industry_benchmark'
+5. Else (fallback):
+   - Use existing rules engine
+   - source='rules_engine'
+
+Add source field to ALL responses so the LWC can render differently per source.
+
+## Testing
+
+1. Mock model, verify recommendMargin produces monotonically decreasing pWin as margin increases
+2. Verify optimal margin maximizes expectedGP (not just margin or pWin)
+3. Integration: mock DB, call /api/recommend, verify response has new fields + source
+
+Create branch feat/ml-inference, commit, push. Open a PR.
+```
+
+---
+
+### Prompt 14E: Industry Benchmarks for Phase 1 [Lambda Node.js] (Sprint 33)
+
+Can run in **parallel** with 14C/14D.
+
+```
+You are working on the MarginArc Lambda API in the `mattrothberg2/MarginArc` repo, under lambda/server/.
+
+## Context
+
+Phase 1 customers see suggestedMarginPct: null today. Replace with curated industry benchmarks — a margin RANGE from publicly available data. Useful from day 1.
+
+## Create: lambda/server/src/ml/benchmarks.js
+
+### BENCHMARKS constant
+
+Nested object: OEM → Segment → SizeBucket → { p25, median, p75, source }
+
+Include at minimum these OEMs with all segment/size combos:
+- Cisco (tight margins on networking: Enterprise 10-17%, SMB 18-28%)
+- Dell (moderate: Enterprise 12-20%, SMB 20-30%)
+- HPE (slightly higher than Dell: +1-2pp)
+- Microsoft (software/cloud: higher margins 18-30%)
+- Palo Alto (security: higher margins 15-28%)
+- CrowdStrike (SaaS security: 20-35%)
+- Fortinet (security: 15-25%)
+- _default fallback: 12-22% general IT VAR benchmark
+
+Size buckets: <$25K, $25K-100K, $100K-500K, $500K-1M, $1M+
+Larger deals = tighter margins (2-4pp compression per tier)
+
+### getBenchmark(oem, segment, dealSize)
+
+Cascading lookup: exact → OEM default → general default. Returns { low, median, high, source, specificity }.
+
+### getSizeBucket(amount) — <$25K, $25K-100K, etc.
+
+### generateBenchmarkResponse(dealInput)
+
+Returns { suggestedMarginRange: { low, high }, suggestedMarginPct: median, benchmarkSource, insights: [contextual tips], source: 'industry_benchmark' }
+
+Insights: if deal reg → "Registration typically adds 2-4pp", if 3+ competitors → "Multiple competitors compress 2-3pp", if services → "Services-attached deals achieve 3-5pp higher".
+
+### Wire into /api/recommend
+
+In the Phase 1 branch of /api/recommend (index.js), replace the current suggestedMarginPct: null with generateBenchmarkResponse(input). The response now has a real margin range even for Phase 1.
+
+## Testing
+
+Verify Cisco Enterprise $250K → returns Cisco-specific range. Verify unknown OEM → falls back to default. Verify insights generated correctly.
+
+Create branch feat/ml-benchmarks, commit, push. Open a PR.
+```
+
+---
+
+### Prompt 14F: LWC Updates — ML Recommendations Display [SFDC LWC] (Sprint 34)
+
+**Depends on 14D + 14E.**
+
+```
+You are working on the MarginArc SFDC package in the `mattrothberg2/MarginArc` repo, under sfdc/.
+
+## Context
+
+The Lambda API now returns richer data. Phase 1: suggestedMarginPct is a benchmark median (not null!) with suggestedMarginRange and source='industry_benchmark'. Phase 2: ML-optimized with conservativeMarginPct, aggressiveMarginPct, expectedGPCurve, learned keyDrivers, source='ml_model'.
+
+## File: sfdc/force-app/main/default/lwc/marginarcMarginAdvisor/marginarcMarginAdvisor.js
+
+### Change 1: Source detection getters
+
+get recommendationSource() — returns this.recommendation?.source || 'rules_engine'
+get isMLRecommendation() — source === 'ml_model'
+get isBenchmarkRecommendation() — source === 'industry_benchmark'
+get hasMarginRange() — suggestedMarginRange != null
+get marginRangeLow/High() — from suggestedMarginRange
+
+### Change 2: Phase 1 — Benchmark Range Display
+
+When isBenchmarkRecommendation, replace the "1 of 50 deals needed" empty state with:
+- A visual range bar showing low-median-high with the rep's planned margin as a marker
+- Context text: "Based on [source] for similar [OEM] [segment] deals"
+- Position assessment: planned margin in range / below / above
+- Caveat: "Personalized ML recommendations unlock after 100 closed deals"
+
+### Change 3: Phase 2 — Three Margin Options
+
+When isMLRecommendation, show a 3-column card layout:
+- Conservative: {conservativeMarginPct}%, Win prob: X%
+- Recommended (highlighted, green border): {suggestedMarginPct}%, Max GP: $X, "Best ROI" badge
+- Aggressive: {aggressiveMarginPct}%, Win prob: X%
+Clicking an option updates the comparison table values.
+
+### Change 4: ML Key Drivers (replace template insights)
+
+When isMLRecommendation, show learned drivers from recommendation.keyDrivers:
+- Each driver: arrow icon (up/down), sentence, impact in pp
+- "Key Drivers (learned from your data)" header
+- Replace the current phase1Tips / topDrivers with these when available
+
+### Change 5: Model Transparency
+
+In the expanded details panel, show: "Model trained on X deals | Accuracy: Y% | Last trained: date"
+
+### Styling
+
+- Benchmark card: #F0FDF4 background, green border, range bar with gradient fill and planned margin indicator
+- Margin options: 3-column grid, selected option gets green border+shadow
+- Drivers: positive=green text, negative=red text, impact badges
+- Model info: subtle gray text, small font, in details panel
+
+Run prettier + eslint on modified files.
+
+Create branch feat/ml-lwc-display, commit, push. Open a PR.
+```
