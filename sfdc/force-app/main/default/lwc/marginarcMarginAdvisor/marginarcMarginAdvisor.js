@@ -1803,9 +1803,20 @@ export default class MarginarcMarginAdvisor extends LightningElement {
   // Confirmation dialog getters
   get confirmNewAmount() {
     if (!this.recommendation || !this.opportunityData) return "$0";
-    const oemCost = Number(this.opportunityData.oemCost) || 0;
-    const marginPct = Number(this.recommendation.suggestedMarginPct) / 100;
-    const newAmount = oemCost / (1 - marginPct);
+    // Derive implied cost from current Amount and current margin so the
+    // preview stays directionally consistent (lower margin → lower price).
+    // Using the stored OEM Cost can mismatch when Planned Margin was edited
+    // independently of Amount.
+    const currentAmount = Number(this.opportunityData.amount) || 0;
+    const currentMarginDec = this.effectivePlannedMargin / 100;
+    const impliedCost =
+      currentMarginDec < 1 ? currentAmount * (1 - currentMarginDec) : 0;
+    const newMarginDec =
+      Number(this.recommendation.suggestedMarginPct) / 100;
+    const newAmount =
+      newMarginDec >= 1 || impliedCost <= 0
+        ? currentAmount
+        : impliedCost / (1 - newMarginDec);
     return this.formatCurrency(newAmount);
   }
 
@@ -2193,13 +2204,22 @@ export default class MarginarcMarginAdvisor extends LightningElement {
       }
 
       // Calculate financials
-      // If we have BOM totals, use those (more accurate). Otherwise compute from top-level.
+      // If we have BOM totals, use those (more accurate). Otherwise derive
+      // implied cost from current Amount + current margin so the direction
+      // stays consistent (lower margin → lower price).
       let newAmount;
       if (hasBom && bomData.totals?.price > 0) {
         newAmount = bomData.totals.price;
       } else {
         const marginDec = appliedMarginPct / 100;
-        newAmount = marginDec >= 1 ? oemCost * 10 : oemCost / (1 - marginDec);
+        const currentAmount = Number(this.opportunityData?.amount) || 0;
+        const currentMarginDec = this.effectivePlannedMargin / 100;
+        const impliedCost =
+          currentMarginDec < 1 && currentAmount > 0
+            ? currentAmount * (1 - currentMarginDec)
+            : oemCost;
+        newAmount =
+          marginDec >= 1 ? impliedCost * 10 : impliedCost / (1 - marginDec);
       }
 
       // Use fresh scores

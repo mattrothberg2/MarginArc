@@ -520,6 +520,40 @@ app.post('/api/recommend', async (req,res)=> {
         predictionQuality
       })
 
+      // Compute plan-vs-recommended metrics using the ML model's own
+      // predictions so the LWC shows consistent win probabilities.
+      let metrics = null
+      if (planned != null && mlResult.predictAtMargin) {
+        const plannedDec = planned / 100
+        const recDec = mlResult.suggestedMarginPct / 100
+        const plannedWinProb = mlResult.predictAtMargin(planned)
+        const plannedPrice = input.oemCost * (1 + plannedDec)
+        const plannedGP = input.oemCost * plannedDec
+        const recWinProb = mlResult.winProbability
+        const recPrice = input.oemCost * (1 + recDec)
+        const recGP = input.oemCost * recDec
+        metrics = {
+          planned: {
+            marginPct: planned,
+            price: plannedPrice,
+            grossProfit: plannedGP,
+            winProb: Math.round(plannedWinProb * 100),
+            riskAdjusted: plannedGP * plannedWinProb
+          },
+          recommended: {
+            marginPct: mlResult.suggestedMarginPct,
+            price: recPrice,
+            grossProfit: recGP,
+            winProb: Math.round(recWinProb * 100),
+            riskAdjusted: recGP * recWinProb
+          },
+          delta: {
+            grossProfit: recGP - plannedGP,
+            riskAdjusted: (recGP * recWinProb) - (plannedGP * plannedWinProb)
+          }
+        }
+      }
+
       if (isLambda) {
         structuredLog('info', 'recommendation', {
           oem: input.oem || 'unknown',
@@ -533,8 +567,12 @@ app.post('/api/recommend', async (req,res)=> {
         })
       }
 
+      // Remove internal helper before sending response
+      const { predictAtMargin: _, ...mlResponse } = mlResult
+
       return res.json({
-        ...mlResult,
+        ...mlResponse,
+        metrics,
         dealScore,
         scoreFactors,
         topDrivers: mlResult.keyDrivers.map(d => d.sentence),

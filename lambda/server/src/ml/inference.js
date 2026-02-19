@@ -102,7 +102,14 @@ export function recommendMargin(dealInput, modelPackage) {
     })
   }
 
-  // 7. Return
+  // 7. Helper: predict win prob at any margin using this model
+  function predictAtMargin(marginPct) {
+    const dec = marginPct / 100
+    const fr = featurize(dealInput, normStats, { proposedMargin: dec })
+    return predict(model, fr.features)
+  }
+
+  // 8. Return
   return {
     suggestedMarginPct: parseFloat((optimal.margin * 100).toFixed(1)),
     conservativeMarginPct: parseFloat((conservative.margin * 100).toFixed(1)),
@@ -117,6 +124,7 @@ export function recommendMargin(dealInput, modelPackage) {
       dealCount: modelPackage.dealCount,
       trainedAt: modelPackage.trainedAt
     },
+    predictAtMargin,
     source: 'ml_model'
   }
 }
