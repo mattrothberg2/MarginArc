@@ -26,85 +26,47 @@
     <!-- Recommendation Display -->
     <template lwc:if={hasRecommendation}>
       <div class="marginarc-card">
-        <!-- Phase 1 Hero: Benchmark Range as primary display -->
+        <!-- Phase 1: Score Hero + Benchmark Range Bar -->
         <template lwc:if={isPhaseOne}>
+          <!-- Score Hero (same style as Phase 2+, using phase1Score) -->
           <div class="deal-score-hero">
             <div class="score-header-row">
               <div class="score-title-group">
                 <h3 class="score-main-title">Margin Advisor</h3>
-                <span class="header-badge"
-                  >{detectedOem} &bull; {detectedSegment}<template
-                    lwc:if={isSegmentInferred}
-                  >
-                    <span class="segment-estimated">(estimated)</span></template
-                  ></span
-                >
-                <template for:each={secondaryVendors} for:item="vendor">
-                  <span key={vendor} class="marginarc-secondary-oem-badge"
-                    >+{vendor}</span
-                  >
-                </template>
-                <template lwc:if={hasOverflowVendors}>
-                  <span
-                    class="marginarc-secondary-oem-badge marginarc-overflow-badge"
-                    >{overflowVendorLabel}</span
-                  >
-                </template>
               </div>
             </div>
 
-            <!-- Benchmark Range as Hero (Phase 1) -->
-            <template lwc:if={isBenchmarkRecommendation}>
-              <div class="benchmark-range-container">
-                <div class="benchmark-range-header">
-                  <span class="benchmark-range-title phase1-range-title">Margin Range</span>
-                  <span class={benchmarkAssessmentClass}>{benchmarkAssessment}</span>
-                </div>
-
-                <!-- Extended bar that shows position even outside range -->
-                <div class="benchmark-bar-wrapper">
-                  <!-- Labels above bar -->
-                  <div class="benchmark-bar-labels">
-                    <span class="benchmark-bar-label" style={benchmarkLowLabelStyle}>p25: {marginRangeLow}%</span>
-                    <span class="benchmark-bar-label benchmark-bar-label-median" style={benchmarkMedianLabelStyle}>Median: {benchmarkMedianValue}%</span>
-                    <span class="benchmark-bar-label" style={benchmarkHighLabelStyle}>p75: {marginRangeHigh}%</span>
-                  </div>
-
-                  <!-- The bar itself — extended range to show outside positions -->
-                  <div class="benchmark-bar-track">
-                    <!-- Benchmark zone (colored section) -->
-                    <div class="benchmark-bar-zone" style={benchmarkZoneStyle}></div>
-                    <!-- Median tick -->
-                    <div class="benchmark-bar-median" style={benchmarkMedianBarStyle}></div>
-                    <!-- Your plan marker (prominent) -->
-                    <div class={plannedMarkerClass} style={plannedMarkerStyle}>
-                      <div class="planned-marker-label">{currentMargin}%</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Delta callout — the key actionable info -->
-                <div class={benchmarkDeltaClass}>
-                  <template lwc:if={isBelowBenchmark}>
-                    <span class="benchmark-delta-text">Your plan is {benchmarkGapPp}pp below the range floor. Raising to {marginRangeLow}% adds ~${benchmarkGapDollars} GP.</span>
-                  </template>
-                  <template lwc:if={isAboveBenchmark}>
-                    <span class="benchmark-delta-text">Your plan is {benchmarkGapPp}pp above the range ceiling — strong margin positioning.</span>
-                  </template>
-                  <template lwc:if={isInBenchmarkRange}>
-                    <span class="benchmark-delta-text">Your margin is within the benchmark range for {benchmarkSource}.</span>
-                  </template>
-                </div>
-
-                <p class="benchmark-source-text">Based on {benchmarkSource}</p>
+            <div class="score-display">
+              <div class="score-number" style={phase1ScoreStyle}>{phase1Score}</div>
+              <div class="score-label" style={phase1ScoreStyle}>
+                {phase1ScoreLabel}
               </div>
-            </template>
+            </div>
 
-            <!-- Phase 1 Deal Insights -->
-            <template lwc:if={hasPhase1Tips}>
+            <!-- Spectrum Bar -->
+            <div class="score-spectrum-container">
+              <div class="score-spectrum">
+                <div class="score-marker" style={phase1ScoreMarkerStyle}>
+                  <div class="score-marker-dot"></div>
+                  <div class="score-marker-line"></div>
+                </div>
+              </div>
+              <div class="score-spectrum-labels">
+                <span class="spectrum-label spectrum-label-red">Needs Work</span>
+                <span class="spectrum-label spectrum-label-orange"
+                  >Below Avg</span
+                >
+                <span class="spectrum-label spectrum-label-yellow">Fair</span>
+                <span class="spectrum-label spectrum-label-green">Good</span>
+                <span class="spectrum-label spectrum-label-bright">Optimal</span>
+              </div>
+            </div>
+
+            <!-- Deal Insights (inside the hero) -->
+            <template lwc:if={hasPhase1FilteredTips}>
               <div class="marginarc-phase1-insights">
                 <h3 class="insights-header">Deal Insights</h3>
-                <template for:each={phase1Tips} for:item="tip">
+                <template for:each={phase1FilteredTips} for:item="tip">
                   <div key={tip.id} class="insight-row">
                     <lightning-icon
                       icon-name={tip.icon}
@@ -127,23 +89,50 @@
                   </template>
                 </div>
               </template>
-              <template lwc:if={hasScoreImprovementTips}>
-                <div class="score-tips">
-                  <p class="score-tips-header">Improve your score:</p>
-                  <template for:each={scoreImprovementTips} for:item="tip">
-                    <div key={tip.text} class="score-tip-row">
-                      <lightning-icon
-                        icon-name={tip.icon}
-                        size="xx-small"
-                      ></lightning-icon>
-                      <span class="score-tip-text">{tip.text}</span>
-                      <span class="score-tip-pts">+{tip.pts} pts</span>
-                    </div>
-                  </template>
-                </div>
-              </template>
             </template>
           </div>
+
+          <!-- Benchmark Range (extended bar from PR #91) -->
+          <template lwc:if={isBenchmarkRecommendation}>
+            <div class="marginarc-phase-callout benchmark-callout">
+              <div class="benchmark-range-container">
+                <div class="benchmark-range-header">
+                  <span class="benchmark-range-title">Margin Range</span>
+                  <span class={benchmarkAssessmentClass}>{benchmarkAssessment}</span>
+                </div>
+
+                <div class="benchmark-bar-wrapper">
+                  <div class="benchmark-bar-labels">
+                    <span class="benchmark-bar-label" style={benchmarkLowLabelStyle}>{marginRangeLow}%</span>
+                    <span class="benchmark-bar-label benchmark-bar-label-median" style={benchmarkMedianLabelStyle}>Median: {benchmarkMedianValue}%</span>
+                    <span class="benchmark-bar-label" style={benchmarkHighLabelStyle}>{marginRangeHigh}%</span>
+                  </div>
+
+                  <div class="benchmark-bar-track">
+                    <div class="benchmark-bar-zone" style={benchmarkZoneStyle}></div>
+                    <div class="benchmark-bar-median" style={benchmarkMedianBarStyle}></div>
+                    <div class={plannedMarkerClass} style={plannedMarkerStyle}>
+                      <div class="planned-marker-label">{currentMargin}%</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class={benchmarkDeltaClass}>
+                  <template lwc:if={isBelowBenchmark}>
+                    <span class="benchmark-delta-text">Your plan is {benchmarkGapPp}pp below the range floor. Raising to {marginRangeLow}% adds ~${benchmarkGapDollars} GP.</span>
+                  </template>
+                  <template lwc:if={isAboveBenchmark}>
+                    <span class="benchmark-delta-text">Your plan is {benchmarkGapPp}pp above the range ceiling — strong margin positioning.</span>
+                  </template>
+                  <template lwc:if={isInBenchmarkRange}>
+                    <span class="benchmark-delta-text">Your margin is within the benchmark range for {benchmarkSource}.</span>
+                  </template>
+                </div>
+
+                <p class="benchmark-source-text">Based on {benchmarkSource}</p>
+              </div>
+            </div>
+          </template>
         </template>
 
         <!-- Deal Score Hero (Phase 2+) -->
@@ -352,30 +341,12 @@
           </div>
         </template>
 
-        <!-- Action Bar (above the fold) -->
+        <!-- Action Bar -->
         <div class="action-bar">
-          <button
-            class="btn-secondary"
-            onclick={handleRefresh}
-            aria-label="Refresh recommendation"
-          >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            Refresh
-          </button>
-          <template lwc:if={showApplyButton}>
             <button
-              class="btn-primary"
-              onclick={handleCopyRecommendation}
-              aria-label="Copy recommendation to clipboard"
+              class="btn-secondary"
+              onclick={handleRefresh}
+              aria-label="Refresh recommendation"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -384,20 +355,38 @@
                 stroke-width="2"
               >
                 <path
-                  d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                 />
               </svg>
-              Copy Recommendation
+              Refresh
             </button>
-            <button
-              class="btn-text"
-              onclick={handleApply}
-              aria-label="Apply recommended margin to opportunity"
-            >
-              Apply to Opportunity
-            </button>
-          </template>
-        </div>
+            <template lwc:if={showApplyButton}>
+              <button
+                class="btn-primary"
+                onclick={handleCopyRecommendation}
+                aria-label="Copy recommendation to clipboard"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                  />
+                </svg>
+                Copy Recommendation
+              </button>
+              <button
+                class="btn-text"
+                onclick={handleApply}
+                aria-label="Apply recommended margin to opportunity"
+              >
+                Apply to Opportunity
+              </button>
+            </template>
+          </div>
 
         <!-- Undo Bar (shown for 30s after applying) -->
         <template lwc:if={showUndoBar}>
@@ -410,16 +399,16 @@
 
         <!-- Show/Hide Details Toggle -->
         <div class="details-toggle-bar">
-          <button
-            class="btn-toggle-details"
-            onclick={toggleDetails}
-            aria-expanded={isDetailExpanded}
-            aria-label={detailsToggleLabel}
-          >
-            <span class="toggle-label">{detailsToggleLabel}</span>
-            <span class="toggle-chevron">{detailsToggleIcon}</span>
-          </button>
-        </div>
+            <button
+              class="btn-toggle-details"
+              onclick={toggleDetails}
+              aria-expanded={isDetailExpanded}
+              aria-label={detailsToggleLabel}
+            >
+              <span class="toggle-label">{detailsToggleLabel}</span>
+              <span class="toggle-chevron">{detailsToggleIcon}</span>
+            </button>
+          </div>
 
         <!-- Expandable Detail Sections -->
         <div class={detailsPanelClass}>

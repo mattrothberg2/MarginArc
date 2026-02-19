@@ -119,6 +119,7 @@ public without sharing class MarginArcDealOutcomeSync implements Database.Batcha
       if (String.isNotBlank(cfg.API_Key__c)) {
         request.setHeader('x-api-key', cfg.API_Key__c);
       }
+      request.setHeader('x-org-id', UserInfo.getOrganizationId());
       request.setTimeout(TIMEOUT_MS);
       request.setBody(payload);
 
