@@ -76,7 +76,7 @@ public with sharing class MarginArcSyntheticDataLoader {
     return new List<AccountArchetype>{
       // Regeneron: Enterprise pharma, heavy Cisco + Palo Alto, strategic
       new AccountArchetype(
-        'Regeneron Pharmaceuticals (Synthetic)', 'Biotechnology', 13000000000.0, 170,
+        'Regeneron Pharmaceuticals (Synthetic)', 'Biotechnology', 13000000000.0, 420,
         'Enterprise', 'Strategic',
         new List<String>{
           'Cisco','Cisco','Cisco','Cisco','Cisco',
@@ -92,7 +92,7 @@ public with sharing class MarginArcSyntheticDataLoader {
       ),
       // HVCU: Mid-market financial, HPE compute + Cisco networking, price-sensitive
       new AccountArchetype(
-        'Hudson Valley Credit Union (Synthetic)', 'Finance', 950000000.0, 90,
+        'Hudson Valley Credit Union (Synthetic)', 'Finance', 950000000.0, 260,
         'MidMarket', 'Good',
         new List<String>{
           'HPE','HPE','HPE','HPE',
@@ -110,7 +110,7 @@ public with sharing class MarginArcSyntheticDataLoader {
       ),
       // Westchester Medical: Enterprise healthcare, Cisco + HPE + Palo Alto, services-heavy
       new AccountArchetype(
-        'Westchester Medical Center (Synthetic)', 'Healthcare', 2500000000.0, 70,
+        'Westchester Medical Center (Synthetic)', 'Healthcare', 2500000000.0, 200,
         'Enterprise', 'Good',
         new List<String>{
           'Cisco','Cisco','Cisco',
@@ -128,7 +128,7 @@ public with sharing class MarginArcSyntheticDataLoader {
       ),
       // SUNY Purchase: SMB/Mid education, mostly Cisco, budget-constrained
       new AccountArchetype(
-        'SUNY Purchase (Synthetic)', 'Education', 180000000.0, 60,
+        'SUNY Purchase (Synthetic)', 'Education', 180000000.0, 170,
         'SMB', 'Good',
         new List<String>{
           'Cisco','Cisco','Cisco','Cisco','Cisco','Cisco',
@@ -144,7 +144,7 @@ public with sharing class MarginArcSyntheticDataLoader {
       ),
       // Entergy: Enterprise energy, HPE storage + Palo Alto, high security
       new AccountArchetype(
-        'Entergy Northeast (Synthetic)', 'Energy', 12000000000.0, 45,
+        'Entergy Northeast (Synthetic)', 'Energy', 12000000000.0, 150,
         'Enterprise', 'Good',
         new List<String>{
           'HPE','HPE','HPE','HPE',
@@ -857,7 +857,7 @@ public with sharing class MarginArcSyntheticDataLoader {
   public class SyntheticDealQueueable implements Queueable {
     private String dealsJson;
     private Integer startIdx;
-    private final Integer BATCH_SIZE = 200;
+    private final Integer BATCH_SIZE = 400;
 
     public SyntheticDealQueueable(String json, Integer idx) {
       this.dealsJson = json;

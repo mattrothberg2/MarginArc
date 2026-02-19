@@ -45,8 +45,8 @@ private class MarginArcSyntheticDataLoaderTest {
       // Verify total deals generated
       Integer oppCount = (Integer) result.get('opportunities');
       System.assert(
-        oppCount >= 400 && oppCount <= 600,
-        'Should generate 400-600 opportunities, got: ' + oppCount
+        oppCount >= 1000 && oppCount <= 1400,
+        'Should generate 1000-1400 opportunities, got: ' + oppCount
       );
 
       // Verify job was enqueued
