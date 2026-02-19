@@ -37,6 +37,7 @@ public with sharing class MarginArcController {
     if (String.isNotBlank(cfg.API_Key__c)) {
       request.setHeader('x-api-key', cfg.API_Key__c);
     }
+    request.setHeader('x-org-id', UserInfo.getOrganizationId());
     request.setTimeout(30000);
     request.setBody(payload);
 
@@ -692,6 +693,7 @@ public with sharing class MarginArcController {
     if (String.isNotBlank(cfg.API_Key__c)) {
       request.setHeader('x-api-key', cfg.API_Key__c);
     }
+    request.setHeader('x-org-id', UserInfo.getOrganizationId());
     request.setTimeout(30000);
     request.setBody(payload);
 
